@@ -25,6 +25,9 @@ no accounts, no cloud, nothing to shut down on you.
   shows, top genres.
 - **TV Time import** — upload the data export from the original app
   (zip or CSVs) and your followed shows + watch history carry over.
+- **Episode notifications** — real Web Push: when a new episode of a show you
+  follow airs, every enrolled device gets a notification, even with the app
+  closed. Several episodes at once collapse into a single digest.
 - **PWA** — installable to your phone's home screen, with offline caching of
   the last-seen data.
 
@@ -66,6 +69,21 @@ Both export generations TV Time has shipped are supported
 show-name + season/episode CSVs). Column headers are sniffed, so minor format
 variations are fine.
 
+## Episode notifications
+
+Enable them per device in **Settings → Episode notifications** (there's a
+test button). A background job checks every 5 minutes for episodes that just
+aired, keeps air dates synced, and pushes straight to your devices — no
+third-party service; VAPID keys are generated automatically on first use.
+
+- **iPhone/iPad**: install the app to your Home Screen first (Share → Add to
+  Home Screen), then enable notifications from inside it (iOS 16.4+).
+- Web Push requires a secure context: `localhost` works out of the box;
+  anything else needs HTTPS.
+- Tuning via env vars: `PUSH_CHECK_MINUTES` (default 5),
+  `PUSH_LOOKBACK_HOURS` (default 12 — how far back "just aired" reaches),
+  `VAPID_SUBJECT` (a `mailto:` contact some push services require).
+
 ## Development
 
 ```bash
@@ -83,5 +101,3 @@ exercisable at any time (this is how the app is tested in CI-like sandboxes).
 - Single-user by design: there is no auth. If you expose it beyond localhost,
   put it behind a reverse proxy with auth (e.g. Tailscale, basic auth).
 - Specials (season 0) are currently skipped to keep progress counts coherent.
-- Push notifications aren't implemented; the calendar feed covers "tell me
-  when a new episode airs" on every device.

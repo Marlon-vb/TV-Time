@@ -58,6 +58,25 @@ Headless Chromium renders the client pages fine:
 Pages worth checking: `/` (watch next), `/upcoming`, `/shows`, `/show/101`
 (seasons, spoiler blur), `/stats`, `/settings`.
 
+## Push notifications
+
+In mock mode deliveries are written to the `push_outbox` table instead of the
+network. Verify the whole loop over HTTP:
+
+```bash
+curl -s -X POST $B/api/push/subscribe -H 'Content-Type: application/json' \
+  -d '{"subscription":{"endpoint":"https://push.example/dev1","keys":{"p256dh":"k","auth":"a"}},"label":"Test"}'
+curl -s -X POST $B/api/push/check     # -> {episodes, sent}
+curl -s -X POST $B/api/push/test      # test notification
+node -e "const db=require('better-sqlite3')('/tmp/verify-data/tvtime.db');console.log(db.prepare('SELECT payload FROM push_outbox').all())"
+```
+
+Episodes qualify when they aired within PUSH_LOOKBACK_HOURS (default 12) and
+are unwatched/unnotified — start the server with e.g. PUSH_LOOKBACK_HOURS=96
+so recent mock episodes qualify. The scheduler (instrumentation.ts) logs
+"[tvtime] episode notification scheduler running" on boot and ticks every
+PUSH_CHECK_MINUTES (default 5).
+
 ## Gotchas
 
 - Mock air dates move with the clock; assert on relative facts (counts,

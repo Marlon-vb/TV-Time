@@ -54,6 +54,26 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint TEXT PRIMARY KEY,
+  keys TEXT NOT NULL,
+  label TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS notified_episodes (
+  episode_id INTEGER PRIMARY KEY,
+  sent_at TEXT NOT NULL
+);
+
+-- Mock-mode only: records what would have been pushed, for testing.
+CREATE TABLE IF NOT EXISTS push_outbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  endpoint TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 `;
 
 export function getDb(): Database.Database {

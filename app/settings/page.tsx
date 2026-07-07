@@ -15,6 +15,7 @@ export default function SettingsPage() {
     <div>
       <h1 className="mb-5 text-2xl font-extrabold tracking-tight">Settings</h1>
       <div className="space-y-4">
+        <NotificationsSection />
         <ImportSection />
         <TmdbSection />
         <PreferencesSection />
@@ -37,6 +38,236 @@ function Section({
       <h2 className="mb-3 text-base font-extrabold tracking-tight">{title}</h2>
       {children}
     </section>
+  );
+}
+
+/* ------------------------------------------------------------ notifications */
+
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, (ch) => ch.charCodeAt(0));
+}
+
+function deviceLabel(): string {
+  const ua = navigator.userAgent;
+  const os = /iPhone|iPad/.test(ua)
+    ? "iOS"
+    : /Android/.test(ua)
+      ? "Android"
+      : /Mac/.test(ua)
+        ? "macOS"
+        : /Windows/.test(ua)
+          ? "Windows"
+          : "Linux";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /Firefox\//.test(ua)
+      ? "Firefox"
+      : /Chrome\//.test(ua)
+        ? "Chrome"
+        : /Safari\//.test(ua)
+          ? "Safari"
+          : "Browser";
+  return `${os} · ${browser}`;
+}
+
+type PushState =
+  | "loading"
+  | "unsupported"
+  | "no-sw"
+  | "denied"
+  | "off"
+  | "on";
+
+function NotificationsSection() {
+  const [state, setState] = useState<PushState>("loading");
+  const [devices, setDevices] = useState<
+    { endpoint: string; label: string | null; created_at: string }[]
+  >([]);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadDevices = async () => {
+    const res = await fetch("/api/push");
+    if (res.ok) setDevices((await res.json()).devices);
+  };
+
+  useEffect(() => {
+    void (async () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setState("unsupported");
+        return;
+      }
+      await loadDevices();
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) {
+        setState("no-sw");
+        return;
+      }
+      if (Notification.permission === "denied") {
+        setState("denied");
+        return;
+      }
+      const sub = await reg.pushManager.getSubscription();
+      setState(sub ? "on" : "off");
+    })();
+  }, []);
+
+  const enable = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setState("denied");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const { publicKey } = await (await fetch("/api/push")).json();
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+      });
+      const res = await postJson("/api/push/subscribe", {
+        subscription: sub.toJSON(),
+        label: deviceLabel(),
+      });
+      if (!res.ok) throw new Error(res.error ?? "Subscribe failed");
+      setState("on");
+      setMessage("Notifications enabled on this device.");
+      await loadDevices();
+    } catch (err) {
+      setMessage(`Could not enable notifications: ${(err as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (sub) {
+        await postJson("/api/push/unsubscribe", { endpoint: sub.endpoint });
+        await sub.unsubscribe();
+      }
+      setState("off");
+      await loadDevices();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendTest = async () => {
+    setBusy(true);
+    const res = await postJson<{ sent: number }>("/api/push/test");
+    setMessage(
+      res.ok
+        ? `Test sent to ${res.data?.sent} device(s) — it should pop up in a moment.`
+        : res.error
+    );
+    setBusy(false);
+  };
+
+  const removeDevice = async (endpoint: string) => {
+    await postJson("/api/push/unsubscribe", { endpoint });
+    await loadDevices();
+  };
+
+  return (
+    <Section title="Episode notifications">
+      <p className="text-sm text-muted">
+        Get a push notification when a new episode of a show you follow airs
+        — checked every few minutes, even while the app is closed. Archived
+        shows stay quiet.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {state === "loading" && (
+          <span className="text-sm text-faint">Checking this device…</span>
+        )}
+        {state === "unsupported" && (
+          <span className="text-sm text-faint">
+            This browser doesn&apos;t support Web Push.
+          </span>
+        )}
+        {state === "no-sw" && (
+          <span className="text-sm text-faint">
+            Notifications need the production app (run{" "}
+            <code className="rounded bg-raised px-1">npm start</code>) — the
+            service worker isn&apos;t active in dev mode.
+          </span>
+        )}
+        {state === "denied" && (
+          <span className="text-sm text-danger">
+            Notifications are blocked for this site — allow them in your
+            browser&apos;s site settings, then reload.
+          </span>
+        )}
+        {state === "off" && (
+          <button
+            onClick={enable}
+            disabled={busy}
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-ink hover:bg-accent-dim disabled:opacity-50"
+          >
+            Enable on this device
+          </button>
+        )}
+        {state === "on" && (
+          <>
+            <button
+              onClick={sendTest}
+              disabled={busy}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-ink hover:bg-accent-dim disabled:opacity-50"
+            >
+              Send test notification
+            </button>
+            <button
+              onClick={disable}
+              disabled={busy}
+              className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-muted hover:bg-raised hover:text-fg disabled:opacity-50"
+            >
+              Disable on this device
+            </button>
+          </>
+        )}
+      </div>
+
+      {message && <p className="mt-2 text-sm text-muted">{message}</p>}
+
+      {devices.length > 0 && (
+        <ul className="mt-4 space-y-1.5">
+          {devices.map((d) => (
+            <li
+              key={d.endpoint}
+              className="flex items-center justify-between rounded-lg border border-line bg-raised px-3 py-2 text-sm"
+            >
+              <span className="font-semibold">{d.label ?? "Device"}</span>
+              <span className="flex items-center gap-3">
+                <span className="text-xs text-faint">
+                  since {d.created_at.slice(0, 10)}
+                </span>
+                <button
+                  onClick={() => removeDevice(d.endpoint)}
+                  className="text-xs font-semibold text-danger/80 hover:text-danger"
+                >
+                  Remove
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-3 text-xs text-faint">
+        On iPhone/iPad: add the app to your Home Screen first (Share → Add to
+        Home Screen), then enable notifications from inside it. Push requires
+        HTTPS (or localhost).
+      </p>
+    </Section>
   );
 }
 
