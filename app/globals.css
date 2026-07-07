@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0d0e17;
+  --color-surface: #151726;
+  --color-raised: #1d2033;
+  --color-overlay: #262a42;
+  --color-line: #2b2f4a;
+  --color-accent: #fbd737;
+  --color-accent-dim: #c7a91f;
+  --color-fg: #f2f3f8;
+  --color-muted: #9aa0b8;
+  --color-faint: #6b7190;
+  --color-danger: #ff5c72;
+  --color-ok: #4ade80;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  background: var(--color-ink);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* Thin scrollbars for horizontal poster rails */
+.rail::-webkit-scrollbar {
+  height: 6px;
+}
+.rail::-webkit-scrollbar-thumb {
+  background: var(--color-overlay);
+  border-radius: 3px;
+}
+
+/* Spoiler-protected episode synopsis */
+.spoiler {
+  filter: blur(6px);
+  transition: filter 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+.spoiler.revealed {
+  filter: none;
+  cursor: auto;
+  user-select: auto;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.25s ease;
+}
