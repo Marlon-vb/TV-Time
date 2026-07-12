@@ -77,6 +77,23 @@ so recent mock episodes qualify. The scheduler (instrumentation.ts) logs
 "[tvtime] episode notification scheduler running" on boot and ticks every
 PUSH_CHECK_MINUTES (default 5).
 
+## Mobile app (mobile/)
+
+No iOS simulator here — verify with:
+
+```bash
+cd mobile
+npx vitest run                                  # pure-logic tests
+npx tsc --noEmit                                # typecheck
+EXPO_NO_TELEMETRY=1 npx expo export --platform ios   # Metro bundle must succeed
+```
+
+`expo install` cannot reach api.expo.dev through the proxy — resolve
+SDK-compatible versions from `node_modules/expo/bundledNativeModules.json`
+and install with plain npm (use --legacy-peer-deps for react-dom peer
+conflicts). SDK 57 API ground truth is the installed `.d.ts` files, not
+memory — check them before using expo-* modules.
+
 ## Gotchas
 
 - Mock air dates move with the clock; assert on relative facts (counts,

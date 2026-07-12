@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "TV Time",
+    "slug": "tv-time",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "tvtime",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0e17",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0d0e17"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.tvtime.personal",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "app.tvtime.personal",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0e17",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#fbd737"
+        }
+      ]
+    ]
+  }
+}

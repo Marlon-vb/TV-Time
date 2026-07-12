@@ -1,9 +1,17 @@
 # TV Time
 
-A personal, self-hosted recreation of the TV Time app: track the shows you
-watch, see when new episodes air, and catch up on the ones you've missed.
-Built as an installable web app (PWA) with your data stored locally in SQLite —
-no accounts, no cloud, nothing to shut down on you.
+A personal recreation of the TV Time app: track the shows you watch, see when
+new episodes air, and catch up on the ones you've missed. No accounts, no
+cloud, nothing to shut down on you — your data lives in your own SQLite file.
+
+Two apps in one repo:
+
+- **Web app (this directory)** — a self-hosted, installable PWA served by
+  Node.js. Instructions below.
+- **iOS app ([`mobile/`](mobile/))** — a fully standalone native app built
+  with Expo/React Native: library, watch history, TV Time import, and
+  episode notifications all live on the phone, no server needed. See
+  [mobile/README.md](mobile/README.md) to run it on your iPhone via Expo Go.
 
 ![Watch Next](docs/screenshots/home.png)
 
