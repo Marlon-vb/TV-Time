@@ -1,34 +1,41 @@
-import { Tabs, useRouter } from "expo-router";
-import { Pressable } from "react-native";
+import { StyleSheet } from "react-native";
+import { Tabs } from "expo-router";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/lib/theme";
 
+/** Floating glass tab bar — headers are rendered in-screen (ScreenHeader). */
 export default function TabsLayout() {
-  const router = useRouter();
-
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.ink },
-        headerTintColor: colors.fg,
-        headerTitleStyle: { fontWeight: "800" },
-        headerShadowVisible: false,
-        headerRight: () => (
-          <Pressable
-            onPress={() => router.push("/settings")}
-            hitSlop={12}
-            style={{ marginRight: 16 }}
-          >
-            <Ionicons name="settings-sharp" size={20} color={colors.muted} />
-          </Pressable>
-        ),
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.line,
-        },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.muted,
+        headerShown: false,
         sceneStyle: { backgroundColor: colors.ink },
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.faint,
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+        tabBarStyle: {
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: 24,
+          height: 64,
+          borderRadius: 32,
+          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: colors.lineStrong,
+          backgroundColor: "rgba(20,22,35,0.62)",
+          overflow: "hidden",
+          paddingTop: 6,
+          paddingBottom: 8,
+        },
+        tabBarBackground: () => (
+          <BlurView
+            tint="dark"
+            intensity={50}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
       }}
     >
       <Tabs.Screen

@@ -7,11 +7,11 @@
     "icon": "./assets/icon.png",
     "scheme": "tvtime",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0d0e17",
+    "backgroundColor": "#0b0c14",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0d0e17"
+      "backgroundColor": "#0b0c14"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
     "android": {
       "package": "app.tvtime.personal",
       "adaptiveIcon": {
-        "backgroundColor": "#0d0e17",
+        "backgroundColor": "#0b0c14",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

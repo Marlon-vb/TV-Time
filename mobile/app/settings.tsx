@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
-import { colors } from "@/lib/theme";
+import { colors, fonts } from "@/lib/theme";
 import { getSetting, setSetting } from "@/lib/db";
 import * as repo from "@/lib/repo";
 import * as tmdb from "@/lib/tmdb";
@@ -46,14 +46,14 @@ function Section({
     <View
       style={{
         backgroundColor: colors.surface,
-        borderRadius: 14,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: colors.line,
         padding: 16,
         gap: 10,
       }}
     >
-      <Text style={{ color: colors.fg, fontWeight: "800", fontSize: 15 }}>
+      <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 15 }}>
         {title}
       </Text>
       {children}

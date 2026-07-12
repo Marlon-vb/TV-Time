@@ -1,6 +1,10 @@
-import { Text, View } from "react-native";
-import { colors } from "@/lib/theme";
+import { useEffect, useRef } from "react";
+import { Animated, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { accentGradient, colors, fonts, radius } from "@/lib/theme";
 
+/** Gradient progress bar that animates to its value on mount and change. */
 export function ProgressBar({
   value,
   max,
@@ -10,7 +14,17 @@ export function ProgressBar({
   max: number;
   height?: number;
 }) {
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  const pct = max > 0 ? Math.min(1, value / max) : 0;
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: pct,
+      duration: 500,
+      useNativeDriver: false, // animating width
+    }).start();
+  }, [pct, anim]);
+
   return (
     <View
       style={{
@@ -20,42 +34,78 @@ export function ProgressBar({
         overflow: "hidden",
       }}
     >
-      <View
+      <Animated.View
         style={{
-          width: `${pct}%`,
+          width: anim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["0%", "100%"],
+          }),
           height: "100%",
-          borderRadius: height / 2,
-          backgroundColor: colors.accent,
         }}
-      />
+      >
+        <LinearGradient
+          colors={accentGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ flex: 1, borderRadius: height / 2 }}
+        />
+      </Animated.View>
     </View>
   );
 }
 
-export function EmptyState({ title, body }: { title: string; body: string }) {
+export function EmptyState({
+  title,
+  body,
+  icon = "tv-outline",
+}: {
+  title: string;
+  body: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+}) {
   return (
     <View
       style={{
-        borderWidth: 1,
-        borderColor: colors.line,
-        borderStyle: "dashed",
-        borderRadius: 14,
-        paddingVertical: 44,
-        paddingHorizontal: 24,
+        borderRadius: radius.lg,
+        paddingVertical: 48,
+        paddingHorizontal: 28,
         alignItems: "center",
         backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.line,
       }}
     >
-      <Text style={{ color: colors.fg, fontSize: 17, fontWeight: "700" }}>
+      <View
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.raised,
+          borderWidth: 1,
+          borderColor: colors.lineStrong,
+          marginBottom: 16,
+        }}
+      >
+        <Ionicons name={icon} size={28} color={colors.accent} />
+      </View>
+      <Text
+        style={{
+          color: colors.fg,
+          fontSize: 17,
+          fontFamily: fonts.display,
+        }}
+      >
         {title}
       </Text>
       <Text
         style={{
           color: colors.muted,
           fontSize: 13,
-          marginTop: 6,
+          marginTop: 8,
           textAlign: "center",
-          lineHeight: 19,
+          lineHeight: 20,
         }}
       >
         {body}
@@ -71,3 +121,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
   finished: "Finished",
   archived: "Archived",
 };
+
+/** Card base style shared across screens. */
+export const card = {
+  backgroundColor: colors.surface,
+  borderRadius: radius.lg,
+  borderWidth: 1,
+  borderColor: colors.line,
+} as const;

@@ -7,15 +7,22 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  Stack,
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import Bouncy from "@/components/Bouncy";
+import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
-import { ProgressBar } from "@/components/ui";
-import { colors } from "@/lib/theme";
+import { ProgressBar, card } from "@/components/ui";
+import {
+  colors,
+  fonts,
+  radius,
+  scrimGradient,
+} from "@/lib/theme";
 import { epCode, fmtDate } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
@@ -28,6 +35,7 @@ export default function ShowScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const showId = Number(id);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const loader = useCallback(() => {
     const show = repo.getShowRow(showId);
@@ -35,7 +43,6 @@ export default function ShowScreen() {
   }, [showId]);
   const { data, reload } = useFocusData(loader);
 
-  // Not followed: fetch a live preview from TVmaze.
   const [preview, setPreview] = useState<RemoteShow | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,6 +63,7 @@ export default function ShowScreen() {
     setBusy(true);
     try {
       await repo.followShow(showId);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await rescheduleAll();
       reload();
     } finally {
@@ -64,22 +72,18 @@ export default function ShowScreen() {
   };
 
   const unfollow = () => {
-    Alert.alert(
-      "Unfollow show?",
-      "Your watch history for it will be deleted.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Unfollow",
-          style: "destructive",
-          onPress: () => {
-            repo.unfollowShow(showId);
-            void rescheduleAll();
-            router.back();
-          },
+    Alert.alert("Unfollow show?", "Your watch history for it will be deleted.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Unfollow",
+        style: "destructive",
+        onPress: () => {
+          repo.unfollowShow(showId);
+          void rescheduleAll();
+          router.back();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const change = (fn: () => void) => {
@@ -87,7 +91,8 @@ export default function ShowScreen() {
     reload();
   };
 
-  const show: ShowRow | null = data?.show ?? (preview ? remoteToRow(preview) : null);
+  const show: ShowRow | null =
+    data?.show ?? (preview ? remoteToRow(preview) : null);
 
   if (!show) {
     return (
@@ -107,126 +112,181 @@ export default function ShowScreen() {
   const watched = episodes.filter((e) => e.watched_at).length;
   const behind = aired.filter((e) => !e.watched_at).length;
   const genres = JSON.parse(show.genres || "[]") as string[];
+  const backdrop = show.backdrop_url ?? show.poster_url;
 
   return (
     <>
-      <Stack.Screen options={{ title: show.name }} />
-      <ScrollView contentContainerStyle={{ padding: 14, gap: 14 }}>
-        {/* Header card */}
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.line,
-            padding: 14,
-            flexDirection: "row",
-            gap: 14,
-          }}
-        >
-          <Poster src={show.poster_url} name={show.name} width={110} height={160} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.fg, fontSize: 19, fontWeight: "800" }}>
-              {show.name}
-            </Text>
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>
-              {[
-                show.premiered?.slice(0, 4),
-                show.network,
-                show.runtime ? `${show.runtime} min` : null,
-                show.status,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </Text>
-            {genres.length > 0 && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
-                {genres.map((g) => (
-                  <View
-                    key={g}
-                    style={{
-                      backgroundColor: colors.overlay,
-                      borderRadius: 999,
-                      paddingHorizontal: 9,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text style={{ color: colors.fg, fontSize: 10, fontWeight: "600" }}>
-                      {g}
+      <Stack.Screen options={{ title: "" }} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
+        {/* Cinematic hero: blurred artwork, scrim, then the sharp poster */}
+        <View style={{ minHeight: 330 }}>
+          {backdrop && (
+            <Image
+              source={{ uri: backdrop }}
+              blurRadius={26}
+              contentFit="cover"
+              cachePolicy="disk"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                opacity: 0.55,
+              }}
+            />
+          )}
+          <LinearGradient
+            colors={scrimGradient}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+          <View
+            style={{
+              paddingTop: insets.top + 54,
+              paddingHorizontal: 18,
+              paddingBottom: 18,
+              flexDirection: "row",
+              gap: 16,
+              alignItems: "flex-end",
+              flex: 1,
+            }}
+          >
+            <Poster
+              src={show.poster_url}
+              name={show.name}
+              width={118}
+              height={172}
+              radius={radius.md}
+            />
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text
+                style={{
+                  color: colors.fg,
+                  fontSize: 25,
+                  fontFamily: fonts.display,
+                  letterSpacing: -0.4,
+                  lineHeight: 29,
+                }}
+              >
+                {show.name}
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>
+                {[
+                  show.premiered?.slice(0, 4),
+                  show.network,
+                  show.runtime ? `${show.runtime} min` : null,
+                  show.status,
+                ]
+                  .filter(Boolean)
+                  .join("  ·  ")}
+              </Text>
+              {genres.length > 0 && (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                  {genres.slice(0, 3).map((g) => (
+                    <View
+                      key={g}
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.08)",
+                        borderWidth: 1,
+                        borderColor: colors.line,
+                        borderRadius: 999,
+                        paddingHorizontal: 10,
+                        paddingVertical: 3,
+                      }}
+                    >
+                      <Text style={{ color: colors.fg, fontSize: 10, fontWeight: "600" }}>
+                        {g}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {followed && episodes.length > 0 && (
+                <View style={{ gap: 5, marginTop: 4 }}>
+                  <Text style={{ color: colors.muted, fontSize: 11 }}>
+                    <Text style={{ color: colors.fg, fontFamily: fonts.displayMedium }}>
+                      {watched}
                     </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {followed && episodes.length > 0 && (
-              <View style={{ marginTop: 10, gap: 4 }}>
-                <Text style={{ color: colors.muted, fontSize: 11 }}>
-                  <Text style={{ color: colors.fg, fontWeight: "700" }}>{watched}</Text>
-                  {` / ${episodes.length} watched`}
-                  {behind > 0 && (
-                    <Text style={{ color: colors.accent, fontWeight: "700" }}>
-                      {`   ${behind} to catch up`}
-                    </Text>
-                  )}
-                </Text>
-                <ProgressBar value={watched} max={episodes.length} />
-              </View>
-            )}
+                    {` / ${episodes.length} watched`}
+                    {behind > 0 && (
+                      <Text style={{ color: colors.accent, fontFamily: fonts.displayMedium }}>
+                        {`   ${behind} to catch up`}
+                      </Text>
+                    )}
+                  </Text>
+                  <ProgressBar value={watched} max={episodes.length} />
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {show.summary && (
-          <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>
-            {show.summary}
-          </Text>
-        )}
+        <View style={{ paddingHorizontal: 18, gap: 16 }}>
+          {show.summary && (
+            <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 20 }}>
+              {show.summary}
+            </Text>
+          )}
 
-        {/* Actions */}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {!followed ? (
-            <ActionButton
-              label={busy ? "Following…" : "+ Follow this show"}
-              primary
-              disabled={busy}
-              onPress={follow}
+          {/* Actions */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {!followed ? (
+              <ActionButton
+                label={busy ? "Following…" : "+ Follow this show"}
+                primary
+                disabled={busy}
+                onPress={() => void follow()}
+              />
+            ) : (
+              <>
+                {behind > 0 && (
+                  <ActionButton
+                    label="Mark all watched"
+                    primary
+                    onPress={() => {
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      change(() => repo.markShow(showId, true));
+                    }}
+                  />
+                )}
+                <ActionButton
+                  label={show.archived === 1 ? "Unarchive" : "Archive"}
+                  onPress={() =>
+                    change(() => repo.setArchived(showId, show.archived !== 1))
+                  }
+                />
+                <ActionButton label="Unfollow" danger onPress={unfollow} />
+              </>
+            )}
+          </View>
+
+          {/* Seasons */}
+          {followed ? (
+            <SeasonList
+              episodes={episodes}
+              spoilers={spoilers}
+              onToggle={(epId, w) => change(() => repo.markEpisode(epId, w))}
+              onMarkSeason={(season, w) => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                change(() => repo.markSeason(showId, season, w));
+              }}
+              onMarkUpTo={(epId) => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                change(() => repo.markUpTo(showId, epId));
+              }}
             />
           ) : (
-            <>
-              {behind > 0 && (
-                <ActionButton
-                  label="Mark all watched"
-                  primary
-                  onPress={() => change(() => repo.markShow(showId, true))}
-                />
-              )}
-              <ActionButton
-                label={show.archived === 1 ? "Unarchive" : "Archive"}
-                onPress={() =>
-                  change(() => repo.setArchived(showId, show.archived !== 1))
-                }
-              />
-              <ActionButton label="Unfollow" danger onPress={unfollow} />
-            </>
+            <Text style={{ color: colors.faint, fontSize: 12 }}>
+              Follow this show to track episodes.
+            </Text>
           )}
         </View>
-
-        {/* Seasons */}
-        {followed && (
-          <SeasonList
-            episodes={episodes}
-            spoilers={spoilers}
-            onToggle={(epId, w) => change(() => repo.markEpisode(epId, w))}
-            onMarkSeason={(season, w) =>
-              change(() => repo.markSeason(showId, season, w))
-            }
-            onMarkUpTo={(epId) => change(() => repo.markUpTo(showId, epId))}
-          />
-        )}
-        {!followed && (
-          <Text style={{ color: colors.faint, fontSize: 12 }}>
-            Follow this show to track episodes.
-          </Text>
-        )}
       </ScrollView>
     </>
   );
@@ -267,14 +327,15 @@ function ActionButton({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
+    <Bouncy
       onPress={onPress}
       disabled={disabled}
+      scaleTo={0.94}
       style={{
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 10,
-        backgroundColor: primary ? colors.accent : "transparent",
+        paddingHorizontal: 15,
+        paddingVertical: 11,
+        borderRadius: radius.sm,
+        backgroundColor: primary ? colors.accent : colors.surface,
         borderWidth: primary ? 0 : 1,
         borderColor: danger ? "rgba(255,92,114,0.4)" : colors.line,
         opacity: disabled ? 0.5 : 1,
@@ -289,7 +350,7 @@ function ActionButton({
       >
         {label}
       </Text>
-    </Pressable>
+    </Bouncy>
   );
 }
 
@@ -336,7 +397,7 @@ function SeasonList({
 
   return (
     <View style={{ gap: 10 }}>
-      <Text style={{ color: colors.fg, fontSize: 16, fontWeight: "800" }}>
+      <Text style={{ color: colors.fg, fontSize: 18, fontFamily: fonts.display }}>
         Episodes
       </Text>
       {sorted.map(([seasonNum, eps]) => {
@@ -344,38 +405,34 @@ function SeasonList({
         const allWatched = watchedCount === eps.length;
         const isOpen = openSet.has(seasonNum);
         return (
-          <View
-            key={seasonNum}
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.line,
-              overflow: "hidden",
-            }}
-          >
+          <View key={seasonNum} style={{ ...card, overflow: "hidden" }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                paddingHorizontal: 12,
-                paddingVertical: 11,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
                 gap: 10,
               }}
             >
               <Pressable
                 onPress={() => toggleOpen(seasonNum)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  flex: 1,
+                }}
               >
                 <Ionicons
                   name={isOpen ? "chevron-down" : "chevron-forward"}
                   size={14}
                   color={colors.muted}
                 />
-                <Text style={{ color: colors.fg, fontWeight: "700", fontSize: 14 }}>
+                <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }}>
                   Season {seasonNum}
                 </Text>
-                <Text style={{ color: colors.faint, fontSize: 12 }}>
+                <Text style={{ color: colors.faint, fontSize: 12, fontFamily: fonts.displayMedium }}>
                   {watchedCount}/{eps.length}
                 </Text>
               </Pressable>
@@ -383,14 +440,20 @@ function SeasonList({
                 onPress={() => onMarkSeason(seasonNum, !allWatched)}
                 style={{
                   borderWidth: 1,
-                  borderColor: colors.line,
+                  borderColor: allWatched ? colors.line : "rgba(251,215,55,0.35)",
                   borderRadius: 8,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
                 }}
               >
-                <Text style={{ color: allWatched ? colors.muted : colors.accent, fontSize: 10, fontWeight: "700" }}>
-                  {allWatched ? "Unmark season" : "Mark season"}
+                <Text
+                  style={{
+                    color: allWatched ? colors.muted : colors.accent,
+                    fontSize: 10,
+                    fontWeight: "700",
+                  }}
+                >
+                  {allWatched ? "UNMARK" : "MARK SEASON"}
                 </Text>
               </Pressable>
             </View>
@@ -408,6 +471,9 @@ function SeasonList({
           </View>
         );
       })}
+      <Text style={{ color: colors.faint, fontSize: 11, textAlign: "center" }}>
+        Tip: long-press an episode to mark everything up to it as watched
+      </Text>
     </View>
   );
 }
@@ -424,7 +490,9 @@ function EpisodeItem({
   onMarkUpTo: (episodeId: number) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const isAired = Boolean(ep.airstamp && ep.airstamp <= new Date().toISOString());
+  const isAired = Boolean(
+    ep.airstamp && ep.airstamp <= new Date().toISOString()
+  );
   const isWatched = Boolean(ep.watched_at);
   const hideSummary = spoilers && !isWatched && !revealed;
 
@@ -434,39 +502,30 @@ function EpisodeItem({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 9,
+        gap: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
         borderTopWidth: 1,
         borderTopColor: colors.line,
-        opacity: isAired ? 1 : 0.55,
+        opacity: isAired ? 1 : 0.5,
       }}
     >
-      <Pressable
-        onPress={() => isAired && onToggle(ep.id, !isWatched)}
+      <CheckButton
+        checked={isWatched}
         disabled={!isAired}
-        hitSlop={6}
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 15,
-          borderWidth: 1.5,
-          borderColor: isWatched ? colors.accent : colors.line,
-          backgroundColor: isWatched ? colors.accent : "transparent",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Ionicons
-          name="checkmark"
-          size={16}
-          color={isWatched ? colors.ink : colors.faint}
-        />
-      </Pressable>
+        size={32}
+        onToggle={(next) => onToggle(ep.id, next)}
+      />
 
       <View style={{ flex: 1 }}>
         <Text numberOfLines={1}>
-          <Text style={{ color: colors.faint, fontSize: 11, fontWeight: "700" }}>
+          <Text
+            style={{
+              color: colors.faint,
+              fontSize: 11,
+              fontFamily: fonts.displayMedium,
+            }}
+          >
             {epCode(ep.season, ep.number)}
           </Text>
           <Text
@@ -476,13 +535,22 @@ function EpisodeItem({
               fontWeight: "600",
             }}
           >
-            {"  "}
+            {"   "}
             {ep.name || "TBA"}
           </Text>
         </Text>
         {ep.summary && (
           <Pressable onPress={() => hideSummary && setRevealed(true)}>
-            <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }} numberOfLines={2}>
+            <Text
+              style={{
+                color: hideSummary ? colors.faint : colors.faint,
+                fontSize: 11,
+                marginTop: 2,
+                lineHeight: 15,
+                fontStyle: hideSummary ? "italic" : "normal",
+              }}
+              numberOfLines={2}
+            >
               {hideSummary ? "Spoiler hidden — tap to reveal" : ep.summary}
             </Text>
           </Pressable>

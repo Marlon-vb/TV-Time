@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { Image, Text, View, type DimensionValue } from "react-native";
+import { Text, View, type DimensionValue } from "react-native";
+import { Image } from "expo-image";
 import { colors } from "@/lib/theme";
 
-/** Poster image with a generated-initials fallback when artwork is missing. */
+/**
+ * Poster artwork: expo-image with fade-in and disk caching, falling back
+ * to generated initials on a deterministic per-show tint.
+ */
 export default function Poster({
   src,
   name,
   width,
   height,
-  radius = 10,
+  radius = 12,
 }: {
   src: string | null;
   name: string;
@@ -35,12 +39,14 @@ export default function Poster({
           borderRadius: radius,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: `hsl(${hue}, 35%, 22%)`,
+          backgroundColor: `hsl(${hue}, 32%, 20%)`,
+          borderWidth: 1,
+          borderColor: colors.line,
         }}
       >
         <Text
           style={{
-            color: "rgba(255,255,255,0.7)",
+            color: "rgba(255,255,255,0.72)",
             fontSize: 20,
             fontWeight: "800",
           }}
@@ -55,13 +61,15 @@ export default function Poster({
     <Image
       source={{ uri: src }}
       onError={() => setFailed(true)}
+      contentFit="cover"
+      transition={220}
+      cachePolicy="disk"
       style={{
         width,
         height,
         borderRadius: radius,
         backgroundColor: colors.raised,
       }}
-      resizeMode="cover"
     />
   );
 }

@@ -1,9 +1,17 @@
 import { useCallback } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
-import { EmptyState } from "@/components/ui";
-import { colors } from "@/lib/theme";
+import ScreenHeader from "@/components/ScreenHeader";
+import { EmptyState, card } from "@/components/ui";
+import {
+  accentGradient,
+  colors,
+  fonts,
+  TAB_BAR_CLEARANCE,
+} from "@/lib/theme";
 import { minutesHuman, monthLabel } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import { useFocusData } from "@/lib/useFocusData";
@@ -17,11 +25,15 @@ export default function ProfileScreen() {
 
   if (data.showsFollowed === 0) {
     return (
-      <View style={{ padding: 14 }}>
-        <EmptyState
-          title="No stats yet"
-          body="Once you follow shows and mark episodes watched, your watch time and history show up here."
-        />
+      <View>
+        <ScreenHeader title="Profile" />
+        <View style={{ padding: 16 }}>
+          <EmptyState
+            icon="person-outline"
+            title="No stats yet"
+            body="Once you follow shows and mark episodes watched, your watch time and history show up here."
+          />
+        </View>
       </View>
     );
   }
@@ -31,11 +43,25 @@ export default function ProfileScreen() {
   const maxGenre = Math.max(...data.topGenres.map((g) => g.minutes), 1);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 14, gap: 12 }}>
+    <ScrollView
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: TAB_BAR_CLEARANCE,
+        gap: 12,
+      }}
+    >
+      <ScreenHeader title="Profile" />
+
       {/* Time watched hero */}
-      <View style={cardStyle}>
-        <Text style={labelStyle}>TIME SPENT WATCHING TV</Text>
-        <View style={{ flexDirection: "row", gap: 18, marginTop: 8 }}>
+      <View style={{ ...card, padding: 20, overflow: "hidden" }}>
+        <LinearGradient
+          colors={["rgba(251,215,55,0.08)", "rgba(251,215,55,0)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 1 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        <Text style={sectionLabel}>TIME SPENT WATCHING TV</Text>
+        <View style={{ flexDirection: "row", gap: 22, marginTop: 12 }}>
           <HeroUnit value={time.months} unit="months" />
           <HeroUnit value={time.days} unit="days" />
           <HeroUnit value={time.hours} unit="hours" />
@@ -50,23 +76,32 @@ export default function ProfileScreen() {
         <StatTile label="Behind" value={data.episodesBehind} accent />
       </View>
 
-      {/* Monthly bars */}
+      {/* Monthly activity */}
       {data.monthly.length > 1 && (
-        <View style={cardStyle}>
-          <Text style={labelStyle}>EPISODES PER MONTH</Text>
+        <View style={{ ...card, padding: 18 }}>
+          <Text style={sectionLabel}>EPISODES PER MONTH</Text>
           <View
             style={{
               flexDirection: "row",
               alignItems: "flex-end",
-              gap: 3,
-              height: 110,
-              marginTop: 10,
+              gap: 4,
+              height: 116,
+              marginTop: 14,
             }}
           >
             {data.monthly.map((m) => (
-              <View key={m.month} style={{ flex: 1, alignItems: "center", gap: 3, height: "100%", justifyContent: "flex-end" }}>
+              <View
+                key={m.month}
+                style={{
+                  flex: 1,
+                  alignItems: "center",
+                  gap: 4,
+                  height: "100%",
+                  justifyContent: "flex-end",
+                }}
+              >
                 {m.episodes === maxMonthly && (
-                  <Text style={{ color: colors.fg, fontSize: 10, fontWeight: "700" }}>
+                  <Text style={{ color: colors.fg, fontSize: 10, fontFamily: fonts.displayMedium }}>
                     {m.episodes}
                   </Text>
                 )}
@@ -74,12 +109,19 @@ export default function ProfileScreen() {
                   style={{
                     width: "100%",
                     maxWidth: 26,
-                    height: `${Math.max((m.episodes / maxMonthly) * 82, 2)}%`,
-                    backgroundColor: colors.accent,
+                    height: `${Math.max((m.episodes / maxMonthly) * 80, 2)}%`,
                     borderTopLeftRadius: 4,
                     borderTopRightRadius: 4,
+                    overflow: "hidden",
                   }}
-                />
+                >
+                  <LinearGradient
+                    colors={accentGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={{ flex: 1 }}
+                  />
+                </View>
                 <Text style={{ color: colors.faint, fontSize: 9 }}>
                   {monthLabel(m.month)}
                 </Text>
@@ -91,25 +133,28 @@ export default function ProfileScreen() {
 
       {/* Most watched */}
       {data.mostWatched.length > 0 && (
-        <View style={cardStyle}>
-          <Text style={labelStyle}>MOST WATCHED</Text>
-          <View style={{ gap: 8, marginTop: 10 }}>
+        <View style={{ ...card, padding: 18 }}>
+          <Text style={sectionLabel}>MOST WATCHED</Text>
+          <View style={{ gap: 10, marginTop: 12 }}>
             {data.mostWatched.map(({ show, watched, minutes }) => (
-              <Pressable
+              <Bouncy
                 key={show.id}
                 onPress={() => router.push(`/show/${show.id}` as never)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
               >
-                <Poster src={show.poster_url} name={show.name} width={36} height={52} radius={6} />
+                <Poster src={show.poster_url} name={show.name} width={38} height={56} radius={7} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.fg, fontWeight: "700", fontSize: 13 }} numberOfLines={1}>
+                  <Text
+                    style={{ color: colors.fg, fontFamily: fonts.displayMedium, fontSize: 13 }}
+                    numberOfLines={1}
+                  >
                     {show.name}
                   </Text>
-                  <Text style={{ color: colors.faint, fontSize: 11 }}>
+                  <Text style={{ color: colors.faint, fontSize: 11, marginTop: 1 }}>
                     {watched} episodes · {Math.round(minutes / 60)} hours
                   </Text>
                 </View>
-              </Pressable>
+              </Bouncy>
             ))}
           </View>
         </View>
@@ -117,25 +162,43 @@ export default function ProfileScreen() {
 
       {/* Top genres */}
       {data.topGenres.length > 0 && (
-        <View style={cardStyle}>
-          <Text style={labelStyle}>TOP GENRES</Text>
-          <View style={{ gap: 8, marginTop: 10 }}>
+        <View style={{ ...card, padding: 18 }}>
+          <Text style={sectionLabel}>TOP GENRES</Text>
+          <View style={{ gap: 10, marginTop: 12 }}>
             {data.topGenres.map((g) => (
               <View key={g.genre} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Text style={{ color: colors.fg, fontWeight: "600", fontSize: 12, width: 90 }} numberOfLines={1}>
+                <Text
+                  style={{
+                    color: colors.fg,
+                    fontFamily: fonts.displayMedium,
+                    fontSize: 12,
+                    width: 92,
+                  }}
+                  numberOfLines={1}
+                >
                   {g.genre}
                 </Text>
-                <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: colors.overlay, overflow: "hidden" }}>
-                  <View
+                <View
+                  style={{
+                    flex: 1,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: colors.overlay,
+                    overflow: "hidden",
+                  }}
+                >
+                  <LinearGradient
+                    colors={accentGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
                     style={{
                       width: `${(g.minutes / maxGenre) * 100}%`,
                       height: "100%",
                       borderRadius: 5,
-                      backgroundColor: colors.accent,
                     }}
                   />
                 </View>
-                <Text style={{ color: colors.muted, fontSize: 11, width: 36, textAlign: "right" }}>
+                <Text style={{ color: colors.muted, fontSize: 11, width: 38, textAlign: "right" }}>
                   {Math.round(g.minutes / 60)} h
                 </Text>
               </View>
@@ -147,25 +210,17 @@ export default function ProfileScreen() {
   );
 }
 
-const cardStyle = {
-  backgroundColor: colors.surface,
-  borderRadius: 14,
-  borderWidth: 1,
-  borderColor: colors.line,
-  padding: 16,
-} as const;
-
-const labelStyle = {
+const sectionLabel = {
   color: colors.muted,
   fontSize: 11,
-  fontWeight: "700",
-  letterSpacing: 0.8,
+  fontFamily: "SpaceGrotesk_500Medium",
+  letterSpacing: 1.4,
 } as const;
 
 function HeroUnit({ value, unit }: { value: number; unit: string }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
-      <Text style={{ color: colors.fg, fontSize: 30, fontWeight: "800" }}>
+    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+      <Text style={{ color: colors.fg, fontSize: 34, fontFamily: fonts.display }}>
         {value}
       </Text>
       <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "600" }}>
@@ -185,17 +240,17 @@ function StatTile({
   accent?: boolean;
 }) {
   return (
-    <View style={{ ...cardStyle, flex: 1, padding: 12 }}>
+    <View style={{ ...card, flex: 1, padding: 14 }}>
       <Text
         style={{
           color: accent && value > 0 ? colors.accent : colors.fg,
-          fontSize: 20,
-          fontWeight: "800",
+          fontSize: 21,
+          fontFamily: fonts.display,
         }}
       >
         {value.toLocaleString()}
       </Text>
-      <Text style={{ color: colors.muted, fontSize: 10, marginTop: 2 }}>
+      <Text style={{ color: colors.muted, fontSize: 10, marginTop: 3 }}>
         {label}
       </Text>
     </View>

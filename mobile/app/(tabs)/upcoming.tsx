@@ -1,9 +1,11 @@
 import { useCallback } from "react";
-import { Pressable, SectionList, Text, View } from "react-native";
+import { SectionList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
-import { EmptyState } from "@/components/ui";
-import { colors } from "@/lib/theme";
+import ScreenHeader from "@/components/ScreenHeader";
+import { EmptyState, card } from "@/components/ui";
+import { colors, fonts, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { epCode, fmtDate, fmtTime, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import { useFocusData } from "@/lib/useFocusData";
@@ -36,15 +38,29 @@ export default function UpcomingScreen() {
     return sections;
   }, []);
   const { data } = useFocusData(loader);
+  const sections = data ?? [];
+  const count = sections.reduce((n, s) => n + s.data.length, 0);
 
   return (
     <SectionList
-      sections={data ?? []}
+      sections={sections}
       keyExtractor={(item) => String(item.episode.id)}
-      contentContainerStyle={{ padding: 14 }}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: TAB_BAR_CLEARANCE,
+      }}
       stickySectionHeadersEnabled={false}
+      ListHeaderComponent={
+        <ScreenHeader
+          title="Upcoming"
+          subtitle={
+            count > 0 ? `${count} episodes in the next 90 days` : null
+          }
+        />
+      }
       ListEmptyComponent={
         <EmptyState
+          icon="calendar-outline"
           title="Nothing scheduled"
           body="None of your shows have announced episodes in the next 90 days. New dates appear automatically after a sync."
         />
@@ -55,17 +71,18 @@ export default function UpcomingScreen() {
             flexDirection: "row",
             alignItems: "baseline",
             gap: 8,
-            marginTop: 14,
-            marginBottom: 8,
+            marginTop: 18,
+            marginBottom: 9,
+            paddingHorizontal: 2,
           }}
         >
           <Text
             style={{
               color: colors.accent,
-              fontWeight: "800",
+              fontFamily: fonts.display,
               fontSize: 13,
               textTransform: "uppercase",
-              letterSpacing: 0.5,
+              letterSpacing: 1.2,
             }}
           >
             {section.title}
@@ -78,16 +95,13 @@ export default function UpcomingScreen() {
         </View>
       )}
       renderItem={({ item }) => (
-        <Pressable
+        <Bouncy
           onPress={() => router.push(`/show/${item.show.id}` as never)}
           style={{
+            ...card,
             flexDirection: "row",
             alignItems: "center",
             gap: 12,
-            backgroundColor: colors.surface,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: colors.line,
             padding: 10,
             marginBottom: 8,
           }}
@@ -95,26 +109,32 @@ export default function UpcomingScreen() {
           <Poster
             src={item.show.poster_url}
             name={item.show.name}
-            width={44}
-            height={62}
-            radius={8}
+            width={46}
+            height={66}
+            radius={9}
           />
           <View style={{ flex: 1 }}>
             <Text
-              style={{ color: colors.fg, fontWeight: "700", fontSize: 14 }}
+              style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }}
               numberOfLines={1}
             >
               {item.show.name}
             </Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>
-              <Text style={{ fontWeight: "700", color: colors.fg }}>
+            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+              <Text style={{ fontFamily: fonts.displayMedium, color: colors.accent, fontSize: 11 }}>
                 {epCode(item.episode.season, item.episode.number)}
               </Text>
-              {item.episode.name ? `  ${item.episode.name}` : ""}
+              {item.episode.name ? `   ${item.episode.name}` : ""}
             </Text>
           </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ color: colors.fg, fontWeight: "600", fontSize: 12 }}>
+          <View style={{ alignItems: "flex-end", gap: 1 }}>
+            <Text
+              style={{
+                color: colors.fg,
+                fontFamily: fonts.displayMedium,
+                fontSize: 12,
+              }}
+            >
               {fmtTime(item.episode.airstamp!)}
             </Text>
             {item.show.network && (
@@ -123,7 +143,7 @@ export default function UpcomingScreen() {
               </Text>
             )}
           </View>
-        </Pressable>
+        </Bouncy>
       )}
     />
   );

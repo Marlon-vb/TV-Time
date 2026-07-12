@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
-import { colors } from "@/lib/theme";
+import ScreenHeader from "@/components/ScreenHeader";
+import { card } from "@/components/ui";
+import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
 import * as repo from "@/lib/repo";
 import type { RemoteShow } from "@/lib/types";
@@ -53,6 +52,7 @@ export default function DiscoverScreen() {
     setBusyId(show.id);
     try {
       await repo.followShow(show.id);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResults((rs) =>
         rs.map((r) => (r.id === show.id ? { ...r, followed: true } : r))
       );
@@ -64,110 +64,125 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <View style={{ flex: 1, padding: 14 }}>
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search for a TV show…"
-        placeholderTextColor={colors.faint}
-        autoCorrect={false}
-        style={{
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.line,
-          borderRadius: 12,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          color: colors.fg,
-          fontSize: 15,
-          marginBottom: 12,
-        }}
-      />
-
-      {status === "idle" && (
-        <Text style={{ color: colors.faint, fontSize: 13 }}>
-          Search TVmaze&apos;s catalog of 80,000+ shows. Everything you follow
-          is stored on this device.
-        </Text>
-      )}
-      {status === "loading" && (
-        <Text style={{ color: colors.muted, fontSize: 13 }}>Searching…</Text>
-      )}
-      {status === "error" && (
-        <Text style={{ color: colors.danger, fontSize: 13 }}>
-          Search failed — check your connection and try again.
-        </Text>
-      )}
-      {status === "done" && results.length === 0 && (
-        <Text style={{ color: colors.muted, fontSize: 13 }}>
-          No shows found for “{query.trim()}”.
-        </Text>
-      )}
-
-      <FlatList
-        data={results}
-        keyExtractor={(s) => String(s.id)}
-        contentContainerStyle={{ gap: 10, paddingTop: 4 }}
-        keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/show/${item.id}` as never)}
+    <FlatList
+      data={results}
+      keyExtractor={(s) => String(s.id)}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: TAB_BAR_CLEARANCE,
+        gap: 10,
+      }}
+      keyboardShouldPersistTaps="handled"
+      ListHeaderComponent={
+        <View>
+          <ScreenHeader title="Discover" />
+          <View
             style={{
               flexDirection: "row",
-              gap: 12,
               alignItems: "center",
+              gap: 10,
               backgroundColor: colors.surface,
-              borderRadius: 12,
               borderWidth: 1,
               borderColor: colors.line,
-              padding: 10,
+              borderRadius: radius.md,
+              paddingHorizontal: 14,
+              marginTop: 10,
+              marginBottom: 12,
             }}
           >
-            <Poster src={item.posterUrl} name={item.name} width={52} height={74} radius={8} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.fg, fontWeight: "700" }} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
-                {[
-                  item.premiered?.slice(0, 4),
-                  item.network,
-                  item.status,
-                  item.genres.slice(0, 2).join(", "),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
-              {item.summary && (
-                <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3 }} numberOfLines={2}>
-                  {item.summary}
-                </Text>
-              )}
-            </View>
-            <Pressable
-              onPress={() => !item.followed && follow(item)}
-              disabled={item.followed || busyId === item.id}
+            <Ionicons name="search" size={16} color={colors.faint} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search 80,000+ shows…"
+              placeholderTextColor={colors.faint}
+              autoCorrect={false}
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 9,
-                borderRadius: 10,
-                backgroundColor: item.followed ? colors.overlay : colors.accent,
-                opacity: busyId === item.id ? 0.5 : 1,
+                flex: 1,
+                paddingVertical: 13,
+                color: colors.fg,
+                fontSize: 15,
+              }}
+            />
+          </View>
+
+          {status === "idle" && (
+            <Text style={{ color: colors.faint, fontSize: 13, lineHeight: 19 }}>
+              Everything you follow is stored on this device — no account, no
+              cloud.
+            </Text>
+          )}
+          {status === "loading" && (
+            <Text style={{ color: colors.muted, fontSize: 13 }}>Searching…</Text>
+          )}
+          {status === "error" && (
+            <Text style={{ color: colors.danger, fontSize: 13 }}>
+              Search failed — check your connection and try again.
+            </Text>
+          )}
+          {status === "done" && results.length === 0 && (
+            <Text style={{ color: colors.muted, fontSize: 13 }}>
+              No shows found for “{query.trim()}”.
+            </Text>
+          )}
+        </View>
+      }
+      renderItem={({ item }) => (
+        <Bouncy
+          onPress={() => router.push(`/show/${item.id}` as never)}
+          style={{
+            ...card,
+            flexDirection: "row",
+            gap: 12,
+            alignItems: "center",
+            padding: 10,
+          }}
+        >
+          <Poster src={item.posterUrl} name={item.name} width={54} height={78} radius={9} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+              {[
+                item.premiered?.slice(0, 4),
+                item.network,
+                item.status,
+                item.genres.slice(0, 2).join(", "),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </Text>
+            {item.summary && (
+              <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3, lineHeight: 15 }} numberOfLines={2}>
+                {item.summary}
+              </Text>
+            )}
+          </View>
+          <Bouncy
+            onPress={() => !item.followed && follow(item)}
+            disabled={item.followed || busyId === item.id}
+            scaleTo={0.92}
+            style={{
+              paddingHorizontal: 13,
+              paddingVertical: 10,
+              borderRadius: radius.sm,
+              backgroundColor: item.followed ? colors.overlay : colors.accent,
+              opacity: busyId === item.id ? 0.5 : 1,
+            }}
+          >
+            <Text
+              style={{
+                color: item.followed ? colors.muted : colors.ink,
+                fontWeight: "800",
+                fontSize: 12,
               }}
             >
-              <Text
-                style={{
-                  color: item.followed ? colors.muted : colors.ink,
-                  fontWeight: "800",
-                  fontSize: 12,
-                }}
-              >
-                {item.followed ? "Following ✓" : "+ Follow"}
-              </Text>
-            </Pressable>
-          </Pressable>
-        )}
-      />
-    </View>
+              {item.followed ? "Following ✓" : "+ Follow"}
+            </Text>
+          </Bouncy>
+        </Bouncy>
+      )}
+    />
   );
 }
