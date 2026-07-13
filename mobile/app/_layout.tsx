@@ -72,6 +72,14 @@ export default function RootLayout() {
             headerBlurEffect: "dark",
           }}
         />
+        <Stack.Screen
+          name="episode/[id]"
+          options={{
+            title: "",
+            headerTransparent: true,
+            headerBlurEffect: "dark",
+          }}
+        />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
       </Stack>
     </>

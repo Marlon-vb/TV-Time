@@ -10,6 +10,11 @@ Everything the web app does, natively:
 
 - **Watch Next** with behind-by-N badges and one-tap mark-watched
 - **Upcoming** agenda grouped by day
+- **Episode pages** — tap any episode for its still, synopsis
+  (spoiler-guarded), watched toggle, emoji reaction, and prev/next
+  navigation
+- **Share cards** — send "Just watched…" posts to iMessage/WhatsApp via the
+  native share sheet, from any episode or show
 - **My Shows** grid with TV Time's category chips and progress bars
 - **Show pages** with season accordions, spoiler-hidden episode summaries,
   mark season / mark all, and long-press an episode to mark

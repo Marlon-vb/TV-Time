@@ -4,6 +4,7 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  Share,
   Text,
   View,
 } from "react-native";
@@ -28,6 +29,7 @@ import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import { getSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
+import { showShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
 import type { EpisodeRow, RemoteShow, ShowRow } from "@/lib/types";
 
@@ -259,6 +261,18 @@ export default function ShowScreen() {
                   label={show.archived === 1 ? "Unarchive" : "Archive"}
                   onPress={() =>
                     change(() => repo.setArchived(showId, show.archived !== 1))
+                  }
+                />
+                <ActionButton
+                  label="Share"
+                  onPress={() =>
+                    void Share.share({
+                      message: showShareMessage({
+                        showName: show.name,
+                        watched,
+                        total: episodes.length,
+                      }),
+                    })
                   }
                 />
                 <ActionButton label="Unfollow" danger onPress={unfollow} />
@@ -496,8 +510,10 @@ function EpisodeItem({
   const isWatched = Boolean(ep.watched_at);
   const hideSummary = spoilers && !isWatched && !revealed;
 
+  const router = useRouter();
   return (
     <Pressable
+      onPress={() => router.push(`/episode/${ep.id}` as never)}
       onLongPress={() => isAired && !isWatched && onMarkUpTo(ep.id)}
       style={{
         flexDirection: "row",
@@ -557,9 +573,12 @@ function EpisodeItem({
         )}
       </View>
 
-      <Text style={{ color: colors.faint, fontSize: 10 }}>
-        {fmtDate(ep.airstamp)}
-      </Text>
+      <View style={{ alignItems: "flex-end", gap: 2 }}>
+        {ep.reaction && <Text style={{ fontSize: 13 }}>{ep.reaction}</Text>}
+        <Text style={{ color: colors.faint, fontSize: 10 }}>
+          {fmtDate(ep.airstamp)}
+        </Text>
+      </View>
     </Pressable>
   );
 }

@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS episodes (
   runtime INTEGER,
   summary TEXT,
   image_url TEXT,
-  watched_at TEXT
+  watched_at TEXT,
+  reaction TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
@@ -48,12 +49,29 @@ CREATE TABLE IF NOT EXISTS settings (
 
 let db: SQLite.SQLiteDatabase | null = null;
 
+/** Schema migrations for databases created by earlier app versions. */
+function migrate(handle: SQLite.SQLiteDatabase): void {
+  const version =
+    handle.getFirstSync<{ user_version: number }>("PRAGMA user_version")
+      ?.user_version ?? 0;
+  if (version < 1) {
+    const columns = handle.getAllSync<{ name: string }>(
+      "PRAGMA table_info(episodes)"
+    );
+    if (!columns.some((c) => c.name === "reaction")) {
+      handle.execSync("ALTER TABLE episodes ADD COLUMN reaction TEXT");
+    }
+    handle.execSync("PRAGMA user_version = 1");
+  }
+}
+
 export function getDb(): SQLite.SQLiteDatabase {
   if (!db) {
     db = SQLite.openDatabaseSync("tvtime.db");
     db.execSync("PRAGMA journal_mode = WAL;");
     db.execSync("PRAGMA foreign_keys = ON;");
     db.execSync(SCHEMA);
+    migrate(db);
   }
   return db;
 }

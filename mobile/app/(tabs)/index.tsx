@@ -1,5 +1,11 @@
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Bouncy from "@/components/Bouncy";
@@ -70,7 +76,8 @@ export default function WatchNextScreen() {
       renderItem={({ item }) => (
         <WatchNextCard
           item={item}
-          onOpen={() => router.push(`/show/${item.show.id}` as never)}
+          onOpen={() => router.push(`/episode/${item.episode.id}` as never)}
+          onOpenShow={() => router.push(`/show/${item.show.id}` as never)}
           onWatched={() => {
             repo.markEpisode(item.episode.id, true);
             reload();
@@ -84,10 +91,12 @@ export default function WatchNextScreen() {
 function WatchNextCard({
   item,
   onOpen,
+  onOpenShow,
   onWatched,
 }: {
   item: WatchNextItem;
   onOpen: () => void;
+  onOpenShow: () => void;
   onWatched: () => void;
 }) {
   const behind = item.aired_unwatched - 1;
@@ -102,12 +111,14 @@ function WatchNextCard({
         alignItems: "center",
       }}
     >
-      <Poster
-        src={item.show.poster_url}
-        name={item.show.name}
-        width={72}
-        height={104}
-      />
+      <Pressable onPress={onOpenShow} hitSlop={4}>
+        <Poster
+          src={item.show.poster_url}
+          name={item.show.name}
+          width={72}
+          height={104}
+        />
+      </Pressable>
       <View style={{ flex: 1, gap: 3 }}>
         <Text
           style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 16 }}

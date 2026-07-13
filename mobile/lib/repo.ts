@@ -275,6 +275,29 @@ export function getEpisodes(showId: number): EpisodeRow[] {
   );
 }
 
+export function getEpisode(episodeId: number): EpisodeRow | null {
+  return (
+    getDb().getFirstSync<EpisodeRow>(
+      "SELECT * FROM episodes WHERE id = ?",
+      episodeId
+    ) ?? null
+  );
+}
+
+/** Set (or clear, with null) the emoji reaction. Reacting implies watched. */
+export function setReaction(episodeId: number, reaction: string | null): void {
+  getDb().runSync(
+    `UPDATE episodes
+     SET reaction = ?,
+         watched_at = CASE WHEN ? IS NOT NULL THEN COALESCE(watched_at, ?) ELSE watched_at END
+     WHERE id = ?`,
+    reaction,
+    reaction,
+    new Date().toISOString(),
+    episodeId
+  );
+}
+
 interface ProgressAgg {
   show_id: number;
   total_episodes: number;

@@ -48,7 +48,7 @@ function mapEpisode(e: any): RemoteEpisode | null {
     airstamp: e.airstamp || null,
     runtime: e.runtime ?? null,
     summary: stripHtml(e.summary),
-    imageUrl: e.image?.medium ?? e.image?.original ?? null,
+    imageUrl: e.image?.original ?? e.image?.medium ?? null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

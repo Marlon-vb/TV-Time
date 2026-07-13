@@ -96,7 +96,7 @@ export default function UpcomingScreen() {
       )}
       renderItem={({ item }) => (
         <Bouncy
-          onPress={() => router.push(`/show/${item.show.id}` as never)}
+          onPress={() => router.push(`/episode/${item.episode.id}` as never)}
           style={{
             ...card,
             flexDirection: "row",
