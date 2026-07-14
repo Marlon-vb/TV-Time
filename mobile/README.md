@@ -75,19 +75,12 @@ fully independent install everywhere, use an EAS build (below).
 ## Build a real standalone app (TestFlight)
 
 Makes the app install like a normal App Store app and shareable with friends,
-no Mac mini required. Full step-by-step: **[deploy/TESTFLIGHT.md](deploy/TESTFLIGHT.md)**.
+no Mac mini required. Requires the paid Apple Developer membership.
 
-Short version, from `mobile/`:
-
-```bash
-npx eas-cli@latest login
-npx eas-cli@latest init
-npx eas-cli@latest build --platform ios --profile production
-npx eas-cli@latest submit --platform ios --profile production --latest
-```
-
-- Requires a free Expo account and the paid Apple Developer membership.
-- `eas build --platform android` produces an installable APK with no fee.
+- **Local Xcode build (no Expo cloud)** — build and sign on your own Mac:
+  **[deploy/XCODE-BUILD.md](deploy/XCODE-BUILD.md)**.
+- **EAS cloud build** — Expo compiles and signs it on their servers (needs a
+  free Expo account): **[deploy/TESTFLIGHT.md](deploy/TESTFLIGHT.md)**.
 
 ## Development
 
