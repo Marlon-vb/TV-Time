@@ -72,17 +72,21 @@ Note: the phone loads the app from the Mac over your home network. Away
 from home, Expo Go opens its cached copy of the last-loaded version; for a
 fully independent install everywhere, use an EAS build (below).
 
-## Build a real standalone app
+## Build a real standalone app (TestFlight)
 
-With a free [Expo account](https://expo.dev) and Apple credentials:
+Makes the app install like a normal App Store app and shareable with friends,
+no Mac mini required. Full step-by-step: **[deploy/TESTFLIGHT.md](deploy/TESTFLIGHT.md)**.
+
+Short version, from `mobile/`:
 
 ```bash
-npm install -g eas-cli
-eas build --platform ios
+npx eas-cli@latest login
+npx eas-cli@latest init
+npx eas-cli@latest build --platform ios --profile production
+npx eas-cli@latest submit --platform ios --profile production --latest
 ```
 
-- Installing on your own device via TestFlight/App Store requires an Apple
-  Developer membership ($99/year).
+- Requires a free Expo account and the paid Apple Developer membership.
 - `eas build --platform android` produces an installable APK with no fee.
 
 ## Development
