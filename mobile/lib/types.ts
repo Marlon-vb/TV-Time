@@ -52,6 +52,8 @@ export interface WatchNextItem {
   show: ShowRow;
   episode: EpisodeRow;
   aired_unwatched: number;
+  watched_count: number;
+  last_watched_at: string | null;
 }
 
 export interface UpcomingItem {

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Pressable,
-  ScrollView,
   Share,
   Text,
   View,
 } from "react-native";
+import { useRef } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -38,6 +39,7 @@ export default function ShowScreen() {
   const showId = Number(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const loader = useCallback(() => {
     const show = repo.getShowRow(showId);
@@ -119,25 +121,57 @@ export default function ShowScreen() {
   return (
     <>
       <Stack.Screen options={{ title: "" }} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-        {/* Cinematic hero: blurred artwork, scrim, then the sharp poster */}
+      <Animated.ScrollView
+        contentContainerStyle={{ paddingBottom: 48 }}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+      >
+        {/* Cinematic hero: blurred artwork stretches on pull and drifts on scroll */}
         <View style={{ minHeight: 330 }}>
-          {backdrop && (
-            <Image
-              source={{ uri: backdrop }}
-              blurRadius={26}
-              contentFit="cover"
-              cachePolicy="disk"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                opacity: 0.55,
-              }}
-            />
-          )}
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              transform: [
+                {
+                  translateY: scrollY.interpolate({
+                    inputRange: [-330, 0, 330],
+                    outputRange: [-165, 0, 165],
+                  }),
+                },
+                {
+                  scale: scrollY.interpolate({
+                    inputRange: [-330, 0],
+                    outputRange: [2, 1],
+                    extrapolateRight: "clamp",
+                  }),
+                },
+              ],
+            }}
+          >
+            {backdrop && (
+              <Image
+                source={{ uri: backdrop }}
+                blurRadius={26}
+                contentFit="cover"
+                cachePolicy="disk"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  opacity: 0.55,
+                }}
+              />
+            )}
+          </Animated.View>
           <LinearGradient
             colors={scrimGradient}
             style={{
@@ -301,7 +335,7 @@ export default function ShowScreen() {
             </Text>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </>
   );
 }

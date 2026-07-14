@@ -375,10 +375,21 @@ export function watchNext(): WatchNextItem[] {
     now
   );
   const behindMap = new Map(behind.map((b) => [b.show_id, b.n]));
+  const watchedAgg = db.getAllSync<{
+    show_id: number;
+    n: number;
+    latest: string | null;
+  }>(
+    `SELECT show_id, COUNT(*) AS n, MAX(watched_at) AS latest
+     FROM episodes WHERE watched_at IS NOT NULL GROUP BY show_id`
+  );
+  const watchedMap = new Map(watchedAgg.map((w) => [w.show_id, w]));
   return rows.map((episode) => ({
     show: getShowRow(episode.show_id)!,
     episode,
     aired_unwatched: behindMap.get(episode.show_id) ?? 0,
+    watched_count: watchedMap.get(episode.show_id)?.n ?? 0,
+    last_watched_at: watchedMap.get(episode.show_id)?.latest ?? null,
   }));
 }
 
@@ -412,6 +423,8 @@ export interface Stats {
   minutesWatched: number;
   showsFinished: number;
   episodesBehind: number;
+  distinctGenres: number;
+  reactionsCount: number;
   topGenres: { genre: string; minutes: number }[];
   mostWatched: { show: ShowRow; watched: number; minutes: number }[];
   monthly: { month: string; episodes: number }[];
@@ -466,12 +479,19 @@ export function stats(): Stats {
       now
     )?.n ?? 0;
 
+  const reactionsCount =
+    db.getFirstSync<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM episodes WHERE reaction IS NOT NULL"
+    )?.n ?? 0;
+
   return {
     showsFollowed: shows.length,
     episodesWatched,
     minutesWatched,
     showsFinished: shows.filter((s) => s.category === "finished").length,
     episodesBehind,
+    distinctGenres: genreMinutes.size,
+    reactionsCount,
     topGenres: [...genreMinutes.entries()]
       .map(([genre, minutes]) => ({ genre, minutes }))
       .sort((a, b) => b.minutes - a.minutes)

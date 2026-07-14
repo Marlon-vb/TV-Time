@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import {
-  FlatList,
   Pressable,
   RefreshControl,
+  SectionList,
   Text,
   View,
 } from "react-native";
@@ -12,20 +12,26 @@ import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
+import TonightPicker from "@/components/TonightPicker";
 import { EmptyState, card } from "@/components/ui";
 import { accentGradient, colors, fonts, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { epCode, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import { rescheduleAll } from "@/lib/notifications";
+import { groupWatchNext } from "@/lib/watchNextSections";
 import { useFocusData } from "@/lib/useFocusData";
 import type { WatchNextItem } from "@/lib/types";
 
 export default function WatchNextScreen() {
   const router = useRouter();
-  const loader = useCallback(() => repo.watchNext(), []);
+  const loader = useCallback(() => {
+    const items = repo.watchNext();
+    return { items, sections: groupWatchNext(items, new Date()) };
+  }, []);
   const { data, reload } = useFocusData(loader);
   const [refreshing, setRefreshing] = useState(false);
-  const items = data ?? [];
+  const items = data?.items ?? [];
+  const sections = data?.sections ?? [];
   const totalBehind = items.reduce((n, i) => n + i.aired_unwatched, 0);
 
   const onRefresh = async () => {
@@ -41,24 +47,14 @@ export default function WatchNextScreen() {
   };
 
   return (
-    <FlatList
-      data={items}
+    <SectionList
+      sections={sections}
       keyExtractor={(item) => String(item.episode.id)}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,
-        gap: 12,
       }}
-      ListHeaderComponent={
-        <ScreenHeader
-          title="Watch Next"
-          subtitle={
-            items.length > 0
-              ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
-              : null
-          }
-        />
-      }
+      stickySectionHeadersEnabled={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -66,13 +62,55 @@ export default function WatchNextScreen() {
           tintColor={colors.accent}
         />
       }
-      ListEmptyComponent={
-        <EmptyState
-          icon="checkmark-done-outline"
-          title="You're all caught up"
-          body="No aired episodes waiting. Follow shows from Discover, or import your TV Time history in Settings."
-        />
+      ListHeaderComponent={
+        <View>
+          <ScreenHeader
+            title="Watch Next"
+            subtitle={
+              items.length > 0
+                ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
+                : null
+            }
+          />
+          <TonightPicker items={items} />
+        </View>
       }
+      ListEmptyComponent={
+        <View style={{ marginTop: 12 }}>
+          <EmptyState
+            icon="checkmark-done-outline"
+            title="You're all caught up"
+            body="No aired episodes waiting. Follow shows from Discover, or import your TV Time history in Settings."
+          />
+        </View>
+      }
+      renderSectionHeader={({ section }) => (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            gap: 8,
+            marginTop: 20,
+            marginBottom: 10,
+            paddingHorizontal: 2,
+          }}
+        >
+          <Text
+            style={{
+              color: colors.accent,
+              fontFamily: fonts.display,
+              fontSize: 13,
+              textTransform: "uppercase",
+              letterSpacing: 1.2,
+            }}
+          >
+            {section.title}
+          </Text>
+          <Text style={{ color: colors.faint, fontSize: 11 }}>
+            {section.data.length}
+          </Text>
+        </View>
+      )}
       renderItem={({ item }) => (
         <WatchNextCard
           item={item}
@@ -109,6 +147,7 @@ function WatchNextCard({
         gap: 14,
         padding: 12,
         alignItems: "center",
+        marginBottom: 10,
       }}
     >
       <Pressable onPress={onOpenShow} hitSlop={4}>

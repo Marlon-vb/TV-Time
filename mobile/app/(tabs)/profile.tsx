@@ -2,10 +2,12 @@ import { useCallback } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
-import { EmptyState, card } from "@/components/ui";
+import { EmptyState, ProgressBar, card } from "@/components/ui";
+import { computeAchievements, type Achievement } from "@/lib/achievements";
 import {
   accentGradient,
   colors,
@@ -75,6 +77,9 @@ export default function ProfileScreen() {
         <StatTile label="Finished" value={data.showsFinished} />
         <StatTile label="Behind" value={data.episodesBehind} accent />
       </View>
+
+      {/* Achievements */}
+      <AchievementsSection stats={data} />
 
       {/* Monthly activity */}
       {data.monthly.length > 1 && (
@@ -216,6 +221,99 @@ const sectionLabel = {
   fontFamily: "SpaceGrotesk_500Medium",
   letterSpacing: 1.4,
 } as const;
+
+function AchievementsSection({
+  stats,
+}: {
+  stats: Parameters<typeof computeAchievements>[0];
+}) {
+  const achievements = computeAchievements(stats);
+  const unlocked = achievements.filter((a) => a.achieved).length;
+  return (
+    <View style={{ ...card, padding: 18 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+        <Text style={sectionLabel}>ACHIEVEMENTS</Text>
+        <Text style={{ color: colors.faint, fontSize: 11, fontFamily: fonts.displayMedium }}>
+          {unlocked}/{achievements.length}
+        </Text>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        {achievements.map((a) => (
+          <AchievementCard key={a.id} achievement={a} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function AchievementCard({ achievement: a }: { achievement: Achievement }) {
+  return (
+    <View
+      style={{
+        width: "47.7%",
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: a.achieved ? "rgba(251,215,55,0.4)" : colors.line,
+        backgroundColor: a.achieved ? "rgba(251,215,55,0.08)" : colors.raised,
+        padding: 12,
+        gap: 6,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: a.achieved ? colors.accent : colors.overlay,
+          }}
+        >
+          <Ionicons
+            /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+            name={a.icon as any}
+            size={15}
+            color={a.achieved ? colors.ink : colors.faint}
+          />
+        </View>
+        <Text
+          style={{
+            flex: 1,
+            color: a.achieved ? colors.fg : colors.muted,
+            fontFamily: fonts.displayMedium,
+            fontSize: 12,
+          }}
+          numberOfLines={1}
+        >
+          {a.name}
+        </Text>
+      </View>
+      <Text style={{ color: colors.faint, fontSize: 10, lineHeight: 14 }} numberOfLines={2}>
+        {a.description}
+      </Text>
+      {a.achieved ? (
+        <Text style={{ color: colors.accent, fontSize: 10, fontWeight: "800" }}>
+          UNLOCKED
+        </Text>
+      ) : (
+        <View style={{ gap: 3 }}>
+          <ProgressBar value={a.current} max={a.target} height={3} />
+          <Text style={{ color: colors.faint, fontSize: 9 }}>
+            {a.current.toLocaleString()}/{a.target.toLocaleString()}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function HeroUnit({ value, unit }: { value: number; unit: string }) {
   return (

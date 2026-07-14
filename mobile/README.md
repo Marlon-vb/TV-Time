@@ -8,7 +8,11 @@ phone in a local SQLite database — no server required.
 
 Everything the web app does, natively:
 
-- **Watch Next** with behind-by-N badges and one-tap mark-watched
+- **Watch Next** in TV Time's sections — Up next, Haven't watched in a
+  while (idle 30+ days), Haven't started — with behind-by-N badges and
+  one-tap mark-watched
+- **"What should I watch tonight?"** — one tap suggests an episode from your
+  backlog with a reason (nearly caught up, neglected show, quick episode)
 - **Upcoming** agenda grouped by day
 - **Episode pages** — tap any episode for its still, synopsis
   (spoiler-guarded), watched toggle, emoji reaction, and prev/next
@@ -20,7 +24,8 @@ Everything the web app does, natively:
   mark season / mark all, and long-press an episode to mark
   "watched up to here"
 - **Discover** search over TVmaze's catalog
-- **Profile** stats: time watched, episodes per month, top shows and genres
+- **Profile** stats: time watched, episodes per month, top shows and genres,
+  plus 12 achievements to unlock (Century Club, Binge Lord, Zero Inbox…)
 - **TV Time import**: pick your export zip straight from the Files app
 - **Episode notifications**: locally scheduled at each episode's exact air
   time — delivered by iOS even with the app closed, no push server involved.
