@@ -47,6 +47,31 @@ Note: in Expo Go, background sync doesn't run (Apple restriction on the Go
 sandbox) — air dates still refresh every time you open the app, and scheduled
 episode notifications work.
 
+## Run it 24/7 from a Mac (Mac mini home server)
+
+Register the server as a macOS service that starts at login and restarts on
+crashes:
+
+```bash
+cd ~/TV-Time/mobile
+bash deploy/install-mac-service.sh
+```
+
+It prints the stable URL for your phone (`exp://<your-mac>.local:8090` —
+uses the Mac's Bonjour name, so it survives IP changes). Enter it once in
+Expo Go; after that the app appears under "Recently opened".
+
+Also do these once so the Mac never naps:
+
+- `sudo pmset -a sleep 0` (never sleep; the display can still sleep)
+- System Settings → Users & Groups → enable automatic login for your user
+
+To ship updates to the running server: `bash deploy/update.sh`.
+
+Note: the phone loads the app from the Mac over your home network. Away
+from home, Expo Go opens its cached copy of the last-loaded version; for a
+fully independent install everywhere, use an EAS build (below).
+
 ## Build a real standalone app
 
 With a free [Expo account](https://expo.dev) and Apple credentials:
