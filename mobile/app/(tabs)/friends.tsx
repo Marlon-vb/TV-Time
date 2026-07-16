@@ -176,14 +176,31 @@ function FindFriends({
   const [contacts, setContacts] = useState<Profile[] | null>(null);
   const [searching, setSearching] = useState(false);
   // Who I already follow, fetched ONCE — not one round trip per result row.
+  // The set is the single source of truth for every row and is updated
+  // optimistically on toggle, so remounts/late fetches can't show stale state.
   const [followingIds, setFollowingIds] = useState<Set<string> | null>(null);
   const gen = useRef(0);
 
   useEffect(() => {
-    void social
-      .getFollowing()
-      .then((list) => setFollowingIds(new Set(list.map((p) => p.id))));
+    void social.getFollowing().then((list) =>
+      setFollowingIds((prev) => {
+        const ids = new Set(list.map((p) => p.id));
+        // A toggle may have landed while the fetch was in flight — keep it.
+        if (prev) for (const id of prev) ids.add(id);
+        return ids;
+      })
+    );
   }, []);
+
+  const toggleFollow = (profileId: string) => {
+    if (!followingIds) return;
+    const isFollowing = followingIds.has(profileId);
+    const next = new Set(followingIds);
+    if (isFollowing) next.delete(profileId);
+    else next.add(profileId);
+    setFollowingIds(next);
+    void (isFollowing ? social.unfollow(profileId) : social.follow(profileId));
+  };
 
   useEffect(() => {
     const q = query.trim();
@@ -266,7 +283,8 @@ function FindFriends({
                 <UserRow
                   key={p.id}
                   profile={p}
-                  initialFollowing={followingIds?.has(p.id) ?? null}
+                  following={followingIds ? followingIds.has(p.id) : null}
+                  onToggle={() => toggleFollow(p.id)}
                   onOpen={onOpenUser}
                 />
               ))}
@@ -283,7 +301,8 @@ function FindFriends({
       renderItem={({ item }) => (
         <UserRow
           profile={item}
-          initialFollowing={followingIds?.has(item.id) ?? null}
+          following={followingIds ? followingIds.has(item.id) : null}
+          onToggle={() => toggleFollow(item.id)}
           onOpen={onOpenUser}
         />
       )}
@@ -324,32 +343,23 @@ function ActionChip({
   );
 }
 
+/**
+ * Fully controlled: follow state lives in the parent's followingIds set, so
+ * row remounts and late-resolving fetches can never show stale state or
+ * clobber an optimistic toggle.
+ */
 function UserRow({
   profile,
-  initialFollowing,
+  following,
+  onToggle,
   onOpen,
 }: {
   profile: Profile;
-  /** From the caller's single getFollowing() fetch; null while loading. */
-  initialFollowing: boolean | null;
+  /** null while the following set is still loading. */
+  following: boolean | null;
+  onToggle: () => void;
   onOpen: (username: string) => void;
 }) {
-  const [following, setFollowing] = useState<boolean | null>(initialFollowing);
-
-  useEffect(() => {
-    setFollowing(initialFollowing);
-  }, [initialFollowing]);
-
-  const toggle = async () => {
-    if (following) {
-      setFollowing(false);
-      await social.unfollow(profile.id);
-    } else {
-      setFollowing(true);
-      await social.follow(profile.id);
-    }
-  };
-
   return (
     <View style={{ ...card, flexDirection: "row", alignItems: "center", gap: 12, padding: 10 }}>
       <Pressable onPress={() => onOpen(profile.username)}>
@@ -362,8 +372,13 @@ function UserRow({
         <Text style={{ color: colors.faint, fontSize: 12 }}>@{profile.username}</Text>
       </Pressable>
       <Bouncy
-        onPress={toggle}
+        onPress={onToggle}
+        disabled={following == null}
         scaleTo={0.92}
+        accessibilityRole="button"
+        accessibilityLabel={
+          following ? `Unfollow ${profile.username}` : `Follow ${profile.username}`
+        }
         style={{
           paddingHorizontal: 14,
           paddingVertical: 8,
@@ -371,6 +386,7 @@ function UserRow({
           backgroundColor: following ? colors.overlay : colors.accent,
           minWidth: 84,
           alignItems: "center",
+          opacity: following == null ? 0.5 : 1,
         }}
       >
         <Text style={{ color: following ? colors.muted : colors.ink, fontWeight: "800", fontSize: 12 }}>

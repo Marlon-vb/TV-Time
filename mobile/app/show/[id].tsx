@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -502,9 +502,12 @@ function SeasonList({
     setOpen(next);
   };
   // Long seasons render lazily: the ScrollView isn't virtualized, so a
-  // 100-episode season would mount 100 rows at once and jank the open.
+  // 100-episode season would mount 100 rows at once and jank the open. The
+  // window starts at the first unwatched aired episode (the row the user
+  // came for), with incremental expanders in both directions.
   const EPISODE_PAGE = 30;
-  const [fullSeasons, setFullSeasons] = useState<Set<number>>(new Set());
+  const [extraRows, setExtraRows] = useState<Map<number, number>>(new Map());
+  const [showEarlier, setShowEarlier] = useState<Set<number>>(new Set());
 
   return (
     <View style={{ gap: 10 }}>
@@ -589,37 +592,57 @@ function SeasonList({
             </View>
 
             {isOpen &&
-              (fullSeasons.has(seasonNum)
-                ? eps
-                : eps.slice(0, EPISODE_PAGE)
-              ).map((ep) => (
-                <EpisodeItem
-                  key={ep.id}
-                  ep={ep}
-                  onToggle={onToggle}
-                  onMarkUpTo={onMarkUpTo}
-                />
-              ))}
-            {isOpen &&
-              !fullSeasons.has(seasonNum) &&
-              eps.length > EPISODE_PAGE && (
-                <Pressable
-                  onPress={() =>
-                    setFullSeasons(new Set([...fullSeasons, seasonNum]))
-                  }
-                  accessibilityRole="button"
-                  style={{
-                    paddingVertical: 12,
-                    alignItems: "center",
-                    borderTopWidth: 1,
-                    borderTopColor: colors.line,
-                  }}
-                >
-                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
-                    Show all {eps.length} episodes
-                  </Text>
-                </Pressable>
-              )}
+              (() => {
+                // Window: start at the first unwatched aired episode (minus
+                // a little context) so the actionable row is always visible.
+                const firstUnwatched = eps.findIndex(
+                  (e) => !e.watched_at && e.airstamp && e.airstamp <= nowIso
+                );
+                const anchor = firstUnwatched === -1 ? 0 : firstUnwatched;
+                const start = showEarlier.has(seasonNum)
+                  ? 0
+                  : Math.max(
+                      0,
+                      Math.min(anchor - 3, eps.length - EPISODE_PAGE)
+                    );
+                const visibleCount =
+                  EPISODE_PAGE + (extraRows.get(seasonNum) ?? 0);
+                const end = Math.min(eps.length, start + visibleCount);
+                const hiddenBelow = eps.length - end;
+                return (
+                  <>
+                    {start > 0 && (
+                      <SeasonExpander
+                        label={`Show first ${start} episodes`}
+                        onPress={() =>
+                          setShowEarlier(new Set([...showEarlier, seasonNum]))
+                        }
+                      />
+                    )}
+                    {eps.slice(start, end).map((ep) => (
+                      <EpisodeItem
+                        key={ep.id}
+                        ep={ep}
+                        onToggle={onToggle}
+                        onMarkUpTo={onMarkUpTo}
+                      />
+                    ))}
+                    {hiddenBelow > 0 && (
+                      <SeasonExpander
+                        label={`Show ${Math.min(hiddenBelow, EPISODE_PAGE)} more (${hiddenBelow} left)`}
+                        onPress={() =>
+                          setExtraRows(
+                            new Map(extraRows).set(
+                              seasonNum,
+                              (extraRows.get(seasonNum) ?? 0) + EPISODE_PAGE
+                            )
+                          )
+                        }
+                      />
+                    )}
+                  </>
+                );
+              })()}
           </View>
         );
       })}
@@ -630,7 +653,34 @@ function SeasonList({
   );
 }
 
-function EpisodeItem({
+function SeasonExpander({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={{
+        paddingVertical: 12,
+        alignItems: "center",
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+      }}
+    >
+      <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+// Memoized: expanding a season's window must not re-render every already-
+// mounted row in every open season.
+const EpisodeItem = memo(function EpisodeItem({
   ep,
   onToggle,
   onMarkUpTo,
@@ -719,4 +769,4 @@ function EpisodeItem({
       </View>
     </Pressable>
   );
-}
+});

@@ -317,7 +317,7 @@ function SyncSection() {
     setBusy(true);
     setMessage("Refreshing all shows from TVmaze…");
     try {
-      const result = await repo.syncStaleShows(0);
+      const result = await repo.syncStaleShows(0, { concurrency: 4 });
       await rescheduleAll();
       setMessage(
         `Done — ${result.synced} shows refreshed${

@@ -46,10 +46,14 @@ export default function WatchNextScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      // A capped, concurrent pass over the stalest shows — refreshing all
-      // 250 sequentially took minutes and held the spinner hostage. The
-      // 12-hourly background sync keeps the long tail fresh.
-      await repo.syncStaleShows(0, { limit: 20, concurrency: 4 });
+      // A capped, paced pass prioritizing the shows that most recently aired
+      // something — what a refreshing user is actually looking for. The
+      // launch + 12-hourly background syncs keep the long tail fresh.
+      await repo.syncStaleShows(0, {
+        limit: 20,
+        concurrency: 4,
+        prioritize: "activity",
+      });
       await rescheduleAll();
     } catch {
       // offline is fine — show what we have

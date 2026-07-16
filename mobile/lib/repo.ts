@@ -175,15 +175,32 @@ export async function syncShow(showId: number): Promise<boolean> {
 
 export async function syncStaleShows(
   maxAgeHours = 12,
-  opts: { limit?: number; concurrency?: number } = {}
+  opts: {
+    limit?: number;
+    concurrency?: number;
+    /**
+     * "activity" spends a capped budget on the shows that most recently
+     * aired something (what a pull-to-refresh user is actually looking
+     * for); "stale" (default) works oldest-sync-first (background repair).
+     */
+    prioritize?: "stale" | "activity";
+  } = {}
 ): Promise<{ synced: number; failed: number }> {
-  const rows = getDb().getAllSync<
-    Pick<ShowRow, "id" | "status" | "last_synced_at">
-  >("SELECT id, status, last_synced_at FROM shows");
+  const rows = getDb().getAllSync<{
+    id: number;
+    status: string;
+    last_synced_at: string | null;
+    last_aired: string | null;
+  }>(
+    `SELECT s.id, s.status, s.last_synced_at,
+            MAX(CASE WHEN e.airstamp IS NOT NULL AND e.airstamp <= $now
+                     THEN e.airstamp END) AS last_aired
+     FROM shows s LEFT JOIN episodes e ON e.show_id = s.id
+     GROUP BY s.id`,
+    { $now: nowIso() }
+  );
   const now = Date.now();
 
-  // Stalest first, so a capped pass (pull-to-refresh) spends its budget on
-  // the shows that need it most; Ended shows barely change and go last.
   const stale = rows
     .filter((row) => {
       const ageHours = row.last_synced_at
@@ -192,15 +209,19 @@ export async function syncStaleShows(
       const threshold = row.status === "Ended" ? 24 * 7 : maxAgeHours;
       return ageHours >= threshold;
     })
-    .sort(
-      (a, b) =>
-        (a.status === "Ended" ? 1 : 0) - (b.status === "Ended" ? 1 : 0) ||
-        (a.last_synced_at ?? "").localeCompare(b.last_synced_at ?? "")
-    )
+    .sort((a, b) => {
+      const ended =
+        (a.status === "Ended" ? 1 : 0) - (b.status === "Ended" ? 1 : 0);
+      if (ended !== 0) return ended; // airing shows first either way
+      return opts.prioritize === "activity"
+        ? (b.last_aired ?? "").localeCompare(a.last_aired ?? "")
+        : (a.last_synced_at ?? "").localeCompare(b.last_synced_at ?? "");
+    })
     .slice(0, opts.limit ?? Infinity);
 
-  // A few in flight at a time — sequential syncs of a 250-show library took
-  // minutes; tvFetch's built-in backoff handles TVmaze's rate limit.
+  // A few in flight, paced under TVmaze's ~20 requests / 10s budget — bursts
+  // just trade time for 429 backoff sleeps. Sequential syncs of a 250-show
+  // library took minutes; this keeps the same rate ceiling without idling.
   const width = Math.max(1, opts.concurrency ?? 1);
   let synced = 0;
   let failed = 0;
@@ -215,6 +236,9 @@ export async function syncStaleShows(
       })
     );
     for (const ok of results) ok ? synced++ : failed++;
+    if (width > 1 && i + width < stale.length) {
+      await new Promise((r) => setTimeout(r, width * 500));
+    }
   }
   return { synced, failed };
 }
@@ -482,6 +506,9 @@ export function watchNext(): WatchNextItem[] {
   // sort key — one indexed aggregate instead of the old correlated NOT
   // EXISTS, which was O(behind × episodes-per-show) and janked tab focus at
   // an 11k-episode library. (Episode numbers are always < 100000.)
+  // `number BETWEEN 0 AND 99999` enforces the packing invariant rather than
+  // trusting it: an out-of-range episode number would silently corrupt the
+  // per-show MIN instead of erroring.
   const rows = db.getAllSync<EpisodeRow>(
     `SELECT e.*
      FROM episodes e
@@ -489,6 +516,7 @@ export function watchNext(): WatchNextItem[] {
        SELECT show_id, MIN(season * 100000 + number) AS pos
        FROM episodes
        WHERE watched_at IS NULL AND airstamp IS NOT NULL AND airstamp <= $now
+         AND number BETWEEN 0 AND 99999
        GROUP BY show_id
      ) f ON f.show_id = e.show_id
         AND e.season * 100000 + e.number = f.pos
@@ -514,10 +542,17 @@ export function watchNext(): WatchNextItem[] {
      FROM episodes WHERE watched_at IS NOT NULL GROUP BY show_id`
   );
   const watchedMap = new Map(watchedAgg.map((w) => [w.show_id, w]));
-  // One query for all shows instead of getShowRow per row (N+1).
+  // One query for exactly the shows that have a backlog — not getShowRow per
+  // row (N+1), and not all 250 shows' full rows for a 3-show backlog either.
   const showMap = new Map(
     db
-      .getAllSync<ShowRow>("SELECT * FROM shows WHERE archived = 0")
+      .getAllSync<ShowRow>(
+        `SELECT * FROM shows WHERE archived = 0 AND id IN (
+           SELECT DISTINCT show_id FROM episodes
+           WHERE watched_at IS NULL AND airstamp IS NOT NULL AND airstamp <= ?
+         )`,
+        now
+      )
       .map((s) => [s.id, s])
   );
   return rows.map((episode) => ({

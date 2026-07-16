@@ -46,19 +46,12 @@ const COMMUNITY_HYDRATIONS = 8;
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function safely<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await fn();
-  } catch {
-    return fallback;
-  }
-}
-
 /**
- * Map with a few requests in flight and a short gap between waves — the old
- * fully-serial loop with a 300ms sleep per call added ~10s of pure waiting
- * to a cold recommendations build. tvFetch's 429 backoff guards the TVmaze
- * rate limit if we ever push too hard.
+ * Map with 3 requests in flight, paced to stay under TVmaze's documented
+ * ~20 requests / 10 s budget (3 per ~1.45s ≈ 2.1/s). Bursting faster just
+ * trades the saved time for 429 backoff sleeps and risks dropped signals.
+ * The build runs in the background and is cached for a day, so honest
+ * pacing beats a fast-but-degraded result.
  */
 async function mapConcurrent<T, R>(
   items: T[],
@@ -68,7 +61,7 @@ async function mapConcurrent<T, R>(
   const out: R[] = [];
   for (let i = 0; i < items.length; i += width) {
     out.push(...(await Promise.all(items.slice(i, i + width).map(fn))));
-    if (i + width < items.length) await pause(150);
+    if (i + width < items.length) await pause(1300);
   }
   return out;
 }
@@ -92,6 +85,18 @@ export async function recommendedShows(
   }
 
   try {
+    // Any swallowed fetch failure marks the build degraded — a partial result
+    // is still shown, but never cached for a day as if it were complete.
+    let degraded = false;
+    const safely = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try {
+        return await fn();
+      } catch {
+        degraded = true;
+        return fallback;
+      }
+    };
+
     const followed = repo.listShowsWithProgress();
     const exclude = new Set(followed.map((s) => s.id));
     const stats = repo.stats();
@@ -190,7 +195,7 @@ export async function recommendedShows(
     }
 
     const recs = rankCandidates([...pool.values()], profile, exclude);
-    if (recs.length > 0) {
+    if (recs.length > 0 && !degraded) {
       try {
         setSetting(
           CACHE_KEY,

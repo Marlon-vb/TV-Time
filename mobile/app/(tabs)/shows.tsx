@@ -87,10 +87,11 @@ export default function MyShowsScreen() {
       keyExtractor={(s) => String(s.id)}
       numColumns={3}
       // 250-show grids: render a screenful fast, recycle aggressively.
+      // (No removeClippedSubviews: it detaches the header's focused search
+      // TextInput when scrolled offscreen and can blank grid cells.)
       initialNumToRender={12}
       windowSize={7}
       maxToRenderPerBatch={12}
-      removeClippedSubviews
       contentContainerStyle={{
         paddingHorizontal: 12,
         paddingBottom: TAB_BAR_CLEARANCE,

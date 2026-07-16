@@ -12,11 +12,13 @@ import { syncUpNextWidget } from "./widget";
 
 const TASK_NAME = "tvtime-background-sync";
 
-export async function syncAndReschedule(): Promise<{
-  synced: number;
-  failed: number;
-}> {
-  const result = await repo.syncStaleShows();
+export async function syncAndReschedule(opts?: {
+  limit?: number;
+}): Promise<{ synced: number; failed: number }> {
+  const result = await repo.syncStaleShows(12, {
+    concurrency: 4,
+    limit: opts?.limit,
+  });
   await rescheduleAll();
   syncUpNextWidget();
   return result;
@@ -24,7 +26,9 @@ export async function syncAndReschedule(): Promise<{
 
 TaskManager.defineTask(TASK_NAME, async () => {
   try {
-    await syncAndReschedule();
+    // iOS gives background tasks ~30s — cap the pass so it finishes inside
+    // the budget instead of being killed mid-sync and reported Failed.
+    await syncAndReschedule({ limit: 25 });
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch {
     return BackgroundTask.BackgroundTaskResult.Failed;
