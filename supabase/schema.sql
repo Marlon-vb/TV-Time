@@ -192,6 +192,7 @@ drop function if exists public.feed(integer, timestamptz);
 drop function if exists public.friends_who_watched(integer, integer, integer);
 drop function if exists public.episode_stats(integer, integer, integer);
 drop function if exists public.character_vote_tally(integer, integer, integer);
+drop function if exists public.also_watched(integer[], integer);
 
 create or replace function public.find_friends(phone_hashes text[], email_hashes text[])
 returns setof public.profiles
@@ -253,6 +254,26 @@ language sql stable security invoker set search_path = public as $$
        where show_id = p_show_id and season = p_season and episode = p_episode and rating is not null),
     (select count(*)::integer from public.watched_episodes
        where show_id = p_show_id and season = p_season and episode = p_episode);
+$$;
+
+-- Community collaborative filtering: shows that people who watch the same
+-- shows as you also watch, ranked by how many of those "taste neighbors"
+-- watch them. Show ids are TVmaze ids. Grows smarter as the user base grows.
+create or replace function public.also_watched(
+  p_show_ids integer[], p_limit integer default 30
+)
+returns table (show_id integer, watchers integer)
+language sql stable security invoker set search_path = public as $$
+  select w.show_id, count(distinct w.user_id)::integer as watchers
+  from public.watched_episodes w
+  where w.user_id in (
+      select distinct user_id from public.watched_episodes
+      where show_id = any(p_show_ids) and user_id <> auth.uid()
+    )
+    and w.show_id <> all(p_show_ids)
+  group by w.show_id
+  order by watchers desc
+  limit least(p_limit, 100);
 $$;
 
 -- Tally of character votes for an episode.

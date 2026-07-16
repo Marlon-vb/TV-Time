@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -18,7 +17,6 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
 import * as repo from "@/lib/repo";
-import { tmdbConfigured } from "@/lib/tmdb";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
 import type { RemoteShow } from "@/lib/types";
 
@@ -34,13 +32,10 @@ export default function DiscoverScreen() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const generation = useRef(0);
   const [recs, setRecs] = useState<Recommendation[]>([]);
-  const [recsLoading, setRecsLoading] = useState(false);
-  const [openingId, setOpeningId] = useState<number | null>(null);
+  const [recsLoading, setRecsLoading] = useState(true);
 
   useEffect(() => {
-    if (!tmdbConfigured()) return;
     let alive = true;
-    setRecsLoading(true);
     (async () => {
       const r = await recommendedShows();
       if (alive) {
@@ -52,18 +47,6 @@ export default function DiscoverScreen() {
       alive = false;
     };
   }, []);
-
-  const openRec = async (rec: Recommendation) => {
-    setOpeningId(rec.tmdbId);
-    try {
-      const show = await tvmaze.singleSearch(rec.name);
-      if (show) router.push(`/show/${show.id}` as never);
-    } catch {
-      // ignore — the user can search by name instead
-    } finally {
-      setOpeningId(null);
-    }
-  };
 
   useEffect(() => {
     const q = query.trim();
@@ -174,11 +157,12 @@ export default function DiscoverScreen() {
                   >
                     {recs.map((r) => (
                       <Bouncy
-                        key={r.tmdbId}
-                        onPress={() => void openRec(r)}
+                        key={r.showId}
+                        onPress={() => router.push(`/show/${r.showId}` as never)}
                         scaleTo={0.94}
+                        accessibilityRole="button"
                         accessibilityLabel={`Open ${r.name}`}
-                        style={{ width: 108, opacity: openingId === r.tmdbId ? 0.5 : 1 }}
+                        style={{ width: 108 }}
                       >
                         <Poster src={r.posterUrl} name={r.name} width={108} height={156} radius={12} />
                         <Text
@@ -192,26 +176,18 @@ export default function DiscoverScreen() {
                         >
                           {r.name}
                         </Text>
-                        {r.year && (
-                          <Text style={{ color: colors.faint, fontSize: 10, marginTop: 1 }}>
-                            {r.year}
+                        {r.reason && (
+                          <Text
+                            numberOfLines={1}
+                            style={{ color: colors.faint, fontSize: 10, marginTop: 1 }}
+                          >
+                            {r.reason}
                           </Text>
                         )}
                       </Bouncy>
                     ))}
                   </ScrollView>
                 </View>
-              ) : !tmdbConfigured() ? (
-                <Pressable
-                  onPress={() => router.push("/settings" as never)}
-                  accessibilityRole="button"
-                >
-                  <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
-                    Add a TMDB key in{" "}
-                    <Text style={{ color: colors.accent }}>Settings</Text> to get
-                    personalized recommendations here.
-                  </Text>
-                </Pressable>
               ) : null}
             </View>
           )}

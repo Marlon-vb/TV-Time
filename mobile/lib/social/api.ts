@@ -338,6 +338,29 @@ export async function uploadCommentPhoto(
   }
 }
 
+// ------------------------------------------------- community recommendations
+
+/**
+ * Shows that people who watch the same shows as you also watch (TVmaze ids
+ * with taste-neighbor counts). Empty when signed out, on error, or while the
+ * community is still small — callers treat this as one optional signal.
+ */
+export async function alsoWatched(
+  showIds: number[]
+): Promise<{ show_id: number; watchers: number }[]> {
+  if (showIds.length === 0) return [];
+  try {
+    const { data, error } = await supabase.rpc("also_watched", {
+      p_show_ids: showIds.slice(0, 100),
+      p_limit: 30,
+    });
+    if (error) return [];
+    return (data as { show_id: number; watchers: number }[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // ---------------------------------------------------------- character votes
 
 /** The character id I voted best-in-episode, or null if I haven't voted. */
