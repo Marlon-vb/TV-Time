@@ -237,6 +237,8 @@ export default function EpisodeScreen() {
             <Bouncy
               onPress={() => void share()}
               scaleTo={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="Share this episode"
               style={{
                 width: 42,
                 height: 42,

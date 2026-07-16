@@ -49,6 +49,8 @@ export default function ScreenHeader({
       <Pressable
         onPress={() => router.push("/settings")}
         hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Settings"
         style={{
           width: 38,
           height: 38,

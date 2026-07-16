@@ -17,6 +17,12 @@ export function tmdbConfigured(): boolean {
   return Boolean(getKey());
 }
 
+/** Low-level GET against the configured TMDB account; null when unconfigured. */
+export async function tmdbGet(pathname: string): Promise<unknown | null> {
+  if (!getKey()) return null;
+  return tmdbFetch(pathname);
+}
+
 async function tmdbFetch(pathname: string): Promise<unknown | null> {
   const key = getKey();
   if (!key) return null;

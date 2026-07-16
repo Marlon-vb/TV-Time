@@ -42,7 +42,14 @@ export default function CheckButton({
   };
 
   return (
-    <Pressable onPress={press} disabled={disabled} hitSlop={8}>
+    <Pressable
+      onPress={press}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked, disabled }}
+      accessibilityLabel={checked ? "Watched" : "Mark as watched"}
+    >
       <Animated.View
         style={{
           width: size,

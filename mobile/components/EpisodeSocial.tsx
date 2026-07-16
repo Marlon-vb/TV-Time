@@ -202,6 +202,8 @@ function CommentComposer({
           <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10 }} contentFit="cover" />
           <Pressable
             onPress={() => setUri(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Remove photo"
             style={{ position: "absolute", top: -6, right: -6, backgroundColor: colors.ink, borderRadius: 10 }}
           >
             <Ionicons name="close-circle" size={20} color={colors.fg} />
@@ -230,7 +232,12 @@ function CommentComposer({
             multiline
             style={{ flex: 1, color: colors.fg, fontSize: 14, paddingVertical: 10, maxHeight: 100 }}
           />
-          <Pressable onPress={pickImage} hitSlop={6}>
+          <Pressable
+            onPress={pickImage}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Add a photo"
+          >
             <Ionicons name="image-outline" size={20} color={colors.muted} />
           </Pressable>
         </View>
@@ -238,6 +245,8 @@ function CommentComposer({
           onPress={post}
           disabled={posting || (!body.trim() && !uri)}
           scaleTo={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="Post comment"
           style={{
             width: 42,
             height: 42,
@@ -291,7 +300,13 @@ function CommentRow({
           />
         ) : null}
       </View>
-      <Pressable onPress={onUpvote} hitSlop={6} style={{ alignItems: "center", gap: 2 }}>
+      <Pressable
+        onPress={onUpvote}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={c.upvoted ? "Remove upvote" : "Upvote"}
+        style={{ alignItems: "center", gap: 2 }}
+      >
         <Ionicons
           name={c.upvoted ? "arrow-up-circle" : "arrow-up-circle-outline"}
           size={24}

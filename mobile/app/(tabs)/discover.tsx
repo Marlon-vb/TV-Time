@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -10,6 +18,8 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
 import * as repo from "@/lib/repo";
+import { tmdbConfigured } from "@/lib/tmdb";
+import { recommendedShows, type Recommendation } from "@/lib/recommendations";
 import type { RemoteShow } from "@/lib/types";
 
 type Result = RemoteShow & { followed: boolean };
@@ -23,6 +33,37 @@ export default function DiscoverScreen() {
   );
   const [busyId, setBusyId] = useState<number | null>(null);
   const generation = useRef(0);
+  const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [recsLoading, setRecsLoading] = useState(false);
+  const [openingId, setOpeningId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tmdbConfigured()) return;
+    let alive = true;
+    setRecsLoading(true);
+    (async () => {
+      const r = await recommendedShows();
+      if (alive) {
+        setRecs(r);
+        setRecsLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const openRec = async (rec: Recommendation) => {
+    setOpeningId(rec.tmdbId);
+    try {
+      const show = await tvmaze.singleSearch(rec.name);
+      if (show) router.push(`/show/${show.id}` as never);
+    } catch {
+      // ignore — the user can search by name instead
+    } finally {
+      setOpeningId(null);
+    }
+  };
 
   useEffect(() => {
     const q = query.trim();
@@ -107,10 +148,72 @@ export default function DiscoverScreen() {
           </View>
 
           {status === "idle" && (
-            <Text style={{ color: colors.faint, fontSize: 13, lineHeight: 19 }}>
-              Everything you follow is stored on this device — no account, no
-              cloud.
-            </Text>
+            <View style={{ gap: 14 }}>
+              <Text style={{ color: colors.faint, fontSize: 13, lineHeight: 19 }}>
+                Everything you follow is stored on this device — no account, no
+                cloud.
+              </Text>
+              {recsLoading ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : recs.length > 0 ? (
+                <View style={{ gap: 10 }}>
+                  <Text
+                    style={{
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontFamily: fonts.displayMedium,
+                      letterSpacing: 1.2,
+                    }}
+                  >
+                    RECOMMENDED FOR YOU
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 12, paddingRight: 8, paddingBottom: 2 }}
+                  >
+                    {recs.map((r) => (
+                      <Bouncy
+                        key={r.tmdbId}
+                        onPress={() => void openRec(r)}
+                        scaleTo={0.94}
+                        accessibilityLabel={`Open ${r.name}`}
+                        style={{ width: 108, opacity: openingId === r.tmdbId ? 0.5 : 1 }}
+                      >
+                        <Poster src={r.posterUrl} name={r.name} width={108} height={156} radius={12} />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            color: colors.fg,
+                            fontSize: 12,
+                            fontFamily: fonts.displayMedium,
+                            marginTop: 6,
+                          }}
+                        >
+                          {r.name}
+                        </Text>
+                        {r.year && (
+                          <Text style={{ color: colors.faint, fontSize: 10, marginTop: 1 }}>
+                            {r.year}
+                          </Text>
+                        )}
+                      </Bouncy>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : !tmdbConfigured() ? (
+                <Pressable
+                  onPress={() => router.push("/settings" as never)}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+                    Add a TMDB key in{" "}
+                    <Text style={{ color: colors.accent }}>Settings</Text> to get
+                    personalized recommendations here.
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
           )}
           {status === "loading" && (
             <Text style={{ color: colors.muted, fontSize: 13 }}>Searching…</Text>

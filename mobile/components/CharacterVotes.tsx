@@ -129,6 +129,13 @@ export default function CharacterVotes({
               key={member.characterId}
               onPress={() => void vote(member)}
               scaleTo={0.92}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              accessibilityLabel={
+                selected
+                  ? `${member.characterName}, your pick. Tap to undo`
+                  : `Vote for ${member.characterName}`
+              }
               style={{ width: 72, alignItems: "center", gap: 5 }}
             >
               <View>
