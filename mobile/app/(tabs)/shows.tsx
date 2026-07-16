@@ -1,5 +1,12 @@
 import { useCallback, useState } from "react";
-import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Bouncy from "@/components/Bouncy";
@@ -29,6 +36,11 @@ const TAB_ORDER: (ShowCategory | "all")[] = [
 
 export default function MyShowsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  // Fixed 3-up card width so a long title can never stretch a card and break
+  // the grid. Accounts for the list's 12pt side padding, the row's 4pt side
+  // padding, and the two 10pt gaps between columns.
+  const cardWidth = (width - 24 - 8 - 20) / 3;
   const [tab, setTab] = useState<ShowCategory | "all">("all");
   const loader = useCallback(() => repo.listShowsWithProgress(), []);
   const { data } = useFocusData(loader);
@@ -118,6 +130,7 @@ export default function MyShowsScreen() {
       renderItem={({ item }) => (
         <ShowCard
           show={item}
+          width={cardWidth}
           onPress={() => router.push(`/show/${item.id}` as never)}
         />
       )}
@@ -133,9 +146,11 @@ const chipStyle = {
 
 function ShowCard({
   show,
+  width,
   onPress,
 }: {
   show: ShowWithProgress;
+  width: number;
   onPress: () => void;
 }) {
   return (
@@ -143,7 +158,7 @@ function ShowCard({
       onPress={onPress}
       style={{
         ...card,
-        flex: 1 / 3,
+        width,
         marginBottom: 12,
         borderRadius: radius.md,
         overflow: "hidden",

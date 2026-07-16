@@ -34,7 +34,13 @@ export default function WatchNextScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const items = data?.items ?? [];
   const sections = data?.sections ?? [];
-  const totalBehind = items.reduce((n, i) => n + i.aired_unwatched, 0);
+  // Only count the shows you're actively watching (the "Up Next" bucket) —
+  // idle and not-yet-started shows don't count as episodes to catch up on.
+  const upNext = sections.find((s) => s.key === "up_next");
+  const totalBehind = (upNext?.data ?? []).reduce(
+    (n, i) => n + i.aired_unwatched,
+    0
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -68,7 +74,7 @@ export default function WatchNextScreen() {
         <ScreenHeader
           title="Watch Next"
           subtitle={
-            items.length > 0
+            totalBehind > 0
               ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
               : null
           }

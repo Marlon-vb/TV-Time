@@ -258,8 +258,11 @@ function StatTile({
       ? value.toFixed(decimals)
       : value.toLocaleString();
   return (
-    <View style={{ ...card, flex: 1, padding: 14 }}>
+    <View style={{ ...card, flex: 1, minWidth: 0, padding: 14 }}>
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
         style={{
           color: accent && value > 0 ? colors.accent : colors.fg,
           fontSize: 21,
