@@ -175,7 +175,15 @@ function FindFriends({
   const [results, setResults] = useState<Profile[]>([]);
   const [contacts, setContacts] = useState<Profile[] | null>(null);
   const [searching, setSearching] = useState(false);
+  // Who I already follow, fetched ONCE — not one round trip per result row.
+  const [followingIds, setFollowingIds] = useState<Set<string> | null>(null);
   const gen = useRef(0);
+
+  useEffect(() => {
+    void social
+      .getFollowing()
+      .then((list) => setFollowingIds(new Set(list.map((p) => p.id))));
+  }, []);
 
   useEffect(() => {
     const q = query.trim();
@@ -255,7 +263,12 @@ function FindFriends({
                   : "No contacts are on TV Time yet"}
               </Text>
               {contacts.map((p) => (
-                <UserRow key={p.id} profile={p} onOpen={onOpenUser} />
+                <UserRow
+                  key={p.id}
+                  profile={p}
+                  initialFollowing={followingIds?.has(p.id) ?? null}
+                  onOpen={onOpenUser}
+                />
               ))}
             </View>
           )}
@@ -267,7 +280,13 @@ function FindFriends({
           )}
         </View>
       }
-      renderItem={({ item }) => <UserRow profile={item} onOpen={onOpenUser} />}
+      renderItem={({ item }) => (
+        <UserRow
+          profile={item}
+          initialFollowing={followingIds?.has(item.id) ?? null}
+          onOpen={onOpenUser}
+        />
+      )}
       ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
     />
   );
@@ -307,16 +326,19 @@ function ActionChip({
 
 function UserRow({
   profile,
+  initialFollowing,
   onOpen,
 }: {
   profile: Profile;
+  /** From the caller's single getFollowing() fetch; null while loading. */
+  initialFollowing: boolean | null;
   onOpen: (username: string) => void;
 }) {
-  const [following, setFollowing] = useState<boolean | null>(null);
+  const [following, setFollowing] = useState<boolean | null>(initialFollowing);
 
   useEffect(() => {
-    void social.isFollowing(profile.id).then(setFollowing);
-  }, [profile.id]);
+    setFollowing(initialFollowing);
+  }, [initialFollowing]);
 
   const toggle = async () => {
     if (following) {

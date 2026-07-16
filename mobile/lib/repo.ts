@@ -174,25 +174,47 @@ export async function syncShow(showId: number): Promise<boolean> {
 }
 
 export async function syncStaleShows(
-  maxAgeHours = 12
+  maxAgeHours = 12,
+  opts: { limit?: number; concurrency?: number } = {}
 ): Promise<{ synced: number; failed: number }> {
   const rows = getDb().getAllSync<
     Pick<ShowRow, "id" | "status" | "last_synced_at">
   >("SELECT id, status, last_synced_at FROM shows");
   const now = Date.now();
+
+  // Stalest first, so a capped pass (pull-to-refresh) spends its budget on
+  // the shows that need it most; Ended shows barely change and go last.
+  const stale = rows
+    .filter((row) => {
+      const ageHours = row.last_synced_at
+        ? (now - Date.parse(row.last_synced_at)) / 3_600_000
+        : Infinity;
+      const threshold = row.status === "Ended" ? 24 * 7 : maxAgeHours;
+      return ageHours >= threshold;
+    })
+    .sort(
+      (a, b) =>
+        (a.status === "Ended" ? 1 : 0) - (b.status === "Ended" ? 1 : 0) ||
+        (a.last_synced_at ?? "").localeCompare(b.last_synced_at ?? "")
+    )
+    .slice(0, opts.limit ?? Infinity);
+
+  // A few in flight at a time — sequential syncs of a 250-show library took
+  // minutes; tvFetch's built-in backoff handles TVmaze's rate limit.
+  const width = Math.max(1, opts.concurrency ?? 1);
   let synced = 0;
   let failed = 0;
-  for (const row of rows) {
-    const ageHours = row.last_synced_at
-      ? (now - Date.parse(row.last_synced_at)) / 3_600_000
-      : Infinity;
-    const threshold = row.status === "Ended" ? 24 * 7 : maxAgeHours;
-    if (ageHours < threshold) continue;
-    try {
-      (await syncShow(row.id)) ? synced++ : failed++;
-    } catch {
-      failed++;
-    }
+  for (let i = 0; i < stale.length; i += width) {
+    const results = await Promise.all(
+      stale.slice(i, i + width).map(async (row) => {
+        try {
+          return await syncShow(row.id);
+        } catch {
+          return false;
+        }
+      })
+    );
+    for (const ok of results) ok ? synced++ : failed++;
   }
   return { synced, failed };
 }
@@ -456,19 +478,23 @@ export function listShowsWithProgress(): ShowWithProgress[] {
 export function watchNext(): WatchNextItem[] {
   const db = getDb();
   const now = nowIso();
+  // First unwatched aired episode per show via a GROUP BY on a season+number
+  // sort key — one indexed aggregate instead of the old correlated NOT
+  // EXISTS, which was O(behind × episodes-per-show) and janked tab focus at
+  // an 11k-episode library. (Episode numbers are always < 100000.)
   const rows = db.getAllSync<EpisodeRow>(
     `SELECT e.*
      FROM episodes e
+     JOIN (
+       SELECT show_id, MIN(season * 100000 + number) AS pos
+       FROM episodes
+       WHERE watched_at IS NULL AND airstamp IS NOT NULL AND airstamp <= $now
+       GROUP BY show_id
+     ) f ON f.show_id = e.show_id
+        AND e.season * 100000 + e.number = f.pos
      JOIN shows s ON s.id = e.show_id AND s.archived = 0
      WHERE e.watched_at IS NULL
        AND e.airstamp IS NOT NULL AND e.airstamp <= $now
-       AND NOT EXISTS (
-         SELECT 1 FROM episodes e2
-         WHERE e2.show_id = e.show_id
-           AND e2.watched_at IS NULL
-           AND e2.airstamp IS NOT NULL AND e2.airstamp <= $now
-           AND (e2.season < e.season OR (e2.season = e.season AND e2.number < e.number))
-       )
      ORDER BY e.airstamp DESC`,
     { $now: now }
   );
@@ -488,8 +514,14 @@ export function watchNext(): WatchNextItem[] {
      FROM episodes WHERE watched_at IS NOT NULL GROUP BY show_id`
   );
   const watchedMap = new Map(watchedAgg.map((w) => [w.show_id, w]));
+  // One query for all shows instead of getShowRow per row (N+1).
+  const showMap = new Map(
+    db
+      .getAllSync<ShowRow>("SELECT * FROM shows WHERE archived = 0")
+      .map((s) => [s.id, s])
+  );
   return rows.map((episode) => ({
-    show: getShowRow(episode.show_id)!,
+    show: showMap.get(episode.show_id)!,
     episode,
     aired_unwatched: behindMap.get(episode.show_id) ?? 0,
     watched_count: watchedMap.get(episode.show_id)?.n ?? 0,
@@ -564,11 +596,12 @@ export function stats(): Stats {
   let minutesWatched = 0;
   const genreMinutes = new Map<string, number>();
   const perShow: { show: ShowRow; watched: number; minutes: number }[] = [];
+  const showById = new Map(shows.map((s) => [s.id, s]));
 
   for (const row of watchedRows) {
     episodesWatched += row.n;
     minutesWatched += row.minutes;
-    const show = shows.find((s) => s.id === row.show_id);
+    const show = showById.get(row.show_id);
     if (!show) continue;
     perShow.push({ show, watched: row.n, minutes: row.minutes });
     for (const genre of JSON.parse(show.genres) as string[]) {

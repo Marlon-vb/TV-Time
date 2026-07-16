@@ -501,6 +501,10 @@ function SeasonList({
     else next.add(season);
     setOpen(next);
   };
+  // Long seasons render lazily: the ScrollView isn't virtualized, so a
+  // 100-episode season would mount 100 rows at once and jank the open.
+  const EPISODE_PAGE = 30;
+  const [fullSeasons, setFullSeasons] = useState<Set<number>>(new Set());
 
   return (
     <View style={{ gap: 10 }}>
@@ -585,7 +589,10 @@ function SeasonList({
             </View>
 
             {isOpen &&
-              eps.map((ep) => (
+              (fullSeasons.has(seasonNum)
+                ? eps
+                : eps.slice(0, EPISODE_PAGE)
+              ).map((ep) => (
                 <EpisodeItem
                   key={ep.id}
                   ep={ep}
@@ -593,6 +600,26 @@ function SeasonList({
                   onMarkUpTo={onMarkUpTo}
                 />
               ))}
+            {isOpen &&
+              !fullSeasons.has(seasonNum) &&
+              eps.length > EPISODE_PAGE && (
+                <Pressable
+                  onPress={() =>
+                    setFullSeasons(new Set([...fullSeasons, seasonNum]))
+                  }
+                  accessibilityRole="button"
+                  style={{
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    borderTopWidth: 1,
+                    borderTopColor: colors.line,
+                  }}
+                >
+                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
+                    Show all {eps.length} episodes
+                  </Text>
+                </Pressable>
+              )}
           </View>
         );
       })}

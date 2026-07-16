@@ -86,6 +86,11 @@ export default function MyShowsScreen() {
       data={visible}
       keyExtractor={(s) => String(s.id)}
       numColumns={3}
+      // 250-show grids: render a screenful fast, recycle aggressively.
+      initialNumToRender={12}
+      windowSize={7}
+      maxToRenderPerBatch={12}
+      removeClippedSubviews
       contentContainerStyle={{
         paddingHorizontal: 12,
         paddingBottom: TAB_BAR_CLEARANCE,
