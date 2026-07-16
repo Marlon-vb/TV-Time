@@ -123,6 +123,20 @@ export async function followCounts(
   };
 }
 
+/**
+ * A profile's shows with watched counts (TVmaze ids, most-watched first).
+ * Empty unless it's you or someone you follow — RLS keeps strangers private.
+ */
+export async function profileWatchSummary(
+  userId: string
+): Promise<{ show_id: number; episodes: number }[]> {
+  const { data, error } = await supabase.rpc("profile_watch_summary", {
+    p_user_id: userId,
+  });
+  if (error) return [];
+  return (data as { show_id: number; episodes: number }[]) ?? [];
+}
+
 // ---------------------------------------------------------------- activities
 
 /** Remove my feed activities for one episode (optionally scoped further). */
@@ -173,10 +187,17 @@ export async function publishActivity(input: ActivityInput): Promise<void> {
   }
 }
 
-export async function getFeed(before?: string): Promise<FeedItem[]> {
+export async function getFeed(before?: {
+  createdAt: string;
+  id: string;
+}): Promise<FeedItem[]> {
   const { data, error } = await supabase.rpc("feed", {
     limit_count: 50,
-    before: before ?? new Date().toISOString(),
+    before: before?.createdAt ?? new Date().toISOString(),
+    // Tiebreaker: created_at isn't unique (server-side backfills stamp many
+    // rows with one now()), and a bare `<` cursor would skip the rest of a
+    // same-timestamp run at a page boundary.
+    before_id: before?.id ?? null,
   });
   // Surface failures — an offline feed must not masquerade as an empty one.
   if (error) throw error;
@@ -236,6 +257,51 @@ export async function unrecordWatch(
     .eq("episode", episode);
   // Un-watching retracts the claim — remove the stale feed activity too.
   await deleteEpisodeActivities(me, showId, season, episode);
+}
+
+/**
+ * Mirror a show-level star rating to the feed ("rated Severance 4.5★" with
+ * no episode code). Clearing removes the feed row. Insert-first like
+ * publishActivity so a failure can't erase an existing row.
+ */
+export async function recordShowRating(
+  show: { id: number; name: string; poster_url: string | null },
+  rating: number | null
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  const deleteShowRated = (excludeId?: string) => {
+    let q = supabase
+      .from("activities")
+      .delete()
+      .eq("user_id", me)
+      .eq("show_id", show.id)
+      .eq("type", "rated")
+      .is("season", null);
+    if (excludeId) q = q.neq("id", excludeId);
+    return q;
+  };
+  if (rating == null) {
+    await deleteShowRated();
+    return;
+  }
+  const { data, error } = await supabase
+    .from("activities")
+    .insert({
+      user_id: me,
+      type: "rated",
+      show_id: show.id,
+      show_name: show.name,
+      poster_url: show.poster_url,
+      season: null,
+      episode: null,
+      episode_name: null,
+      rating,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return;
+  await deleteShowRated(data.id as string);
 }
 
 /**
@@ -569,8 +635,15 @@ export async function getBlockedIds(): Promise<Set<string>> {
 export async function blockUser(userId: string): Promise<void> {
   const me = await uid();
   if (!me || me === userId) return;
-  await supabase.from("blocks").upsert({ blocker_id: me, blocked_id: userId });
-  // Blocking also severs the relationship both ways.
+  // The block row is the write that matters — throw so confirmBlock's
+  // "Couldn't block" alert is reachable instead of the UI lying offline.
+  const { error } = await supabase
+    .from("blocks")
+    .upsert({ blocker_id: me, blocked_id: userId });
+  if (error) throw error;
+  // Sever the relationship both ways immediately for the UI; the
+  // handle_new_block trigger does the same server-side, so these staying
+  // best-effort is safe.
   await unfollow(userId);
   await supabase
     .from("follows")

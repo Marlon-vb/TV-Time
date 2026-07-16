@@ -20,6 +20,8 @@ function show(overrides: Partial<ShowWithProgress>): ShowWithProgress {
     followed_at: "2026-01-01T00:00:00Z",
     archived: 0,
     last_synced_at: null,
+    rating: null,
+    review: null,
     episode_count: 0,
     watched_count: 0,
     aired_unwatched: 0,

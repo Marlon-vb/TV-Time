@@ -30,6 +30,8 @@ function item(
       followed_at: "",
       archived: 0,
       last_synced_at: null,
+    rating: null,
+    review: null,
     },
     episode: {
       id: id * 100,

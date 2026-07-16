@@ -16,12 +16,23 @@ import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
-import { card } from "@/components/ui";
+import Poster from "@/components/Poster";
+import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
 import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
+import * as repo from "@/lib/repo";
+import * as tvmaze from "@/lib/tvmaze";
 import type { Profile } from "@/lib/social/types";
+
+interface ShowSummary {
+  showId: number;
+  episodes: number;
+  name: string;
+  posterUrl: string | null;
+  inMyLibrary: boolean;
+}
 
 export default function UserProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -33,8 +44,64 @@ export default function UserProfileScreen() {
   const [following, setFollowing] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [qr, setQr] = useState(false);
+  const [summary, setSummary] = useState<{
+    totalEpisodes: number;
+    totalShows: number;
+    top: ShowSummary[];
+    inCommon: ShowSummary[];
+  } | null>(null);
 
   const isMe = me?.username === username;
+
+  const loadSummary = useCallback(async (userId: string) => {
+    // Follower-scoped by RLS: returns [] for profiles you don't follow.
+    const rows = await social.profileWatchSummary(userId);
+    if (rows.length === 0) {
+      setSummary(null);
+      return;
+    }
+    const myShowIds = new Set(repo.listFollowedShowIds());
+    const hydrate = async (r: { show_id: number; episodes: number }) => {
+      const local = repo.getShowRow(r.show_id);
+      if (local) {
+        return {
+          showId: r.show_id,
+          episodes: r.episodes,
+          name: local.name,
+          posterUrl: local.poster_url,
+          inMyLibrary: true,
+        };
+      }
+      const remote = await tvmaze.getShow(r.show_id).catch(() => null);
+      return {
+        showId: r.show_id,
+        episodes: r.episodes,
+        name: remote?.name ?? "Unknown show",
+        posterUrl: remote?.posterUrl ?? null,
+        inMyLibrary: false,
+      };
+    };
+    const top = await Promise.all(rows.slice(0, 8).map(hydrate));
+    const inCommon = rows
+      .filter((r) => myShowIds.has(r.show_id))
+      .slice(0, 8)
+      .map((r) => {
+        const local = repo.getShowRow(r.show_id)!;
+        return {
+          showId: r.show_id,
+          episodes: r.episodes,
+          name: local.name,
+          posterUrl: local.poster_url,
+          inMyLibrary: true,
+        };
+      });
+    setSummary({
+      totalEpisodes: rows.reduce((n, r) => n + r.episodes, 0),
+      totalShows: rows.length,
+      top,
+      inCommon,
+    });
+  }, []);
 
   const load = useCallback(async () => {
     const p = await social.getProfileByUsername(username);
@@ -45,7 +112,8 @@ export default function UserProfileScreen() {
       setFollowing(await social.isFollowing(p.id));
       setBlocked((await social.getBlockedIds()).has(p.id));
     }
-  }, [username, isMe]);
+    void loadSummary(p.id);
+  }, [username, isMe, loadSummary]);
 
   useEffect(() => {
     void load();
@@ -70,6 +138,15 @@ export default function UserProfileScreen() {
   const name = profile.display_name || profile.username;
 
   const toggleFollow = async () => {
+    // This screen is reachable signed-out via invite links; follow() would
+    // fail with a misleading "check your connection" — point at the real fix.
+    if (!me) {
+      Alert.alert(
+        "Sign in to follow",
+        "Sign in with Apple from your Profile tab, then come back to follow friends."
+      );
+      return;
+    }
     const wasFollowing = Boolean(following);
     setFollowing(!wasFollowing);
     const ok = wasFollowing
@@ -183,6 +260,40 @@ export default function UserProfileScreen() {
             )}
           </View>
         </View>
+
+        {summary ? (
+          <>
+            {/* Watch stats */}
+            <View style={{ ...card, flexDirection: "row", padding: 14 }}>
+              <ProfileStat n={summary.totalEpisodes} label="episodes watched" />
+              <ProfileStat n={summary.totalShows} label="shows" />
+            </View>
+
+            {/* Shows in common */}
+            {summary.inCommon.length > 0 && (
+              <View style={{ ...card, padding: 14, gap: 10 }}>
+                <Text style={sectionLabel}>YOU BOTH WATCH</Text>
+                <ShowRail shows={summary.inCommon} onOpen={(id) => router.push(`/show/${id}` as never)} />
+              </View>
+            )}
+
+            {/* Top shows */}
+            <View style={{ ...card, padding: 14, gap: 10 }}>
+              <Text style={sectionLabel}>
+                {isMe ? "YOUR MOST WATCHED" : "THEIR MOST WATCHED"}
+              </Text>
+              <ShowRail shows={summary.top} onOpen={(id) => router.push(`/show/${id}` as never)} />
+            </View>
+          </>
+        ) : !isMe && !blocked ? (
+          <View style={{ ...card, padding: 16, alignItems: "center" }}>
+            <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center" }}>
+              {following
+                ? "No shared watch history yet."
+                : "Follow to see their shows and watch stats."}
+            </Text>
+          </View>
+        ) : null}
       </ScrollView>
 
       <Modal visible={qr} transparent animationType="fade" onRequestClose={() => setQr(false)}>
@@ -205,6 +316,62 @@ export default function UserProfileScreen() {
         </Pressable>
       </Modal>
     </>
+  );
+}
+
+function ShowRail({
+  shows,
+  onOpen,
+}: {
+  shows: ShowSummary[];
+  onOpen: (showId: number) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 12, paddingRight: 4 }}
+    >
+      {shows.map((s) => (
+        <Bouncy
+          key={s.showId}
+          onPress={() => onOpen(s.showId)}
+          scaleTo={0.94}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${s.name}`}
+          style={{ width: 86 }}
+        >
+          <Poster src={s.posterUrl} name={s.name} width={86} height={124} radius={10} />
+          <Text
+            numberOfLines={1}
+            style={{ color: colors.fg, fontSize: 11, fontFamily: fonts.displayMedium, marginTop: 5 }}
+          >
+            {s.name}
+          </Text>
+          <Text style={{ color: colors.faint, fontSize: 10 }}>
+            {s.episodes} ep{s.episodes === 1 ? "" : "s"}
+          </Text>
+        </Bouncy>
+      ))}
+    </ScrollView>
+  );
+}
+
+function ProfileStat({ n, label }: { n: number; label: string }) {
+  return (
+    <View style={{ flex: 1, alignItems: "center" }}>
+      <Text
+        style={{
+          color: colors.fg,
+          fontFamily: fonts.display,
+          fontSize: 20,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {n.toLocaleString()}
+      </Text>
+      <Text style={{ color: colors.faint, fontSize: 11 }}>{label}</Text>
+    </View>
   );
 }
 

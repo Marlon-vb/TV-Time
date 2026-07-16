@@ -63,6 +63,10 @@ export default function StarRating({
             const next = Math.min(5, Math.max(0, rating + step));
             onChange(next === 0 ? null : next);
           },
+          // Swallow VoiceOver's double-tap: without this it synthesizes a
+          // touch at the container's center, silently setting ~3 stars when
+          // the user only meant to inspect the control.
+          onAccessibilityTap: () => {},
         } as const);
 
   return (

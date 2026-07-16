@@ -84,7 +84,14 @@ export default function CheckButton({
               justifyContent: "center",
             }}
           >
-            <Ionicons name="checkmark-sharp" size={size * 0.5} color={colors.faint} />
+            {/* Deliberately near-invisible: a hint of where the mark will
+                land, not a mark — colors.faint got brightened for text and
+                would read as "already watched" here. */}
+            <Ionicons
+              name="checkmark-sharp"
+              size={size * 0.5}
+              color={colors.lineStrong}
+            />
           </Animated.View>
         )}
       </Animated.View>

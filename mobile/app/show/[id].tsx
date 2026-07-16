@@ -6,6 +6,7 @@ import {
   Pressable,
   Share,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useRef } from "react";
@@ -18,9 +19,9 @@ import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
-import { ratingLabel } from "@/components/StarRating";
+import StarRating, { ratingLabel } from "@/components/StarRating";
 import FriendsWatchedRow from "@/components/FriendsWatchedRow";
-import { ProgressBar, card } from "@/components/ui";
+import { ProgressBar, card, sectionLabel } from "@/components/ui";
 import {
   colors,
   fonts,
@@ -343,13 +344,16 @@ export default function ShowScreen() {
                     }}
                   />
                 )}
-                {behind === 0 && watched > 0 && (
+                {/* aired.length, not the watched count — rewatchShow only
+                    bumps aired episodes, and imports can leave unaired rows
+                    marked watched that would inflate the promised number. */}
+                {behind === 0 && aired.length > 0 && (
                   <ActionButton
                     label="Log a rewatch"
                     onPress={() => {
                       Alert.alert(
                         "Log a rewatch?",
-                        `This adds one more watch to every aired episode (${watched} episodes) and moves them to today.`,
+                        `This adds one more watch to every aired episode (${aired.length} episodes) and moves them to today.`,
                         [
                           { text: "Cancel", style: "cancel" },
                           {
@@ -401,6 +405,14 @@ export default function ShowScreen() {
             </View>
           )}
 
+          {/* Your show rating + private notes */}
+          {followed && (
+            <ShowRatingCard
+              show={show}
+              onChanged={reload}
+            />
+          )}
+
           {/* Friends who watched this show */}
           {followed && <FriendsWatchedRow showId={show.id} />}
 
@@ -447,6 +459,8 @@ function remoteToRow(r: RemoteShow): ShowRow {
     followed_at: "",
     archived: 0,
     last_synced_at: null,
+    rating: null,
+    review: null,
   };
 }
 
@@ -678,6 +692,72 @@ function SeasonList({
       <Text style={{ color: colors.faint, fontSize: 11, textAlign: "center" }}>
         Tip: long-press an episode to mark everything up to it as watched
       </Text>
+    </View>
+  );
+}
+
+/** Show-level star rating (shared to the feed) + private notes (local only). */
+function ShowRatingCard({
+  show,
+  onChanged,
+}: {
+  show: ShowRow;
+  onChanged: () => void;
+}) {
+  const [notes, setNotes] = useState(show.review ?? "");
+
+  const rate = (next: number | null) => {
+    repo.setShowRating(show.id, next);
+    onChanged();
+    void social.recordShowRating(show, next); // no-op signed out
+  };
+
+  const saveNotes = () => {
+    repo.setShowReview(show.id, notes);
+    onChanged();
+  };
+
+  return (
+    <View style={{ ...card, padding: 14, gap: 10 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text style={sectionLabel}>YOUR RATING</Text>
+        {show.rating != null && (
+          <Text style={{ color: colors.accent, fontFamily: fonts.display, fontSize: 14 }}>
+            {ratingLabel(show.rating)}
+            <Text style={{ color: colors.faint, fontSize: 11 }}> / 5</Text>
+          </Text>
+        )}
+      </View>
+      <View style={{ alignItems: "center" }}>
+        <StarRating value={show.rating} onChange={rate} size={32} />
+      </View>
+      <TextInput
+        value={notes}
+        onChangeText={setNotes}
+        onBlur={saveNotes}
+        placeholder="Private notes — only you see these…"
+        placeholderTextColor={colors.faint}
+        multiline
+        style={{
+          color: colors.fg,
+          fontSize: 13,
+          lineHeight: 19,
+          backgroundColor: colors.raised,
+          borderWidth: 1,
+          borderColor: colors.line,
+          borderRadius: radius.sm,
+          paddingHorizontal: 12,
+          paddingVertical: 9,
+          minHeight: 40,
+          maxHeight: 120,
+        }}
+      />
     </View>
   );
 }

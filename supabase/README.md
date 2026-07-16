@@ -34,6 +34,50 @@ need to set up; it's free to start and stays free until you have real scale.
 3. Copy the **anon / public** API key (a long token labeled `anon` `public`).
 4. Send me both — I'll wire them into the app.
 
+## Push notifications (optional, ~5 minutes)
+
+Sends a real iPhone push when someone follows you, likes your comment, or
+comments on an episode you commented on. Three pieces: an Edge Function that
+talks to Expo's push API, database triggers that call it, and a shared
+secret between the two.
+
+You'll need the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
+(`brew install supabase/tap/supabase`), logged in with `supabase login`.
+
+```bash
+# from the repo root — <project-ref> is the id in your project's URL
+supabase link --project-ref <project-ref>
+
+# 1. Make up a long random secret and store it for the function
+supabase secrets set NOTIFY_SECRET=<paste a long random string>
+
+# 2. Deploy the function (no JWT check — the secret gates it instead)
+supabase functions deploy notify --no-verify-jwt
+```
+
+Then in the **SQL Editor**:
+
+1. Run [`notifications.sql`](./notifications.sql) (safe to re-run any time).
+2. Point it at your function with the SAME secret from step 1:
+
+```sql
+insert into public.notify_config (function_url, secret)
+values (
+  'https://<project-ref>.supabase.co/functions/v1/notify',
+  '<the same random string>'
+)
+on conflict (single) do update
+  set function_url = excluded.function_url, secret = excluded.secret;
+```
+
+That's it — pushes go out to any device that has signed in and allowed
+notifications. Until `notify_config` has a row, the triggers silently do
+nothing, so you can run `notifications.sql` early without breaking anything.
+
+> The Edge Function uses the service-role key **inside Supabase's own
+> servers** (they inject it into the function's environment). You never
+> copy or paste it anywhere, and it's never in the app.
+
 ## Security notes (important)
 
 - The **anon / public key is meant to be embedded in the app.** It's safe to

@@ -255,6 +255,7 @@ drop function if exists public.episode_stats(integer, integer, integer);
 drop function if exists public.character_vote_tally(integer, integer, integer);
 drop function if exists public.also_watched(integer[], integer);
 drop function if exists public.delete_account();
+drop function if exists public.profile_watch_summary(uuid);
 
 create or replace function public.find_friends(phone_hashes text[], email_hashes text[])
 returns setof public.profiles
@@ -268,7 +269,14 @@ language sql security definer set search_path = public as $$
     );
 $$;
 
-create or replace function public.feed(limit_count integer default 50, before timestamptz default now())
+-- Signature changed (added before_id) — drop the old overload or PostgREST
+-- sees two ambiguous feed() functions.
+drop function if exists public.feed(integer, timestamptz);
+create or replace function public.feed(
+  limit_count integer default 50,
+  before timestamptz default now(),
+  before_id uuid default null
+)
 returns table (
   id uuid, user_id uuid, username text, display_name text, avatar_url text,
   type text, show_id integer, show_name text, poster_url text,
@@ -283,8 +291,11 @@ language sql stable security invoker set search_path = public as $$
   where (a.user_id = auth.uid()
          or a.user_id in (select followee_id from public.follows where follower_id = auth.uid()))
     and a.user_id not in (select blocked_id from public.blocks where blocker_id = auth.uid())
-    and a.created_at < before
-  order by a.created_at desc
+    -- created_at isn't unique; the id tiebreaker keeps pagination from
+    -- skipping the rest of a same-timestamp run at a page boundary.
+    and (a.created_at < before
+         or (before_id is not null and a.created_at = before and a.id < before_id))
+  order by a.created_at desc, a.id desc
   limit least(limit_count, 100);
 $$;
 
@@ -302,6 +313,20 @@ language sql stable security invoker set search_path = public as $$
     and w.user_id in (select followee_id from public.follows where follower_id = auth.uid())
     and (p_season is null or w.season = p_season)
     and (p_episode is null or w.episode = p_episode);
+$$;
+
+-- A profile's shows with watched-episode counts, most-watched first.
+-- SECURITY INVOKER on purpose: watched_episodes RLS is follower-scoped, so
+-- this returns rows only for yourself and people you follow — a stranger's
+-- profile stays private without any extra checks here.
+create or replace function public.profile_watch_summary(p_user_id uuid)
+returns table (show_id integer, episodes integer)
+language sql stable security invoker set search_path = public as $$
+  select show_id, count(*)::integer as episodes
+  from public.watched_episodes
+  where user_id = p_user_id
+  group by show_id
+  order by episodes desc;
 $$;
 
 -- Community rating for an episode: average + count across everyone.

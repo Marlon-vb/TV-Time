@@ -13,15 +13,37 @@ import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
-import { card } from "@/components/ui";
+import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
 import * as repo from "@/lib/repo";
+import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
 import type { RemoteShow } from "@/lib/types";
 
 type Result = RemoteShow & { followed: boolean };
+
+const AIRING_CACHE_KEY = "airing_today_cache_v1";
+
+/** Tonight's popular US schedule, cached per calendar day. */
+async function airingTonight(): Promise<RemoteShow[]> {
+  const today = new Date().toDateString();
+  try {
+    const raw = getSetting(AIRING_CACHE_KEY);
+    if (raw) {
+      const cached = JSON.parse(raw) as { date: string; shows: RemoteShow[] };
+      if (cached.date === today && cached.shows.length > 0) return cached.shows;
+    }
+  } catch {
+    // corrupt cache — refetch below
+  }
+  const shows = await tvmaze.getAiringToday(12);
+  if (shows.length > 0) {
+    setSetting(AIRING_CACHE_KEY, JSON.stringify({ date: today, shows }));
+  }
+  return shows;
+}
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -34,6 +56,7 @@ export default function DiscoverScreen() {
   const generation = useRef(0);
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [recsLoading, setRecsLoading] = useState(true);
+  const [tonight, setTonight] = useState<RemoteShow[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -44,6 +67,14 @@ export default function DiscoverScreen() {
         setRecsLoading(false);
       }
     })();
+    // Independent of recommendations — one cheap request, cached for the day.
+    airingTonight()
+      .then((shows) => {
+        if (alive) setTonight(shows);
+      })
+      .catch(() => {
+        // offline — the rail simply doesn't render
+      });
     return () => {
       alive = false;
     };
@@ -144,56 +175,29 @@ export default function DiscoverScreen() {
               {recsLoading ? (
                 <ActivityIndicator color={colors.accent} />
               ) : recs.length > 0 ? (
-                <View style={{ gap: 10 }}>
-                  <Text
-                    style={{
-                      color: colors.muted,
-                      fontSize: 11,
-                      fontFamily: fonts.displayMedium,
-                      letterSpacing: 1.2,
-                    }}
-                  >
-                    RECOMMENDED FOR YOU
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 12, paddingRight: 8, paddingBottom: 2 }}
-                  >
-                    {recs.map((r) => (
-                      <Bouncy
-                        key={r.showId}
-                        onPress={() => router.push(`/show/${r.showId}` as never)}
-                        scaleTo={0.94}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Open ${r.name}`}
-                        style={{ width: 108 }}
-                      >
-                        <Poster src={r.posterUrl} name={r.name} width={108} height={156} radius={12} />
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            color: colors.fg,
-                            fontSize: 12,
-                            fontFamily: fonts.displayMedium,
-                            marginTop: 6,
-                          }}
-                        >
-                          {r.name}
-                        </Text>
-                        {r.reason && (
-                          <Text
-                            numberOfLines={1}
-                            style={{ color: colors.faint, fontSize: 10, marginTop: 1 }}
-                          >
-                            {r.reason}
-                          </Text>
-                        )}
-                      </Bouncy>
-                    ))}
-                  </ScrollView>
-                </View>
+                <Rail
+                  title="RECOMMENDED FOR YOU"
+                  items={recs.map((r) => ({
+                    id: r.showId,
+                    name: r.name,
+                    posterUrl: r.posterUrl,
+                    sub: r.reason,
+                  }))}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
               ) : null}
+              {tonight.length > 0 && (
+                <Rail
+                  title="AIRING TONIGHT"
+                  items={tonight.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                    posterUrl: s.posterUrl,
+                    sub: s.network,
+                  }))}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
+              )}
             </View>
           )}
           {status === "loading" && (
@@ -268,5 +272,59 @@ export default function DiscoverScreen() {
         </Bouncy>
       )}
     />
+  );
+}
+
+/** Horizontal poster rail with a section label — recommendations, trending. */
+function Rail({
+  title,
+  items,
+  onOpen,
+}: {
+  title: string;
+  items: { id: number; name: string; posterUrl: string | null; sub?: string | null }[];
+  onOpen: (id: number) => void;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={sectionLabel}>{title}</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 12, paddingRight: 8, paddingBottom: 2 }}
+      >
+        {items.map((r) => (
+          <Bouncy
+            key={r.id}
+            onPress={() => onOpen(r.id)}
+            scaleTo={0.94}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${r.name}`}
+            style={{ width: 108 }}
+          >
+            <Poster src={r.posterUrl} name={r.name} width={108} height={156} radius={12} />
+            <Text
+              numberOfLines={1}
+              style={{
+                color: colors.fg,
+                fontSize: 12,
+                fontFamily: fonts.displayMedium,
+                marginTop: 6,
+              }}
+            >
+              {r.name}
+            </Text>
+            {r.sub ? (
+              <Text
+                numberOfLines={1}
+                style={{ color: colors.faint, fontSize: 10, marginTop: 1 }}
+              >
+                {r.sub}
+              </Text>
+            ) : null}
+          </Bouncy>
+        ))}
+      </ScrollView>
+    </View>
   );
 }

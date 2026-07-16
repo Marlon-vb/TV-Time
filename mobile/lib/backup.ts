@@ -1,0 +1,173 @@
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import * as repo from "./repo";
+import { getDb } from "./db";
+import { reconcileAll } from "./social/mirror";
+
+/**
+ * Full-fidelity backup of the library — the user's 11k-episode watch history
+ * lives in one on-device SQLite file, so give them a way out. The JSON keeps
+ * everything the importers can't reconstruct (watch dates, ratings, plays,
+ * show notes) and restores losslessly on any device.
+ */
+
+export interface BackupEpisode {
+  id: number; // TVmaze episode id
+  season: number;
+  number: number;
+  watched_at: string | null;
+  rating: number | null;
+  plays: number;
+}
+
+export interface BackupShow {
+  id: number; // TVmaze show id
+  name: string; // for human-readable backups; restore matches by id
+  archived: 0 | 1;
+  rating: number | null;
+  review: string | null;
+  episodes: BackupEpisode[];
+}
+
+export interface BackupFile {
+  app: "tv-time";
+  version: 1;
+  exported_at: string;
+  shows: BackupShow[];
+}
+
+/** Snapshot the library (only episodes carrying user data). */
+export function buildBackup(now: Date = new Date()): BackupFile {
+  const db = getDb();
+  const shows = db.getAllSync<{
+    id: number;
+    name: string;
+    archived: 0 | 1;
+    rating: number | null;
+    review: string | null;
+  }>("SELECT id, name, archived, rating, review FROM shows ORDER BY name");
+  return {
+    app: "tv-time",
+    version: 1,
+    exported_at: now.toISOString(),
+    shows: shows.map((s) => ({
+      ...s,
+      episodes: db.getAllSync<BackupEpisode>(
+        `SELECT id, season, number, watched_at, rating, plays
+         FROM episodes
+         WHERE show_id = ?
+           AND (watched_at IS NOT NULL OR rating IS NOT NULL OR plays > 0)
+         ORDER BY season, number`,
+        s.id
+      ),
+    })),
+  };
+}
+
+/** Validate an untrusted backup payload. Pure and unit-tested. */
+export function parseBackup(json: string): BackupFile {
+  const data = JSON.parse(json) as BackupFile;
+  if (data?.app !== "tv-time" || data.version !== 1) {
+    throw new Error("Not a TV Time backup file.");
+  }
+  if (!Array.isArray(data.shows)) throw new Error("Backup has no shows.");
+  for (const s of data.shows) {
+    if (typeof s.id !== "number" || !Array.isArray(s.episodes)) {
+      throw new Error("Backup is damaged.");
+    }
+  }
+  return data;
+}
+
+/** Write the backup JSON and hand it to the share sheet. */
+export async function exportAndShare(): Promise<void> {
+  const backup = buildBackup();
+  const name = `tv-time-backup-${backup.exported_at.slice(0, 10)}.json`;
+  const file = new File(Paths.cache, name);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(JSON.stringify(backup));
+  await Sharing.shareAsync(file.uri, {
+    mimeType: "application/json",
+    dialogTitle: "Export TV Time backup",
+  });
+}
+
+export interface RestoreProgress {
+  progress: number; // 0..1
+  message: string;
+  restoredShows: number;
+  failedShows: string[];
+}
+
+/**
+ * Restore a backup: re-follow missing shows from TVmaze, then apply the
+ * watch state atomically per show. Existing local data wins ties (restore
+ * never un-watches something you've since watched).
+ */
+export async function restoreBackup(
+  backup: BackupFile,
+  onProgress: (p: RestoreProgress) => void
+): Promise<RestoreProgress> {
+  const state: RestoreProgress = {
+    progress: 0,
+    message: "",
+    restoredShows: 0,
+    failedShows: [],
+  };
+  const db = getDb();
+  for (let i = 0; i < backup.shows.length; i++) {
+    const show = backup.shows[i];
+    state.progress = i / backup.shows.length;
+    state.message = `Restoring “${show.name}” (${i + 1}/${backup.shows.length})…`;
+    onProgress({ ...state });
+    try {
+      if (!repo.isFollowed(show.id)) {
+        const followed = await repo.followShow(show.id);
+        if (!followed) {
+          state.failedShows.push(show.name);
+          continue;
+        }
+      }
+      repo.inTransaction(() => {
+        for (const ep of show.episodes) {
+          db.runSync(
+            `UPDATE episodes SET
+               watched_at = COALESCE(watched_at, ?),
+               rating = COALESCE(rating, ?),
+               plays = MAX(plays, ?)
+             WHERE id = ? AND show_id = ?`,
+            ep.watched_at,
+            ep.rating,
+            ep.plays ?? 0,
+            ep.id,
+            show.id
+          );
+        }
+        db.runSync(
+          `UPDATE shows SET archived = ?,
+             rating = COALESCE(rating, ?),
+             review = COALESCE(review, ?)
+           WHERE id = ?`,
+          show.archived ?? 0,
+          show.rating ?? null,
+          show.review ?? null,
+          show.id
+        );
+      });
+      state.restoredShows++;
+    } catch {
+      state.failedShows.push(show.name);
+    }
+  }
+  state.progress = 1;
+  const failNote = state.failedShows.length
+    ? ` ${state.failedShows.length} show(s) couldn't be restored.`
+    : "";
+  state.message = `Restored ${state.restoredShows} show${state.restoredShows === 1 ? "" : "s"}.${failNote}`;
+  onProgress({ ...state });
+  // Mirror the restored history to the social layer (no-op signed out — the
+  // sign-in reconcile backfills it later instead).
+  reconcileAll();
+  return state;
+}

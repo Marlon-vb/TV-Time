@@ -17,6 +17,12 @@ import * as tmdb from "@/lib/tmdb";
 import { parseImportFiles, type ImportFile } from "@/lib/importer";
 import { runImport, type ImportProgress } from "@/lib/importRunner";
 import {
+  exportAndShare,
+  parseBackup,
+  restoreBackup,
+  type RestoreProgress,
+} from "@/lib/backup";
+import {
   notificationsEnabled,
   rescheduleAll,
   sendTestNotification,
@@ -28,6 +34,7 @@ export default function SettingsScreen() {
     <ScrollView contentContainerStyle={{ padding: 14, gap: 12 }}>
       <NotificationsSection />
       <ImportSection />
+      <BackupSection />
       <TmdbSection />
       <SyncSection />
     </ScrollView>
@@ -235,6 +242,101 @@ function ImportSection() {
           {progress.showsFailed.length > 0 && (
             <Text style={{ ...bodyText, color: colors.faint }}>
               Not matched: {progress.showsFailed.join(", ")}
+            </Text>
+          )}
+        </View>
+      )}
+      {error && (
+        <Text style={{ ...bodyText, color: colors.danger }}>{error}</Text>
+      )}
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------- backup */
+
+function BackupSection() {
+  const [exporting, setExporting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [progress, setProgress] = useState<RestoreProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const doExport = async () => {
+    setError(null);
+    setExporting(true);
+    try {
+      await exportAndShare();
+    } catch (err) {
+      setError(`Export failed: ${(err as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const doRestore = async () => {
+    setError(null);
+    const picked = await DocumentPicker.getDocumentAsync({
+      type: ["application/json", "*/*"],
+      copyToCacheDirectory: true,
+    });
+    if (picked.canceled) return;
+    setRestoring(true);
+    setProgress(null);
+    try {
+      const file = new File(picked.assets[0].uri);
+      const backup = parseBackup(await file.text());
+      await restoreBackup(backup, setProgress);
+      await rescheduleAll();
+    } catch (err) {
+      setError(`Restore failed: ${(err as Error).message}`);
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  return (
+    <Section title="Backup & restore">
+      <Text style={bodyText}>
+        Your library lives on this device. Export a backup file (shows, watch
+        dates, ratings, notes) to the Files app or iCloud Drive — and restore
+        it on a new phone. Restoring never removes anything you've already
+        watched here.
+      </Text>
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Button
+          label={exporting ? "Exporting…" : "Export backup"}
+          primary
+          disabled={exporting || restoring}
+          onPress={() => void doExport()}
+        />
+        <Button
+          label={restoring ? "Restoring…" : "Restore from backup"}
+          disabled={exporting || restoring}
+          onPress={() => void doRestore()}
+        />
+      </View>
+      {progress && (
+        <View style={{ gap: 6 }}>
+          <View
+            style={{
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: colors.overlay,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                width: `${Math.round(progress.progress * 100)}%`,
+                height: "100%",
+                backgroundColor: colors.accent,
+              }}
+            />
+          </View>
+          <Text style={bodyText}>{progress.message}</Text>
+          {progress.failedShows.length > 0 && (
+            <Text style={{ ...bodyText, color: colors.faint }}>
+              Couldn't restore: {progress.failedShows.join(", ")}
             </Text>
           )}
         </View>

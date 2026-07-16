@@ -32,11 +32,19 @@ export default function Poster({
     for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
     const hue = Math.abs(hash) % 360;
     // Scale the initials with the poster instead of a fixed 20pt that clips
-    // tiny posters and gets lost on big ones.
-    const fontSize =
+    // tiny posters and gets lost on big ones. Either dimension is enough —
+    // grids often pass width="100%" with a numeric height (posters are 2:3,
+    // so the short side ≈ height * 2/3).
+    const shortSide =
       typeof width === "number" && typeof height === "number"
-        ? Math.max(11, Math.round(Math.min(width, height) * 0.3))
-        : 20;
+        ? Math.min(width, height)
+        : typeof width === "number"
+          ? width
+          : typeof height === "number"
+            ? (height * 2) / 3
+            : null;
+    const fontSize =
+      shortSide != null ? Math.max(11, Math.round(shortSide * 0.3)) : 20;
     return (
       <View
         style={{

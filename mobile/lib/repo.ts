@@ -148,6 +148,18 @@ export function unfollowShow(showId: number): void {
   getDb().runSync("DELETE FROM shows WHERE id = ?", showId);
 }
 
+export function setShowRating(showId: number, rating: number | null): void {
+  getDb().runSync("UPDATE shows SET rating = ? WHERE id = ?", rating, showId);
+}
+
+export function setShowReview(showId: number, review: string | null): void {
+  getDb().runSync(
+    "UPDATE shows SET review = ? WHERE id = ?",
+    review?.trim() || null,
+    showId
+  );
+}
+
 export function setArchived(showId: number, archived: boolean): void {
   getDb().runSync(
     "UPDATE shows SET archived = ? WHERE id = ?",
@@ -399,6 +411,57 @@ export function listWatchedRows(
     `SELECT show_id, season, number AS episode, rating
      FROM episodes WHERE ${where}`,
     ...params
+  );
+}
+
+export interface HistoryEntry {
+  episode_id: number;
+  show_id: number;
+  show_name: string;
+  poster_url: string | null;
+  season: number;
+  number: number;
+  episode_name: string;
+  watched_at: string;
+  rating: number | null;
+}
+
+/** The watch diary: everything watched, newest first, paginated. */
+export function watchHistory(limit: number, offset: number): HistoryEntry[] {
+  return getDb().getAllSync<HistoryEntry>(
+    `SELECT e.id AS episode_id, e.show_id, s.name AS show_name, s.poster_url,
+            e.season, e.number, e.name AS episode_name, e.watched_at, e.rating
+     FROM episodes e JOIN shows s ON s.id = e.show_id
+     WHERE e.watched_at IS NOT NULL
+     ORDER BY e.watched_at DESC, e.id DESC
+     LIMIT ? OFFSET ?`,
+    limit,
+    offset
+  );
+}
+
+/** Diary edit: move a watch to a different date (stays watched). */
+export function setWatchedDate(episodeId: number, at: string): void {
+  getDb().runSync(
+    "UPDATE episodes SET watched_at = ? WHERE id = ? AND watched_at IS NOT NULL",
+    at,
+    episodeId
+  );
+}
+
+/** Local episode id for a (show, season, number) triple — used by feed links. */
+export function findEpisodeId(
+  showId: number,
+  season: number,
+  number: number
+): number | null {
+  return (
+    getDb().getFirstSync<{ id: number }>(
+      "SELECT id FROM episodes WHERE show_id = ? AND season = ? AND number = ?",
+      showId,
+      season,
+      number
+    )?.id ?? null
   );
 }
 

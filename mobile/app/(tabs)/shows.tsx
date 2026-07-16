@@ -63,7 +63,9 @@ export default function MyShowsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await repo.syncStaleShows(0, {
+      // 15-min staleness floor: back-to-back pulls must not burn TVmaze's
+      // ~20 req/10s budget re-fetching shows synced seconds ago.
+      await repo.syncStaleShows(0.25, {
         limit: 20,
         concurrency: 4,
         prioritize: "activity",

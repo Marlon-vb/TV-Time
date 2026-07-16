@@ -7,7 +7,19 @@ const BASE = "https://api.tvmaze.com";
 async function tvFetch(pathname: string): Promise<unknown | null> {
   const url = `${BASE}${pathname}`;
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    // Hard timeout: a stalled connection must fail fast, not hang a
+    // pull-to-refresh spinner indefinitely.
+    const abort = new AbortController();
+    const kill = setTimeout(() => abort.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: abort.signal,
+      });
+    } finally {
+      clearTimeout(kill);
+    }
     if (res.status === 404) return null;
     // TVmaze rate limit is ~20 requests / 10 s per IP; back off and retry.
     if ((res.status === 429 || res.status >= 500) && attempt < 4) {
@@ -101,6 +113,31 @@ export interface CastMember {
 export async function getShow(id: number): Promise<RemoteShow | null> {
   const data = await tvFetch(`/shows/${id}`);
   return data ? mapShow(data) : null;
+}
+
+/**
+ * Popular shows airing today (TVmaze schedule, ranked by its crowd-derived
+ * weight). Gives Discover something alive before a user follows anything.
+ */
+export async function getAiringToday(limit = 12): Promise<RemoteShow[]> {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const data = (await tvFetch(`/schedule?country=US`)) as any[] | null;
+  if (!data) return [];
+  const byShow = new Map<number, { show: RemoteShow; weight: number }>();
+  for (const entry of data) {
+    const s = entry?.show;
+    if (!s?.id || byShow.has(s.id)) continue;
+    byShow.set(s.id, {
+      show: mapShow(s),
+      weight: typeof s.weight === "number" ? s.weight : 0,
+    });
+  }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  return [...byShow.values()]
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, limit)
+    .map((e) => e.show)
+    .filter((s) => s.posterUrl);
 }
 
 export interface CastPerson {

@@ -88,6 +88,33 @@ export default function ProfileScreen() {
         <StatTile label="Behind" value={data.episodesBehind} accent />
       </View>
 
+      {/* Watch diary */}
+      <Bouncy
+        onPress={() => router.push("/history" as never)}
+        accessibilityRole="button"
+        accessibilityLabel="Open watch history"
+        style={{
+          ...card,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          padding: 14,
+        }}
+      >
+        <Ionicons name="time-outline" size={18} color={colors.accent} />
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }}
+          >
+            Watch history
+          </Text>
+          <Text style={{ color: colors.faint, fontSize: 11, marginTop: 1 }}>
+            Every episode, day by day — edit watch dates
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={15} color={colors.faint} />
+      </Bouncy>
+
       {/* Monthly activity */}
       {data.monthly.length > 1 && (
         <View style={{ ...card, padding: 18 }}>
@@ -269,7 +296,10 @@ function StatTile({
         }}
       >
         {display}
-        {suffix ? <Text style={{ fontSize: 14, color: colors.accent }}>{suffix}</Text> : null}
+        {/* No suffix on the em-dash — "—★" reads as a garbled rating. */}
+        {suffix && value != null ? (
+          <Text style={{ fontSize: 14, color: colors.accent }}>{suffix}</Text>
+        ) : null}
       </Text>
       <Text style={{ color: colors.muted, fontSize: 10, marginTop: 3 }}>
         {label}

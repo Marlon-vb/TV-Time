@@ -48,8 +48,9 @@ export default function WatchNextScreen() {
     try {
       // A capped, paced pass prioritizing the shows that most recently aired
       // something — what a refreshing user is actually looking for. The
-      // launch + 12-hourly background syncs keep the long tail fresh.
-      await repo.syncStaleShows(0, {
+      // launch + 12-hourly background syncs keep the long tail fresh. The
+      // 15-min staleness floor keeps back-to-back pulls off TVmaze's budget.
+      await repo.syncStaleShows(0.25, {
         limit: 20,
         concurrency: 4,
         prioritize: "activity",

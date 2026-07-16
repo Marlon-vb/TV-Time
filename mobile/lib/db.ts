@@ -117,6 +117,20 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
     );
     handle.execSync("PRAGMA user_version = 5");
   }
+  // v6: show-level star rating + private notes.
+  if (version < 6) {
+    const hasShowColumn = (col: string) =>
+      handle
+        .getAllSync<{ name: string }>("PRAGMA table_info(shows)")
+        .some((c) => c.name === col);
+    if (!hasShowColumn("rating")) {
+      handle.execSync("ALTER TABLE shows ADD COLUMN rating REAL");
+    }
+    if (!hasShowColumn("review")) {
+      handle.execSync("ALTER TABLE shows ADD COLUMN review TEXT");
+    }
+    handle.execSync("PRAGMA user_version = 6");
+  }
 }
 
 export function getDb(): SQLite.SQLiteDatabase {

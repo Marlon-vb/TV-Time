@@ -20,6 +20,7 @@ import { EmptyState, card } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
+import * as repo from "@/lib/repo";
 import { feedActivityText, shortAgo } from "@/lib/format-social";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
@@ -101,27 +102,42 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
+  // Bumped on every fresh load; an in-flight loadMore whose generation is
+  // stale by the time it resolves must not append its page onto the new
+  // list (duplicate rows, skipped activities, wrong hasMore).
+  const feedGen = useRef(0);
+
   const load = useCallback(async () => {
+    const gen = ++feedGen.current;
     try {
       const feed = await social.getFeed();
+      if (gen !== feedGen.current) return;
       setItems(feed);
       setHasMore(feed.length >= 50);
       setError(false);
     } catch {
+      if (gen !== feedGen.current) return;
       setError(true); // offline/error must not masquerade as "no activity"
     }
     setLoading(false);
     setRefreshing(false);
   }, []);
 
-  // Infinite scroll via the feed's created_at cursor.
+  // Infinite scroll via the feed's (created_at, id) cursor.
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || items.length === 0) return;
+    const gen = feedGen.current;
     setLoadingMore(true);
     try {
-      const older = await social.getFeed(items[items.length - 1].created_at);
-      setItems((prev) => [...prev, ...older]);
-      setHasMore(older.length >= 50);
+      const last = items[items.length - 1];
+      const older = await social.getFeed({
+        createdAt: last.created_at,
+        id: last.id,
+      });
+      if (gen === feedGen.current) {
+        setItems((prev) => [...prev, ...older]);
+        setHasMore(older.length >= 50);
+      }
     } catch {
       /* transient — the next scroll retries */
     }
@@ -175,8 +191,24 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
       }
       renderItem={({ item }) => {
         const name = item.display_name || item.username;
+        // The whole row links somewhere useful: the episode when we have it
+        // locally, otherwise the show.
+        const openTarget = () => {
+          if (item.show_id == null) return;
+          if (item.season != null && item.episode != null) {
+            const epId = repo.findEpisodeId(item.show_id, item.season, item.episode);
+            if (epId != null) {
+              router.push(`/episode/${epId}` as never);
+              return;
+            }
+          }
+          router.push(`/show/${item.show_id}` as never);
+        };
         return (
-          <View style={{ ...card, flexDirection: "row", gap: 12, padding: 12, alignItems: "center" }}>
+          <Pressable
+            onPress={openTarget}
+            style={{ ...card, flexDirection: "row", gap: 12, padding: 12, alignItems: "center" }}
+          >
             <Pressable onPress={() => onOpenUser(item.username)}>
               <Avatar name={name} url={item.avatar_url} size={40} />
             </Pressable>
@@ -192,11 +224,9 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
               </Text>
             </View>
             {item.show_id != null && (
-              <Pressable onPress={() => router.push(`/show/${item.show_id}` as never)}>
-                <Poster src={item.poster_url} name={item.show_name ?? ""} width={34} height={50} radius={6} />
-              </Pressable>
+              <Poster src={item.poster_url} name={item.show_name ?? ""} width={34} height={50} radius={6} />
             )}
-          </View>
+          </Pressable>
         );
       }}
     />

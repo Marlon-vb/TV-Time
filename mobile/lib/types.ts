@@ -15,6 +15,8 @@ export interface ShowRow {
   followed_at: string;
   archived: 0 | 1;
   last_synced_at: string | null;
+  rating: number | null; // your show-level star rating (½–5)
+  review: string | null; // private notes — never leaves the device
 }
 
 export interface EpisodeRow {
