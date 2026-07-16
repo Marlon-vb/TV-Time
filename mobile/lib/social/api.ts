@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { normalizeEmail, normalizePhone } from "./hash";
 import type {
   ActivityInput,
+  CharacterVoteTally,
   Comment,
   EpisodeStats,
   FeedItem,
@@ -335,6 +336,77 @@ export async function uploadCommentPhoto(
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------- character votes
+
+/** The character id I voted best-in-episode, or null if I haven't voted. */
+export async function getMyCharacterVote(
+  showId: number,
+  season: number,
+  episode: number
+): Promise<number | null> {
+  const me = await uid();
+  if (!me) return null;
+  const { data } = await supabase
+    .from("character_votes")
+    .select("character_id")
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode)
+    .maybeSingle();
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  return (data as any)?.character_id ?? null;
+}
+
+/** Cast one vote for the episode's best character (replaces any prior vote). */
+export async function voteCharacter(
+  showId: number,
+  season: number,
+  episode: number,
+  characterId: number,
+  characterName: string
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase.from("character_votes").upsert({
+    user_id: me,
+    show_id: showId,
+    season,
+    episode,
+    character_id: characterId,
+    character_name: characterName,
+  });
+}
+
+export async function clearCharacterVote(
+  showId: number,
+  season: number,
+  episode: number
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("character_votes")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode);
+}
+
+export async function characterVoteTally(
+  showId: number,
+  season: number,
+  episode: number
+): Promise<CharacterVoteTally[]> {
+  const { data } = await supabase.rpc("character_vote_tally", {
+    p_show_id: showId,
+    p_season: season,
+    p_episode: episode,
+  });
+  return (data as CharacterVoteTally[]) ?? [];
 }
 
 // ------------------------------------------------------- push notifications

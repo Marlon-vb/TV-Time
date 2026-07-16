@@ -60,3 +60,10 @@ export interface EpisodeStats {
   ratingCount: number;
   watchCount: number;
 }
+
+/** A row from the character_vote_tally() RPC — votes for one character. */
+export interface CharacterVoteTally {
+  character_id: number;
+  character_name: string;
+  votes: number;
+}

@@ -24,6 +24,7 @@ import { episodeShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
 import StarRating, { ratingLabel } from "@/components/StarRating";
 import EpisodeSocial from "@/components/EpisodeSocial";
+import CharacterVotes from "@/components/CharacterVotes";
 import * as social from "@/lib/social/api";
 
 export default function EpisodeScreen() {
@@ -346,6 +347,15 @@ export default function EpisodeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
           </Bouncy>
+
+          {/* Best character in this episode (vote + leaderboard) */}
+          {isAired && (
+            <CharacterVotes
+              showId={show.id}
+              season={episode.season}
+              episode={episode.number}
+            />
+          )}
 
           {/* Social: community rating, friends who watched, comments */}
           <EpisodeSocial

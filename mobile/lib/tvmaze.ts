@@ -89,3 +89,42 @@ export async function singleSearch(name: string): Promise<RemoteShow | null> {
   );
   return data ? mapShow(data) : null;
 }
+
+export interface CastMember {
+  characterId: number;
+  characterName: string;
+  personName: string;
+  image: string | null;
+}
+
+/**
+ * Show cast (character + the actor who plays them). Powers per-episode
+ * character votes. TVmaze can list a character twice (recasts, dual roles);
+ * we keep the first and dedupe by character id.
+ */
+export async function getCast(showId: number): Promise<CastMember[]> {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const data = (await tvFetch(`/shows/${showId}/cast`)) as any[] | null;
+  if (!data) return [];
+  const seen = new Set<number>();
+  const cast: CastMember[] = [];
+  for (const entry of data) {
+    const character = entry?.character;
+    const person = entry?.person;
+    if (!character?.id || !character?.name) continue;
+    if (seen.has(character.id)) continue;
+    seen.add(character.id);
+    cast.push({
+      characterId: character.id,
+      characterName: character.name,
+      personName: person?.name ?? "",
+      image:
+        character.image?.medium ??
+        character.image?.original ??
+        person?.image?.medium ??
+        null,
+    });
+  }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  return cast;
+}
