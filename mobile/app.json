@@ -20,7 +20,8 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSContactsUsageDescription": "TV Time can match your contacts to help you find friends who already use the app. Your contacts are hashed on your device and never uploaded in readable form."
+        "NSContactsUsageDescription": "TV Time can match your contacts to help you find friends who already use the app. Your contacts are hashed on your device and never uploaded in readable form.",
+        "NSPhotoLibraryUsageDescription": "TV Time lets you attach a photo to your episode comments."
       }
     },
     "android": {

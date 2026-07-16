@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS episodes (
   summary TEXT,
   image_url TEXT,
   watched_at TEXT,
-  rating REAL
+  rating REAL,
+  plays INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
@@ -71,6 +72,19 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
       handle.execSync("ALTER TABLE episodes ADD COLUMN rating REAL");
     }
     handle.execSync("PRAGMA user_version = 2");
+  }
+  // v3: rewatch tracking (times watched per episode).
+  if (version < 3) {
+    if (!hasColumn("plays")) {
+      handle.execSync(
+        "ALTER TABLE episodes ADD COLUMN plays INTEGER NOT NULL DEFAULT 0"
+      );
+      // Backfill: anything already watched counts as one play.
+      handle.execSync(
+        "UPDATE episodes SET plays = 1 WHERE watched_at IS NOT NULL"
+      );
+    }
+    handle.execSync("PRAGMA user_version = 3");
   }
 }
 

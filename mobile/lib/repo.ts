@@ -176,10 +176,37 @@ export async function syncStaleShows(
 // ------------------------------------------------------------------- watching
 
 export function markEpisode(episodeId: number, watched: boolean): void {
+  if (watched) {
+    getDb().runSync(
+      "UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1) WHERE id = ?",
+      nowIso(),
+      episodeId
+    );
+  } else {
+    getDb().runSync(
+      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE id = ?",
+      episodeId
+    );
+  }
+}
+
+/** Log another watch of an already-seen episode (rewatch). */
+export function logRewatch(episodeId: number): void {
   getDb().runSync(
-    "UPDATE episodes SET watched_at = ? WHERE id = ?",
-    watched ? nowIso() : null,
+    "UPDATE episodes SET plays = MAX(plays, 1) + 1, watched_at = ? WHERE id = ?",
+    nowIso(),
     episodeId
+  );
+}
+
+/** Start a fresh rewatch of a whole show: +1 play on every aired episode. */
+export function rewatchShow(showId: number): void {
+  getDb().runSync(
+    `UPDATE episodes SET plays = MAX(plays, 1) + 1, watched_at = ?
+     WHERE show_id = ? AND airstamp IS NOT NULL AND airstamp <= ?`,
+    nowIso(),
+    showId,
+    nowIso()
   );
 }
 
@@ -190,14 +217,14 @@ export function markSeason(
 ): void {
   if (watched) {
     getDb().runSync(
-      "UPDATE episodes SET watched_at = ? WHERE show_id = ? AND season = ? AND watched_at IS NULL",
+      "UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1) WHERE show_id = ? AND season = ? AND watched_at IS NULL",
       nowIso(),
       showId,
       season
     );
   } else {
     getDb().runSync(
-      "UPDATE episodes SET watched_at = NULL WHERE show_id = ? AND season = ?",
+      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE show_id = ? AND season = ?",
       showId,
       season
     );
@@ -207,7 +234,7 @@ export function markSeason(
 export function markShow(showId: number, watched: boolean): void {
   if (watched) {
     getDb().runSync(
-      `UPDATE episodes SET watched_at = ?
+      `UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1)
        WHERE show_id = ? AND watched_at IS NULL
          AND airstamp IS NOT NULL AND airstamp <= ?`,
       nowIso(),
@@ -216,7 +243,7 @@ export function markShow(showId: number, watched: boolean): void {
     );
   } else {
     getDb().runSync(
-      "UPDATE episodes SET watched_at = NULL WHERE show_id = ?",
+      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE show_id = ?",
       showId
     );
   }
@@ -231,7 +258,7 @@ export function markUpTo(showId: number, episodeId: number): void {
   );
   if (!target) return;
   db.runSync(
-    `UPDATE episodes SET watched_at = ?
+    `UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1)
      WHERE show_id = ? AND watched_at IS NULL
        AND (season < ? OR (season = ? AND number <= ?))`,
     nowIso(),
@@ -292,11 +319,13 @@ export function setRating(episodeId: number, rating: number | null): void {
   getDb().runSync(
     `UPDATE episodes
      SET rating = ?,
-         watched_at = CASE WHEN ? IS NOT NULL THEN COALESCE(watched_at, ?) ELSE watched_at END
+         watched_at = CASE WHEN ? IS NOT NULL THEN COALESCE(watched_at, ?) ELSE watched_at END,
+         plays = CASE WHEN ? IS NOT NULL THEN MAX(plays, 1) ELSE plays END
      WHERE id = ?`,
     rating,
     rating,
     new Date().toISOString(),
+    rating,
     episodeId
   );
 }

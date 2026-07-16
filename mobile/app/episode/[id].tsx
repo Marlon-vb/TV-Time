@@ -23,6 +23,8 @@ import { findNeighbors } from "@/lib/episodeNav";
 import { episodeShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
 import StarRating, { ratingLabel } from "@/components/StarRating";
+import EpisodeSocial from "@/components/EpisodeSocial";
+import * as social from "@/lib/social/api";
 
 export default function EpisodeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -61,11 +63,50 @@ export default function EpisodeScreen() {
   const toggleWatched = (nextWatched: boolean) => {
     repo.markEpisode(episode.id, nextWatched);
     reload();
+    // Mirror to the social layer (no-ops when signed out).
+    if (nextWatched) {
+      void social.recordWatch({
+        showId: show.id,
+        season: episode.season,
+        episode: episode.number,
+        rating: episode.rating,
+        showName: show.name,
+        posterUrl: show.poster_url,
+        episodeName: episode.name,
+      });
+    } else {
+      void social.unrecordWatch(show.id, episode.season, episode.number);
+    }
   };
 
   const rate = (next: number | null) => {
     repo.setRating(episode.id, next);
     reload();
+    if (next != null) {
+      void social.recordWatch({
+        showId: show.id,
+        season: episode.season,
+        episode: episode.number,
+        rating: next,
+        showName: show.name,
+        posterUrl: show.poster_url,
+        episodeName: episode.name,
+      });
+    }
+  };
+
+  const rewatch = () => {
+    repo.logRewatch(episode.id);
+    reload();
+    void social.recordWatch({
+      showId: show.id,
+      season: episode.season,
+      episode: episode.number,
+      rating: episode.rating,
+      showName: show.name,
+      posterUrl: show.poster_url,
+      episodeName: episode.name,
+    });
   };
 
   const share = async () => {
@@ -185,7 +226,15 @@ export default function EpisodeScreen() {
               {isWatched && episode.watched_at && (
                 <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
                   on {fmtDate(episode.watched_at)}
+                  {episode.plays > 1 ? ` · watched ${episode.plays}×` : ""}
                 </Text>
+              )}
+              {isWatched && (
+                <Pressable onPress={rewatch} hitSlop={4} style={{ marginTop: 4 }}>
+                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
+                    + Log a rewatch
+                  </Text>
+                </Pressable>
               )}
             </View>
             <Bouncy
@@ -297,6 +346,13 @@ export default function EpisodeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.faint} />
           </Bouncy>
+
+          {/* Social: community rating, friends who watched, comments */}
+          <EpisodeSocial
+            showId={show.id}
+            season={episode.season}
+            episode={episode.number}
+          />
 
           {/* Prev / next */}
           <View style={{ flexDirection: "row", gap: 10 }}>

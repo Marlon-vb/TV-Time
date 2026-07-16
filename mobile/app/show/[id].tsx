@@ -19,6 +19,7 @@ import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
 import { ratingLabel } from "@/components/StarRating";
+import FriendsWatchedRow from "@/components/FriendsWatchedRow";
 import { ProgressBar, card } from "@/components/ui";
 import {
   colors,
@@ -26,7 +27,7 @@ import {
   radius,
   scrimGradient,
 } from "@/lib/theme";
-import { epCode, fmtDate } from "@/lib/format";
+import { epCode, fmtDate, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import { getSetting } from "@/lib/db";
@@ -116,6 +117,16 @@ export default function ShowScreen() {
   const aired = episodes.filter((e) => e.airstamp && e.airstamp <= nowIso);
   const watched = episodes.filter((e) => e.watched_at).length;
   const behind = aired.filter((e) => !e.watched_at).length;
+
+  // Renewal / next-episode line (the "is it coming back?" answer).
+  const nextEp = episodes.find((e) => e.airstamp && e.airstamp > nowIso);
+  const renewalLine = nextEp
+    ? `Returning · next episode ${relativeDay(nextEp.airstamp)}`
+    : show.status === "Ended"
+      ? "This show has ended"
+      : show.status === "Running" || show.status === "To Be Determined"
+        ? "Awaiting a new episode date"
+        : null;
   const genres = JSON.parse(show.genres || "[]") as string[];
   const backdrop = show.backdrop_url ?? show.poster_url;
 
@@ -292,6 +303,15 @@ export default function ShowScreen() {
                     }}
                   />
                 )}
+                {behind === 0 && watched > 0 && (
+                  <ActionButton
+                    label="Log a rewatch"
+                    onPress={() => {
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      change(() => repo.rewatchShow(showId));
+                    }}
+                  />
+                )}
                 <ActionButton
                   label={show.archived === 1 ? "Unarchive" : "Archive"}
                   onPress={() =>
@@ -314,6 +334,21 @@ export default function ShowScreen() {
               </>
             )}
           </View>
+
+          {/* Renewal / next episode */}
+          {renewalLine && (
+            <View style={{ ...card, flexDirection: "row", alignItems: "center", gap: 8, padding: 12 }}>
+              <Ionicons
+                name={nextEp ? "calendar" : show.status === "Ended" ? "checkmark-done" : "time"}
+                size={16}
+                color={colors.accent}
+              />
+              <Text style={{ color: colors.fg, fontSize: 13 }}>{renewalLine}</Text>
+            </View>
+          )}
+
+          {/* Friends who watched this show */}
+          {followed && <FriendsWatchedRow showId={show.id} />}
 
           {/* Seasons */}
           {followed ? (

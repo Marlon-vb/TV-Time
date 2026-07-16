@@ -1,8 +1,16 @@
 import * as Contacts from "expo-contacts";
 import * as Crypto from "expo-crypto";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
 import { normalizeEmail, normalizePhone } from "./hash";
-import type { ActivityInput, Comment, FeedItem, Profile } from "./types";
+import type {
+  ActivityInput,
+  Comment,
+  EpisodeStats,
+  FeedItem,
+  Profile,
+} from "./types";
 
 /**
  * All reads/writes for the social layer. Every call is guarded server-side by
@@ -137,6 +145,93 @@ export async function getFeed(before?: string): Promise<FeedItem[]> {
   return (data as FeedItem[]) ?? [];
 }
 
+// -------------------------------------------------------- watched-episode sync
+
+/**
+ * Mirror a local watch/rating to the server so friends see it (activity feed,
+ * friends-who-watched, community rating). Called from the watch/rate actions
+ * only when signed in; silently no-ops otherwise.
+ */
+export async function recordWatch(input: {
+  showId: number;
+  season: number;
+  episode: number;
+  rating?: number | null;
+  showName: string;
+  posterUrl: string | null;
+  episodeName?: string | null;
+}): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase.from("watched_episodes").upsert({
+    user_id: me,
+    show_id: input.showId,
+    season: input.season,
+    episode: input.episode,
+    rating: input.rating ?? null,
+  });
+  await publishActivity({
+    type: input.rating != null ? "rated" : "watched",
+    showId: input.showId,
+    showName: input.showName,
+    posterUrl: input.posterUrl,
+    season: input.season,
+    episode: input.episode,
+    episodeName: input.episodeName ?? null,
+    rating: input.rating ?? null,
+  });
+}
+
+export async function unrecordWatch(
+  showId: number,
+  season: number,
+  episode: number
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("watched_episodes")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode);
+}
+
+export async function friendsWhoWatched(
+  showId: number,
+  season?: number,
+  episode?: number
+): Promise<Profile[]> {
+  const { data } = await supabase.rpc("friends_who_watched", {
+    p_show_id: showId,
+    p_season: season ?? null,
+    p_episode: episode ?? null,
+  });
+  return (data as Profile[]) ?? [];
+}
+
+export async function episodeStats(
+  showId: number,
+  season: number,
+  episode: number
+): Promise<EpisodeStats> {
+  const { data } = await supabase
+    .rpc("episode_stats", {
+      p_show_id: showId,
+      p_season: season,
+      p_episode: episode,
+    })
+    .maybeSingle();
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const r = data as any;
+  return {
+    avgRating: r?.avg_rating ?? null,
+    ratingCount: r?.rating_count ?? 0,
+    watchCount: r?.watch_count ?? 0,
+  };
+}
+
 // ------------------------------------------------------------------ comments
 
 export async function getComments(
@@ -144,19 +239,32 @@ export async function getComments(
   season: number,
   episode: number
 ): Promise<Comment[]> {
+  const me = await uid();
   const { data } = await supabase
     .from("comments")
-    .select("*, author:profiles!comments_user_id_fkey(username,display_name,avatar_url)")
+    .select(
+      "*, author:profiles!comments_user_id_fkey(username,display_name,avatar_url), comment_votes(user_id)"
+    )
     .eq("show_id", showId)
     .eq("season", season)
     .eq("episode", episode)
     .order("created_at", { ascending: false });
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   return ((data as any[]) ?? []).map((c) => ({
-    ...c,
+    id: c.id,
+    user_id: c.user_id,
+    show_id: c.show_id,
+    season: c.season,
+    episode: c.episode,
+    body: c.body,
+    image_url: c.image_url,
+    created_at: c.created_at,
     username: c.author?.username,
     display_name: c.author?.display_name,
     avatar_url: c.author?.avatar_url,
+    upvotes: (c.comment_votes ?? []).length,
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    upvoted: (c.comment_votes ?? []).some((v: any) => v.user_id === me),
   }));
 }
 
@@ -164,17 +272,103 @@ export async function addComment(
   showId: number,
   season: number,
   episode: number,
-  body: string
+  body: string,
+  imageUrl?: string | null
 ): Promise<void> {
   const me = await uid();
   if (!me) return;
+  const trimmed = body.trim();
+  if (!trimmed && !imageUrl) return;
   await supabase.from("comments").insert({
     user_id: me,
     show_id: showId,
     season,
     episode,
-    body: body.trim(),
+    body: trimmed || null,
+    image_url: imageUrl ?? null,
   });
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  await supabase.from("comments").delete().eq("id", commentId);
+}
+
+export async function toggleUpvote(
+  commentId: string,
+  upvoted: boolean
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  if (upvoted) {
+    await supabase
+      .from("comment_votes")
+      .delete()
+      .eq("comment_id", commentId)
+      .eq("user_id", me);
+  } else {
+    await supabase
+      .from("comment_votes")
+      .upsert({ comment_id: commentId, user_id: me });
+  }
+}
+
+/** Upload a photo to the public comment-photos bucket, return its URL. */
+export async function uploadCommentPhoto(
+  localUri: string
+): Promise<string | null> {
+  const me = await uid();
+  if (!me) return null;
+  try {
+    const res = await fetch(localUri);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const ext = localUri.split(".").pop()?.split("?")[0] || "jpg";
+    const path = `${me}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("comment-photos")
+      .upload(path, bytes, {
+        contentType: `image/${ext === "jpg" ? "jpeg" : ext}`,
+        upsert: false,
+      });
+    if (error) return null;
+    return supabase.storage.from("comment-photos").getPublicUrl(path).data
+      .publicUrl;
+  } catch {
+    return null;
+  }
+}
+
+// ------------------------------------------------------- push notifications
+
+export async function registerPushToken(token: string): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("push_tokens")
+    .upsert({ user_id: me, token, updated_at: new Date().toISOString() });
+}
+
+/**
+ * On sign-in: store the user's email hash (so their contacts can find them)
+ * and register their Expo push token if notifications are already allowed.
+ * Best-effort — never throws.
+ */
+export async function registerForSocial(email?: string | null): Promise<void> {
+  try {
+    await upsertMyContactHashes(email);
+  } catch {
+    /* ignore */
+  }
+  try {
+    const perm = await Notifications.getPermissionsAsync();
+    if (!perm.granted) return;
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    const projectId = (Constants.expoConfig?.extra as any)?.eas?.projectId;
+    if (!projectId) return;
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    await registerPushToken(token);
+  } catch {
+    /* ignore */
+  }
 }
 
 // -------------------------------------------------- contacts friend matching

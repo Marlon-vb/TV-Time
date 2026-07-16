@@ -43,10 +43,20 @@ export interface Comment {
   show_id: number;
   season: number;
   episode: number;
-  body: string;
+  body: string | null;
+  image_url: string | null;
   created_at: string;
-  // joined author fields (via select)
+  // joined author fields
   username?: string;
   display_name?: string | null;
   avatar_url?: string | null;
+  // aggregates
+  upvotes: number;
+  upvoted: boolean; // did I upvote it
+}
+
+export interface EpisodeStats {
+  avgRating: number | null;
+  ratingCount: number;
+  watchCount: number;
 }

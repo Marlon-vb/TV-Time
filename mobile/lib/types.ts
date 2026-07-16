@@ -30,6 +30,7 @@ export interface EpisodeRow {
   image_url: string | null;
   watched_at: string | null;
   rating: number | null; // 0.5–5.0 in half-star steps
+  plays: number; // times watched (0 = unwatched, 2+ = rewatched)
 }
 
 export type ShowCategory =

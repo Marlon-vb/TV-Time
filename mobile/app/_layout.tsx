@@ -81,6 +81,10 @@ export default function RootLayout() {
             headerBlurEffect: "dark",
           }}
         />
+        <Stack.Screen
+          name="u/[username]"
+          options={{ title: "", headerTransparent: true, headerBlurEffect: "dark" }}
+        />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
       </Stack>
     </AuthProvider>

@@ -47,6 +47,7 @@ function item(
       image_url: null,
       watched_at: null,
       rating: null,
+      plays: 0,
       ...(overrides.episode ?? {}),
     },
     aired_unwatched: overrides.aired_unwatched ?? 5,

@@ -52,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Watch Next",
+          title: "Next",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="play" size={size} color={color} />
           ),
@@ -70,7 +70,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="shows"
         options={{
-          title: "My Shows",
+          title: "Shows",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="grid" size={size} color={color} />
           ),
@@ -86,9 +86,18 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="friends"
+        options={{
+          title: "Friends",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: "You",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

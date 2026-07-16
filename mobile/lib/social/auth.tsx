@@ -10,6 +10,7 @@ import {
 import * as AppleAuthentication from "expo-apple-authentication";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { registerForSocial } from "./api";
 import type { Profile } from "./types";
 
 interface AuthState {
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       void loadProfile(s?.user.id);
+      if (s?.user) void registerForSocial(s.user.email);
     });
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
