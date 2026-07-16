@@ -11,8 +11,6 @@ Everything the web app does, natively:
 - **Watch Next** in TV Time's sections — Up next, Haven't watched in a
   while (idle 30+ days), Haven't started — with behind-by-N badges and
   one-tap mark-watched
-- **"What should I watch tonight?"** — one tap suggests an episode from your
-  backlog with a reason (nearly caught up, neglected show, quick episode)
 - **Upcoming** agenda grouped by day
 - **Episode pages** — tap any episode for its still, synopsis, watched
   toggle, star rating, character votes, and prev/next navigation

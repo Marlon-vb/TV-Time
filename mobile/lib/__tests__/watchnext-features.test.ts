@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { groupWatchNext, sectionForItem } from "../watchNextSections";
-import { pickTonight } from "../tonight";
 import type { WatchNextItem } from "../types";
 
 const NOW = new Date("2026-07-13T20:00:00Z");
@@ -88,38 +87,5 @@ describe("watch next sections", () => {
     const onlyFresh = groupWatchNext([item({ id: 1 })], NOW);
     expect(onlyFresh).toHaveLength(1);
     expect(onlyFresh[0].key).toBe("up_next");
-  });
-});
-
-describe("pickTonight", () => {
-  it("returns null for an empty backlog", () => {
-    expect(pickTonight([], () => 0.5, NOW)).toBeNull();
-  });
-
-  it("picks deterministically with a seeded rand and gives a reason", () => {
-    const items = [
-      item({ id: 1, watched: 0 }),
-      item({ id: 2, lastWatchedDaysAgo: 70 }),
-      item({ id: 3, aired_unwatched: 1 }),
-    ];
-    const first = pickTonight(items, () => 0, NOW)!;
-    expect(first.item.show.id).toBe(1);
-    expect(first.reason).toContain("never started");
-
-    const idle = pickTonight(items, () => 0.4, NOW)!;
-    expect(idle.item.show.id).toBe(2);
-    expect(idle.reason).toContain("since you watched");
-
-    const nearly = pickTonight(items, () => 0.9, NOW)!;
-    expect(nearly.item.show.id).toBe(3);
-    expect(nearly.reason).toContain("fully caught up");
-  });
-
-  it("avoids repeating the excluded episode when rerolling", () => {
-    const items = [item({ id: 1 }), item({ id: 2 })];
-    for (let r = 0; r < 1; r += 0.25) {
-      const pick = pickTonight(items, () => r, NOW, 100)!; // exclude show 1's ep
-      expect(pick.item.episode.id).toBe(200);
-    }
   });
 });

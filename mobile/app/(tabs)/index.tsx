@@ -12,7 +12,6 @@ import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
-import TonightPicker from "@/components/TonightPicker";
 import { EmptyState, card } from "@/components/ui";
 import { accentGradient, colors, fonts, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { epCode, relativeDay } from "@/lib/format";
@@ -66,17 +65,14 @@ export default function WatchNextScreen() {
         />
       }
       ListHeaderComponent={
-        <View>
-          <ScreenHeader
-            title="Watch Next"
-            subtitle={
-              items.length > 0
-                ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
-                : null
-            }
-          />
-          <TonightPicker items={items} />
-        </View>
+        <ScreenHeader
+          title="Watch Next"
+          subtitle={
+            items.length > 0
+              ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
+              : null
+          }
+        />
       }
       ListEmptyComponent={
         <View style={{ marginTop: 12 }}>
