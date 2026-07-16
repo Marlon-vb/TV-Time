@@ -102,7 +102,9 @@ export default function DiscoverScreen() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View>
-          <ScreenHeader title="Discover" />
+          <View style={{ marginHorizontal: -16 }}>
+            <ScreenHeader title="Discover" />
+          </View>
           <View
             style={{
               flexDirection: "row",

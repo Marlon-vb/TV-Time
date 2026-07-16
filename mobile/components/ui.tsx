@@ -129,3 +129,11 @@ export const card = {
   borderWidth: 1,
   borderColor: colors.line,
 } as const;
+
+/** Uppercase spaced section label ("COMMUNITY", "SYNOPSIS", …). */
+export const sectionLabel = {
+  color: colors.muted,
+  fontSize: 11,
+  fontFamily: fonts.displayMedium,
+  letterSpacing: 1.2,
+} as const;

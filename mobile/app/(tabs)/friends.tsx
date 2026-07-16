@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -96,13 +97,36 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   const load = useCallback(async () => {
-    const feed = await social.getFeed();
-    setItems(feed);
+    try {
+      const feed = await social.getFeed();
+      setItems(feed);
+      setHasMore(feed.length >= 50);
+      setError(false);
+    } catch {
+      setError(true); // offline/error must not masquerade as "no activity"
+    }
     setLoading(false);
     setRefreshing(false);
   }, []);
+
+  // Infinite scroll via the feed's created_at cursor.
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || items.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const older = await social.getFeed(items[items.length - 1].created_at);
+      setItems((prev) => [...prev, ...older]);
+      setHasMore(older.length >= 50);
+    } catch {
+      /* transient — the next scroll retries */
+    }
+    setLoadingMore(false);
+  }, [loadingMore, hasMore, items]);
 
   useEffect(() => {
     void load();
@@ -127,12 +151,27 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
           tintColor={colors.accent}
         />
       }
+      onEndReachedThreshold={0.4}
+      onEndReached={() => void loadMore()}
+      ListFooterComponent={
+        loadingMore ? (
+          <ActivityIndicator color={colors.accent} style={{ marginVertical: 12 }} />
+        ) : null
+      }
       ListEmptyComponent={
-        <EmptyState
-          icon="pulse-outline"
-          title="No activity yet"
-          body="When you and the people you follow watch and rate episodes, it shows up here. Find friends to get started."
-        />
+        error ? (
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Couldn't load the feed"
+            body="Check your connection and pull down to try again."
+          />
+        ) : (
+          <EmptyState
+            icon="pulse-outline"
+            title="No activity yet"
+            body="When you and the people you follow watch and rate episodes, it shows up here. Find friends to get started."
+          />
+        )
       }
       renderItem={({ item }) => {
         const name = item.display_name || item.username;
@@ -173,7 +212,9 @@ function FindFriends({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
-  const [contacts, setContacts] = useState<Profile[] | null>(null);
+  const [contacts, setContacts] = useState<
+    Profile[] | "scanning" | "denied" | null
+  >(null);
   const [searching, setSearching] = useState(false);
   // Who I already follow, fetched ONCE — not one round trip per result row.
   // The set is the single source of truth for every row and is updated
@@ -199,7 +240,22 @@ function FindFriends({
     if (isFollowing) next.delete(profileId);
     else next.add(profileId);
     setFollowingIds(next);
-    void (isFollowing ? social.unfollow(profileId) : social.follow(profileId));
+    void (isFollowing ? social.unfollow(profileId) : social.follow(profileId)).then(
+      (ok) => {
+        if (ok) return;
+        // Revert the optimistic flip — a silent no-op reads as a broken app.
+        setFollowingIds((prev) => {
+          const reverted = new Set(prev ?? []);
+          if (isFollowing) reverted.add(profileId);
+          else reverted.delete(profileId);
+          return reverted;
+        });
+        Alert.alert(
+          isFollowing ? "Couldn't unfollow" : "Couldn't follow",
+          "Check your connection and try again."
+        );
+      }
+    );
   };
 
   useEffect(() => {
@@ -223,15 +279,20 @@ function FindFriends({
   const invite = async () => {
     await Share.share({
       message: myUsername
-        ? `Follow me on TV Time — I'm @${myUsername}. Get the app and add me: tvtime://u/${myUsername}`
+        ? `Follow me on TV Time — I'm @${myUsername}. Got the app? Tap tvtime://u/${myUsername} — otherwise search @${myUsername} once you're in.`
         : "Join me on TV Time!",
     });
   };
 
   const scanContacts = async () => {
-    setContacts([]);
-    const found = await social.findFriendsFromContacts();
-    setContacts(found);
+    setContacts("scanning");
+    try {
+      const { granted, profiles } = await social.findFriendsFromContacts();
+      setContacts(granted ? profiles : "denied");
+    } catch {
+      setContacts(null);
+      Alert.alert("Couldn't scan contacts", "Please try again.");
+    }
   };
 
   return (
@@ -272,12 +333,26 @@ function FindFriends({
             <ActionChip icon="people-outline" label="From contacts" onPress={scanContacts} />
           </View>
 
-          {contacts !== null && (
+          {contacts === "scanning" && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <ActivityIndicator color={colors.accent} size="small" />
+              <Text style={{ color: colors.muted, fontSize: 12 }}>
+                Scanning your contacts…
+              </Text>
+            </View>
+          )}
+          {contacts === "denied" && (
+            <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
+              Contacts access is off. Allow it in Settings → TV Time to find
+              friends from your address book.
+            </Text>
+          )}
+          {Array.isArray(contacts) && (
             <View style={{ gap: 8 }}>
               <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
                 {contacts.length > 0
                   ? "In your contacts"
-                  : "No contacts are on TV Time yet"}
+                  : "No contacts are on TV Time yet — invite someone!"}
               </Text>
               {contacts.map((p) => (
                 <UserRow

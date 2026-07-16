@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
-import { ProgressBar, card } from "@/components/ui";
+import { ProgressBar, card, sectionLabel } from "@/components/ui";
 import { colors, fonts } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
@@ -272,9 +272,4 @@ export default function CharacterVotes({
   );
 }
 
-const label = {
-  color: colors.muted,
-  fontSize: 11,
-  fontFamily: "SpaceGrotesk_500Medium",
-  letterSpacing: 1.2,
-} as const;
+const label = sectionLabel;

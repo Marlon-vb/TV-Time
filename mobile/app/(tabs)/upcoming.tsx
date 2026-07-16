@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import { SectionList, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { RefreshControl, SectionList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
@@ -37,9 +37,25 @@ export default function UpcomingScreen() {
     }
     return sections;
   }, []);
-  const { data } = useFocusData(loader);
+  const { data, reload } = useFocusData(loader);
   const sections = data ?? [];
   const count = sections.reduce((n, s) => n + s.data.length, 0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await repo.syncStaleShows(0, {
+        limit: 20,
+        concurrency: 4,
+        prioritize: "activity",
+      });
+    } catch {
+      // offline is fine — show what we have
+    }
+    reload();
+    setRefreshing(false);
+  };
 
   return (
     <SectionList
@@ -49,22 +65,31 @@ export default function UpcomingScreen() {
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,
       }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefresh()}
+          tintColor={colors.accent}
+        />
+      }
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={
-        <ScreenHeader
-          title="Upcoming"
-          subtitle={
-            count > 0
-              ? `${count} scheduled episode${count === 1 ? "" : "s"}`
-              : null
-          }
-        />
+        <View style={{ marginHorizontal: -16 }}>
+          <ScreenHeader
+            title="Upcoming"
+            subtitle={
+              count > 0
+                ? `${count} scheduled episode${count === 1 ? "" : "s"}`
+                : null
+            }
+          />
+        </View>
       }
       ListEmptyComponent={
         <EmptyState
           icon="calendar-outline"
           title="Nothing scheduled"
-          body="None of your shows have announced episodes yet. New dates appear automatically after a sync."
+          body="None of your shows have announced episodes yet. Pull down to check for new dates."
         />
       }
       renderSectionHeader={({ section }) => (

@@ -33,8 +33,40 @@ export default function StarRating({
     }
   };
 
+  // VoiceOver: one adjustable element ("swipe up/down to adjust") instead of
+  // five unlabeled stars.
+  const a11y =
+    readOnly || !onChange
+      ? ({
+          accessible: true,
+          accessibilityLabel:
+            value != null ? `Rated ${value} of 5 stars` : "Not rated",
+        } as const)
+      : ({
+          accessible: true,
+          accessibilityRole: "adjustable" as const,
+          accessibilityLabel: "Rating",
+          accessibilityValue: {
+            min: 0,
+            max: 5,
+            now: rating,
+            text: value != null ? `${value} of 5 stars` : "Not rated",
+          },
+          accessibilityActions: [
+            { name: "increment" as const },
+            { name: "decrement" as const },
+          ],
+          onAccessibilityAction: (e: {
+            nativeEvent: { actionName: string };
+          }) => {
+            const step = e.nativeEvent.actionName === "increment" ? 0.5 : -0.5;
+            const next = Math.min(5, Math.max(0, rating + step));
+            onChange(next === 0 ? null : next);
+          },
+        } as const);
+
   return (
-    <View style={{ flexDirection: "row", gap, alignSelf: "flex-start" }}>
+    <View style={{ flexDirection: "row", gap, alignSelf: "flex-start" }} {...a11y}>
       {[0, 1, 2, 3, 4].map((i) => {
         const filled = rating - i; // >=1 full, 0.5 half, <=0 empty
         const name =

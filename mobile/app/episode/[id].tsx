@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
-import { card } from "@/components/ui";
+import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius, scrimGradient } from "@/lib/theme";
 import { epCode, fmtDate, fmtTime, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
@@ -106,9 +106,14 @@ export default function EpisodeScreen() {
   return (
     <>
       <Stack.Screen options={{ title: "" }} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 48 }}
+        // Keeps the comment composer visible above the keyboard.
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Hero still */}
-        <View style={{ height: 250 }}>
+        <View style={{ minHeight: 250 }}>
           {still && (
             <Image
               source={{ uri: still }}
@@ -155,6 +160,7 @@ export default function EpisodeScreen() {
               {show.name.toUpperCase()} · {epCode(episode.season, episode.number)}
             </Text>
             <Text
+              numberOfLines={2}
               style={{
                 color: colors.fg,
                 fontFamily: fonts.display,
@@ -211,7 +217,12 @@ export default function EpisodeScreen() {
                 </Text>
               )}
               {isWatched && (
-                <Pressable onPress={rewatch} hitSlop={4} style={{ marginTop: 4 }}>
+                <Pressable
+                  onPress={rewatch}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  style={{ marginTop: 4 }}
+                >
                   <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
                     + Log a rewatch
                   </Text>
@@ -247,16 +258,7 @@ export default function EpisodeScreen() {
                 alignItems: "center",
               }}
             >
-              <Text
-                style={{
-                  color: colors.muted,
-                  fontSize: 11,
-                  fontFamily: fonts.displayMedium,
-                  letterSpacing: 1.2,
-                }}
-              >
-                YOUR RATING
-              </Text>
+              <Text style={sectionLabel}>YOUR RATING</Text>
               {episode.rating != null && (
                 <Text style={{ color: colors.accent, fontFamily: fonts.display, fontSize: 15 }}>
                   {ratingLabel(episode.rating)}
@@ -272,16 +274,7 @@ export default function EpisodeScreen() {
           {/* Synopsis */}
           {episode.summary && (
             <View style={{ ...card, padding: 14 }}>
-              <Text
-                style={{
-                  color: colors.muted,
-                  fontSize: 11,
-                  fontFamily: fonts.displayMedium,
-                  letterSpacing: 1.2,
-                }}
-              >
-                SYNOPSIS
-              </Text>
+              <Text style={sectionLabel}>SYNOPSIS</Text>
               <Text
                 style={{
                   color: colors.muted,

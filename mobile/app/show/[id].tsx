@@ -324,8 +324,22 @@ export default function ShowScreen() {
                     label="Mark all watched"
                     primary
                     onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      bulkChange(() => repo.markShow(showId, true));
+                      Alert.alert(
+                        "Mark all watched?",
+                        `This marks all ${behind} remaining aired episode${behind === 1 ? "" : "s"} as watched.`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Mark all",
+                            onPress: () => {
+                              void Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Medium
+                              );
+                              bulkChange(() => repo.markShow(showId, true));
+                            },
+                          },
+                        ]
+                      );
                     }}
                   />
                 )}
@@ -333,8 +347,22 @@ export default function ShowScreen() {
                   <ActionButton
                     label="Log a rewatch"
                     onPress={() => {
-                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      bulkChange(() => repo.rewatchShow(showId));
+                      Alert.alert(
+                        "Log a rewatch?",
+                        `This adds one more watch to every aired episode (${watched} episodes) and moves them to today.`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Log rewatch",
+                            onPress: () => {
+                              void Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Medium
+                              );
+                              bulkChange(() => repo.rewatchShow(showId));
+                            },
+                          },
+                        ]
+                      );
                     }}
                   />
                 )}
@@ -564,6 +592,7 @@ function SeasonList({
               <Pressable
                 onPress={() => onMarkSeason(seasonNum, !allWatched)}
                 disabled={seasonEmpty}
+                hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel={
                   allWatched

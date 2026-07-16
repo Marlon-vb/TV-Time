@@ -3,6 +3,7 @@ import {
   ActionSheetIOS,
   FlatList,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -54,9 +55,25 @@ export default function MyShowsScreen() {
   const [tab, setTab] = useState<ShowCategory | "all">("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<ShowSort>("az");
+  const [refreshing, setRefreshing] = useState(false);
   const loader = useCallback(() => repo.listShowsWithProgress(), []);
-  const { data } = useFocusData(loader);
+  const { data, reload } = useFocusData(loader);
   const shows = data ?? [];
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await repo.syncStaleShows(0, {
+        limit: 20,
+        concurrency: 4,
+        prioritize: "activity",
+      });
+    } catch {
+      // offline is fine
+    }
+    reload();
+    setRefreshing(false);
+  };
 
   const counts = new Map<string, number>();
   for (const s of shows)
@@ -92,6 +109,13 @@ export default function MyShowsScreen() {
       initialNumToRender={12}
       windowSize={7}
       maxToRenderPerBatch={12}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefresh()}
+          tintColor={colors.accent}
+        />
+      }
       contentContainerStyle={{
         paddingHorizontal: 12,
         paddingBottom: TAB_BAR_CLEARANCE,
@@ -271,7 +295,9 @@ function ShowCard({
           src={show.poster_url}
           name={show.name}
           width={"100%"}
-          height={152}
+          // Real 2:3 poster aspect instead of a fixed height that cropped
+          // artwork on larger devices.
+          height={Math.round(width * 1.5)}
           radius={0}
         />
         {show.aired_unwatched > 0 && (

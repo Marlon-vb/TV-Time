@@ -31,6 +31,12 @@ export default function Poster({
     let hash = 0;
     for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
     const hue = Math.abs(hash) % 360;
+    // Scale the initials with the poster instead of a fixed 20pt that clips
+    // tiny posters and gets lost on big ones.
+    const fontSize =
+      typeof width === "number" && typeof height === "number"
+        ? Math.max(11, Math.round(Math.min(width, height) * 0.3))
+        : 20;
     return (
       <View
         style={{
@@ -47,7 +53,7 @@ export default function Poster({
         <Text
           style={{
             color: "rgba(255,255,255,0.72)",
-            fontSize: 20,
+            fontSize,
             fontWeight: "800",
           }}
         >

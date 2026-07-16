@@ -14,7 +14,9 @@ export const colors = {
   accentDeep: "#f5a623",
   fg: "#f4f5fa",
   muted: "#9aa0b8",
-  faint: "#666c8a",
+  // Fine print still has to be legible: ~4.5:1 on ink (was #666c8a at ~3.8:1,
+  // failing WCAG AA for the 9–11pt metadata it's used on).
+  faint: "#7a80a0",
   danger: "#ff5c72",
   ok: "#4ade80",
 } as const;

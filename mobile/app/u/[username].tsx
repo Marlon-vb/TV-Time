@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActionSheetIOS,
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import Avatar from "@/components/Avatar";
@@ -24,6 +26,7 @@ import type { Profile } from "@/lib/social/types";
 export default function UserProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { profile: me } = useAuth();
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
@@ -67,12 +70,18 @@ export default function UserProfileScreen() {
   const name = profile.display_name || profile.username;
 
   const toggleFollow = async () => {
-    if (following) {
-      setFollowing(false);
-      await social.unfollow(profile.id);
-    } else {
-      setFollowing(true);
-      await social.follow(profile.id);
+    const wasFollowing = Boolean(following);
+    setFollowing(!wasFollowing);
+    const ok = wasFollowing
+      ? await social.unfollow(profile.id)
+      : await social.follow(profile.id);
+    if (!ok) {
+      setFollowing(wasFollowing); // revert — don't let a silent failure lie
+      Alert.alert(
+        wasFollowing ? "Couldn't unfollow" : "Couldn't follow",
+        "Check your connection and try again."
+      );
+      return;
     }
     setCounts(await social.followCounts(profile.id));
   };
@@ -82,7 +91,15 @@ export default function UserProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ title: `@${profile.username}` }} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingTop: 90 }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 16,
+          gap: 14,
+          // Clear the transparent nav header on every device, Dynamic Island
+          // included (was a hardcoded 90).
+          paddingTop: insets.top + 56,
+        }}
+      >
         <View style={{ alignItems: "center", gap: 8 }}>
           <Avatar name={name} url={profile.avatar_url} size={84} />
           <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 20 }}>
@@ -104,7 +121,7 @@ export default function UserProfileScreen() {
                 <Bouncy
                   onPress={() =>
                     void Share.share({
-                      message: `Follow me on TV Time — @${profile.username}: ${deepLink}`,
+                      message: `Follow me on TV Time — I'm @${profile.username}. Got the app? Tap ${deepLink} — otherwise search @${profile.username} once you're in.`,
                     })
                   }
                   scaleTo={0.94}
@@ -181,7 +198,8 @@ export default function UserProfileScreen() {
               <QRCode value={deepLink} size={200} backgroundColor="#fff" color="#0b0c14" />
             </View>
             <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center" }}>
-              Have a friend scan this in the app to follow you.
+              Friends with the app can scan this with the iPhone camera to
+              open your profile.
             </Text>
           </View>
         </Pressable>

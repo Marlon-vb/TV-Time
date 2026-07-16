@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
 import StarRating from "@/components/StarRating";
-import { card } from "@/components/ui";
+import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
@@ -353,7 +353,7 @@ function CommentRow({
       </View>
       <Pressable
         onPress={onUpvote}
-        hitSlop={6}
+        hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel={c.upvoted ? "Remove upvote" : "Upvote"}
         style={{ alignItems: "center", gap: 2 }}
@@ -373,9 +373,4 @@ function CommentRow({
   );
 }
 
-const label = {
-  color: colors.muted,
-  fontSize: 11,
-  fontFamily: "SpaceGrotesk_500Medium",
-  letterSpacing: 1.2,
-} as const;
+const label = sectionLabel;

@@ -44,6 +44,14 @@ export default function RootLayout() {
         }
       }
     );
+    // The listener above misses taps that LAUNCHED the app (cold start) —
+    // fetch that response explicitly or the tap lands on the home screen.
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      const url = response?.notification.request.content.data?.url;
+      if (typeof url === "string") {
+        setTimeout(() => router.push(url as never), 400); // after nav mounts
+      }
+    });
     return () => {
       clearTimeout(timer);
       sub.remove();

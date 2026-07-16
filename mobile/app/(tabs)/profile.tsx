@@ -7,7 +7,7 @@ import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
 import AccountCard from "@/components/AccountCard";
-import { EmptyState, card } from "@/components/ui";
+import { EmptyState, card, sectionLabel } from "@/components/ui";
 import {
   accentGradient,
   colors,
@@ -53,7 +53,9 @@ export default function ProfileScreen() {
         gap: 12,
       }}
     >
-      <ScreenHeader title="Profile" />
+      <View style={{ marginHorizontal: -16 }}>
+        <ScreenHeader title="Profile" />
+      </View>
 
       <AccountCard />
 
@@ -79,7 +81,7 @@ export default function ProfileScreen() {
         <StatTile label="Shows" value={data.showsFollowed} />
         <StatTile
           label="Avg rating"
-          value={data.averageRating ?? 0}
+          value={data.ratedCount > 0 ? data.averageRating : null}
           decimals={1}
           suffix="★"
         />
@@ -220,12 +222,6 @@ export default function ProfileScreen() {
   );
 }
 
-const sectionLabel = {
-  color: colors.muted,
-  fontSize: 11,
-  fontFamily: "SpaceGrotesk_500Medium",
-  letterSpacing: 1.4,
-} as const;
 
 function HeroUnit({ value, unit }: { value: number; unit: string }) {
   return (
@@ -248,15 +244,18 @@ function StatTile({
   suffix = "",
 }: {
   label: string;
-  value: number;
+  /** null renders an em-dash — "no data yet" beats a misleading 0.0. */
+  value: number | null;
   accent?: boolean;
   decimals?: number;
   suffix?: string;
 }) {
   const display =
-    decimals > 0
-      ? value.toFixed(decimals)
-      : value.toLocaleString();
+    value == null
+      ? "—"
+      : decimals > 0
+        ? value.toFixed(decimals)
+        : value.toLocaleString();
   return (
     <View style={{ ...card, flex: 1, minWidth: 0, padding: 14 }}>
       <Text
@@ -264,7 +263,7 @@ function StatTile({
         adjustsFontSizeToFit
         minimumFontScale={0.5}
         style={{
-          color: accent && value > 0 ? colors.accent : colors.fg,
+          color: accent && (value ?? 0) > 0 ? colors.accent : colors.fg,
           fontSize: 21,
           fontFamily: fonts.display,
         }}

@@ -79,14 +79,18 @@ export default function WatchNextScreen() {
         />
       }
       ListHeaderComponent={
-        <ScreenHeader
-          title="Watch Next"
-          subtitle={
-            totalBehind > 0
-              ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
-              : null
-          }
-        />
+        // Cancel the list's 16pt gutter so the masthead sits at its own 18pt
+        // on every tab.
+        <View style={{ marginHorizontal: -16 }}>
+          <ScreenHeader
+            title="Watch Next"
+            subtitle={
+              totalBehind > 0
+                ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
+                : null
+            }
+          />
+        </View>
       }
       ListEmptyComponent={
         <View style={{ marginTop: 12 }}>

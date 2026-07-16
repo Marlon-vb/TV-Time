@@ -59,22 +59,25 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
 
 // ------------------------------------------------------------------- follows
 
-export async function follow(userId: string): Promise<void> {
+/** Returns false when the follow didn't reach the server (offline, blocked). */
+export async function follow(userId: string): Promise<boolean> {
   const me = await uid();
-  if (!me || me === userId) return;
-  await supabase
+  if (!me || me === userId) return false;
+  const { error } = await supabase
     .from("follows")
     .upsert({ follower_id: me, followee_id: userId });
+  return !error;
 }
 
-export async function unfollow(userId: string): Promise<void> {
+export async function unfollow(userId: string): Promise<boolean> {
   const me = await uid();
-  if (!me) return;
-  await supabase
+  if (!me) return false;
+  const { error } = await supabase
     .from("follows")
     .delete()
     .eq("follower_id", me)
     .eq("followee_id", userId);
+  return !error;
 }
 
 export async function isFollowing(userId: string): Promise<boolean> {
@@ -171,10 +174,12 @@ export async function publishActivity(input: ActivityInput): Promise<void> {
 }
 
 export async function getFeed(before?: string): Promise<FeedItem[]> {
-  const { data } = await supabase.rpc("feed", {
+  const { data, error } = await supabase.rpc("feed", {
     limit_count: 50,
     before: before ?? new Date().toISOString(),
   });
+  // Surface failures — an offline feed must not masquerade as an empty one.
+  if (error) throw error;
   return (data as FeedItem[]) ?? [];
 }
 
@@ -754,12 +759,12 @@ export async function registerForSocial(email?: string | null): Promise<void> {
  */
 export async function findFriendsFromContacts(
   defaultCountryCode = ""
-): Promise<Profile[]> {
+): Promise<{ granted: boolean; profiles: Profile[] }> {
   const me = await uid();
-  if (!me) return [];
+  if (!me) return { granted: true, profiles: [] };
 
   const { status } = await Contacts.requestPermissionsAsync();
-  if (status !== "granted") return [];
+  if (status !== "granted") return { granted: false, profiles: [] };
 
   const { data: contacts } = await Contacts.getContactsAsync({
     fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
@@ -782,7 +787,7 @@ export async function findFriendsFromContacts(
     phone_hashes: [...phoneHashes],
     email_hashes: [...emailHashes],
   });
-  return (data as Profile[]) ?? [];
+  return { granted: true, profiles: (data as Profile[]) ?? [] };
 }
 
 /** Store hashes of the user's own email so contacts of theirs can match them. */
