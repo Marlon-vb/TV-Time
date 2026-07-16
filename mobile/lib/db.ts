@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS episodes (
   summary TEXT,
   image_url TEXT,
   watched_at TEXT,
-  reaction TEXT
+  rating REAL
 );
 
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
@@ -54,14 +54,23 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
   const version =
     handle.getFirstSync<{ user_version: number }>("PRAGMA user_version")
       ?.user_version ?? 0;
+  const hasColumn = (col: string) =>
+    handle
+      .getAllSync<{ name: string }>("PRAGMA table_info(episodes)")
+      .some((c) => c.name === col);
+
   if (version < 1) {
-    const columns = handle.getAllSync<{ name: string }>(
-      "PRAGMA table_info(episodes)"
-    );
-    if (!columns.some((c) => c.name === "reaction")) {
+    if (!hasColumn("reaction")) {
       handle.execSync("ALTER TABLE episodes ADD COLUMN reaction TEXT");
     }
     handle.execSync("PRAGMA user_version = 1");
+  }
+  // v2: star ratings replace emoji reactions.
+  if (version < 2) {
+    if (!hasColumn("rating")) {
+      handle.execSync("ALTER TABLE episodes ADD COLUMN rating REAL");
+    }
+    handle.execSync("PRAGMA user_version = 2");
   }
 }
 

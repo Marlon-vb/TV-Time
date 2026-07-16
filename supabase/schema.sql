@@ -41,18 +41,18 @@ create table if not exists public.follows (
 );
 create index if not exists idx_follows_followee on public.follows(followee_id);
 
--- Activity feed events (a friend watched/reacted/finished/started something).
+-- Activity feed events (a friend watched/rated/finished/started something).
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  type text not null check (type in ('watched','reacted','finished','started')),
+  type text not null check (type in ('watched','rated','finished','started')),
   show_id integer,          -- TVmaze show id
   show_name text,
   poster_url text,
   season integer,
   episode integer,
   episode_name text,
-  reaction text,
+  rating real,
   created_at timestamptz not null default now()
 );
 create index if not exists idx_activities_user_time on public.activities(user_id, created_at desc);
@@ -156,12 +156,12 @@ create or replace function public.feed(limit_count integer default 50, before ti
 returns table (
   id uuid, user_id uuid, username text, display_name text, avatar_url text,
   type text, show_id integer, show_name text, poster_url text,
-  season integer, episode integer, episode_name text, reaction text, created_at timestamptz
+  season integer, episode integer, episode_name text, rating real, created_at timestamptz
 )
 language sql stable security invoker set search_path = public as $$
   select a.id, a.user_id, p.username, p.display_name, p.avatar_url,
          a.type, a.show_id, a.show_name, a.poster_url,
-         a.season, a.episode, a.episode_name, a.reaction, a.created_at
+         a.season, a.episode, a.episode_name, a.rating, a.created_at
   from public.activities a
   join public.profiles p on p.id = a.user_id
   where (

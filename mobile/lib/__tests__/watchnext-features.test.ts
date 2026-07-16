@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { groupWatchNext, sectionForItem } from "../watchNextSections";
 import { pickTonight } from "../tonight";
-import { computeAchievements } from "../achievements";
 import type { WatchNextItem } from "../types";
 
 const NOW = new Date("2026-07-13T20:00:00Z");
@@ -47,7 +46,7 @@ function item(
       summary: null,
       image_url: null,
       watched_at: null,
-      reaction: null,
+      rating: null,
       ...(overrides.episode ?? {}),
     },
     aired_unwatched: overrides.aired_unwatched ?? 5,
@@ -121,56 +120,5 @@ describe("pickTonight", () => {
       const pick = pickTonight(items, () => r, NOW, 100)!; // exclude show 1's ep
       expect(pick.item.episode.id).toBe(200);
     }
-  });
-});
-
-describe("computeAchievements", () => {
-  const base = {
-    episodesWatched: 0,
-    minutesWatched: 0,
-    showsFollowed: 0,
-    showsFinished: 0,
-    episodesBehind: 10,
-    distinctGenres: 0,
-    reactionsCount: 0,
-  };
-
-  it("tracks progress and unlocks at thresholds", () => {
-    const none = computeAchievements(base);
-    expect(none.every((a) => !a.achieved)).toBe(true);
-
-    const some = computeAchievements({
-      ...base,
-      episodesWatched: 150,
-      minutesWatched: 150 * 45,
-      showsFollowed: 8,
-      showsFinished: 1,
-      distinctGenres: 6,
-      reactionsCount: 4,
-    });
-    const byId = Object.fromEntries(some.map((a) => [a.id, a]));
-    expect(byId.first_episode.achieved).toBe(true);
-    expect(byId.century.achieved).toBe(true);
-    expect(byId.binge_lord.achieved).toBe(false);
-    expect(byId.binge_lord.current).toBe(150);
-    expect(byId.around_clock.achieved).toBe(true); // 112h > 24h
-    expect(byId.finisher.achieved).toBe(true);
-    expect(byId.genre_hopper.achieved).toBe(true);
-    expect(byId.reactor.progress).toBeCloseTo(0.4);
-  });
-
-  it("zero inbox needs both caught-up and 3+ shows", () => {
-    const caughtUpTooFew = computeAchievements({
-      ...base,
-      showsFollowed: 2,
-      episodesBehind: 0,
-    });
-    expect(caughtUpTooFew.find((a) => a.id === "zero_inbox")!.achieved).toBe(false);
-    const caughtUp = computeAchievements({
-      ...base,
-      showsFollowed: 5,
-      episodesBehind: 0,
-    });
-    expect(caughtUp.find((a) => a.id === "zero_inbox")!.achieved).toBe(true);
   });
 });

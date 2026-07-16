@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
@@ -23,9 +22,7 @@ import { getSetting } from "@/lib/db";
 import { findNeighbors } from "@/lib/episodeNav";
 import { episodeShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
-
-/** TV Time-style single-choice emoji reactions. */
-const REACTIONS = ["😍", "🤣", "😱", "😭", "🔥", "😴"] as const;
+import StarRating, { ratingLabel } from "@/components/StarRating";
 
 export default function EpisodeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,9 +63,8 @@ export default function EpisodeScreen() {
     reload();
   };
 
-  const react = (emoji: string) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    repo.setReaction(episode.id, episode.reaction === emoji ? null : emoji);
+  const rate = (next: number | null) => {
+    repo.setRating(episode.id, next);
     reload();
   };
 
@@ -79,7 +75,7 @@ export default function EpisodeScreen() {
         season: episode.season,
         number: episode.number,
         episodeName: episode.name,
-        reaction: episode.reaction,
+        rating: episode.rating,
         watched: isWatched,
       }),
     });
@@ -210,51 +206,34 @@ export default function EpisodeScreen() {
             </Bouncy>
           </View>
 
-          {/* Reactions */}
+          {/* Your rating */}
           <View style={{ ...card, padding: 14 }}>
-            <Text
-              style={{
-                color: colors.muted,
-                fontSize: 11,
-                fontFamily: fonts.displayMedium,
-                letterSpacing: 1.2,
-              }}
-            >
-              YOUR REACTION
-            </Text>
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                marginTop: 12,
+                alignItems: "center",
               }}
             >
-              {REACTIONS.map((emoji) => {
-                const active = episode.reaction === emoji;
-                return (
-                  <Bouncy
-                    key={emoji}
-                    onPress={() => react(emoji)}
-                    scaleTo={0.8}
-                    style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 23,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: active
-                        ? "rgba(251,215,55,0.16)"
-                        : colors.raised,
-                      borderWidth: active ? 1.5 : 1,
-                      borderColor: active ? colors.accent : colors.line,
-                    }}
-                  >
-                    <Text style={{ fontSize: 22, opacity: active ? 1 : 0.75 }}>
-                      {emoji}
-                    </Text>
-                  </Bouncy>
-                );
-              })}
+              <Text
+                style={{
+                  color: colors.muted,
+                  fontSize: 11,
+                  fontFamily: fonts.displayMedium,
+                  letterSpacing: 1.2,
+                }}
+              >
+                YOUR RATING
+              </Text>
+              {episode.rating != null && (
+                <Text style={{ color: colors.accent, fontFamily: fonts.display, fontSize: 15 }}>
+                  {ratingLabel(episode.rating)}
+                  <Text style={{ color: colors.faint, fontSize: 12 }}> / 5</Text>
+                </Text>
+              )}
+            </View>
+            <View style={{ marginTop: 12, alignItems: "center" }}>
+              <StarRating value={episode.rating} onChange={rate} size={38} />
             </View>
           </View>
 

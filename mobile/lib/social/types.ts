@@ -6,7 +6,7 @@ export interface Profile {
   created_at: string;
 }
 
-export type ActivityType = "watched" | "reacted" | "finished" | "started";
+export type ActivityType = "watched" | "rated" | "finished" | "started";
 
 /** A row from the feed() RPC — an activity joined with its author. */
 export interface FeedItem {
@@ -22,7 +22,7 @@ export interface FeedItem {
   season: number | null;
   episode: number | null;
   episode_name: string | null;
-  reaction: string | null;
+  rating: number | null;
   created_at: string;
 }
 
@@ -34,7 +34,7 @@ export interface ActivityInput {
   season?: number | null;
   episode?: number | null;
   episodeName?: string | null;
-  reaction?: string | null;
+  rating?: number | null;
 }
 
 export interface Comment {

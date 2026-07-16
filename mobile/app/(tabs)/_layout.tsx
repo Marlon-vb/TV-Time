@@ -14,26 +14,37 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.faint,
         tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+        tabBarItemStyle: { paddingTop: 8, paddingBottom: 8 },
+        // Rounded, bordered pill with a real drop shadow. The container owns
+        // the rounded background/border/shadow (no overflow:hidden so the
+        // shadow renders); the BlurView frost clips to its own rounded corners
+        // on top (iOS native blur ignores a parent's overflow:hidden).
         tabBarStyle: {
           position: "absolute",
-          left: 16,
-          right: 16,
-          bottom: 24,
-          height: 64,
-          borderRadius: 32,
+          left: 20,
+          right: 20,
+          bottom: 28,
+          height: 60,
+          borderRadius: 30,
           borderTopWidth: 0,
           borderWidth: 1,
           borderColor: colors.lineStrong,
-          backgroundColor: "rgba(20,22,35,0.62)",
-          overflow: "hidden",
-          paddingTop: 6,
-          paddingBottom: 8,
+          backgroundColor: "rgba(18,20,32,0.72)",
+          elevation: 12,
+          shadowColor: "#000",
+          shadowOpacity: 0.4,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
         },
         tabBarBackground: () => (
           <BlurView
             tint="dark"
-            intensity={50}
-            style={StyleSheet.absoluteFill}
+            intensity={40}
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              borderRadius: 30,
+              overflow: "hidden",
+            }}
           />
         ),
       }}

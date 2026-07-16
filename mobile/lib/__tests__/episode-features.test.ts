@@ -28,17 +28,17 @@ describe("findNeighbors", () => {
 });
 
 describe("share messages", () => {
-  it("formats a watched episode with reaction", () => {
+  it("formats a watched episode with a star rating", () => {
     expect(
       episodeShareMessage({
         showName: "Midnight Signal",
         season: 3,
         number: 5,
         episodeName: "The Silent Wire",
-        reaction: "🔥",
+        rating: 4.5,
         watched: true,
       })
-    ).toBe("Just watched Midnight Signal S03E05 — “The Silent Wire” 🔥");
+    ).toBe("Just watched Midnight Signal S03E05 — “The Silent Wire” · rated ★★★★½");
   });
 
   it("formats an unwatched episode as up-next", () => {

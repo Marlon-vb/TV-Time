@@ -7,15 +7,23 @@ export function episodeShareMessage(input: {
   season: number;
   number: number;
   episodeName?: string | null;
-  reaction?: string | null;
+  rating?: number | null;
   watched: boolean;
 }): string {
   const code = epCode(input.season, input.number);
   const title = input.episodeName ? ` — “${input.episodeName}”` : "";
-  const emoji = input.reaction ? ` ${input.reaction}` : "";
+  const stars =
+    input.rating != null ? ` · rated ${starString(input.rating)}` : "";
   return input.watched
-    ? `Just watched ${input.showName} ${code}${title}${emoji}`
+    ? `Just watched ${input.showName} ${code}${title}${stars}`
     : `Up next for me: ${input.showName} ${code}${title}`;
+}
+
+/** "★★★★½" for a 0.5–5 rating. */
+export function starString(rating: number): string {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return "★".repeat(full) + (half ? "½" : "");
 }
 
 export function showShareMessage(input: {

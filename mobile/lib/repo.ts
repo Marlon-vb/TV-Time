@@ -284,15 +284,18 @@ export function getEpisode(episodeId: number): EpisodeRow | null {
   );
 }
 
-/** Set (or clear, with null) the emoji reaction. Reacting implies watched. */
-export function setReaction(episodeId: number, reaction: string | null): void {
+/**
+ * Set (or clear, with null) the ½–5 star rating for an episode. Rating an
+ * episode implies you watched it, so it also stamps watched_at if unset.
+ */
+export function setRating(episodeId: number, rating: number | null): void {
   getDb().runSync(
     `UPDATE episodes
-     SET reaction = ?,
+     SET rating = ?,
          watched_at = CASE WHEN ? IS NOT NULL THEN COALESCE(watched_at, ?) ELSE watched_at END
      WHERE id = ?`,
-    reaction,
-    reaction,
+    rating,
+    rating,
     new Date().toISOString(),
     episodeId
   );
@@ -423,8 +426,8 @@ export interface Stats {
   minutesWatched: number;
   showsFinished: number;
   episodesBehind: number;
-  distinctGenres: number;
-  reactionsCount: number;
+  averageRating: number | null; // mean of your episode star ratings
+  ratedCount: number;
   topGenres: { genre: string; minutes: number }[];
   mostWatched: { show: ShowRow; watched: number; minutes: number }[];
   monthly: { month: string; episodes: number }[];
@@ -479,10 +482,9 @@ export function stats(): Stats {
       now
     )?.n ?? 0;
 
-  const reactionsCount =
-    db.getFirstSync<{ n: number }>(
-      "SELECT COUNT(*) AS n FROM episodes WHERE reaction IS NOT NULL"
-    )?.n ?? 0;
+  const ratingAgg = db.getFirstSync<{ n: number; avg: number | null }>(
+    "SELECT COUNT(*) AS n, AVG(rating) AS avg FROM episodes WHERE rating IS NOT NULL"
+  );
 
   return {
     showsFollowed: shows.length,
@@ -490,8 +492,8 @@ export function stats(): Stats {
     minutesWatched,
     showsFinished: shows.filter((s) => s.category === "finished").length,
     episodesBehind,
-    distinctGenres: genreMinutes.size,
-    reactionsCount,
+    ratedCount: ratingAgg?.n ?? 0,
+    averageRating: ratingAgg?.avg ?? null,
     topGenres: [...genreMinutes.entries()]
       .map(([genre, minutes]) => ({ genre, minutes }))
       .sort((a, b) => b.minutes - a.minutes)

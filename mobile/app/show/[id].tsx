@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
+import { ratingLabel } from "@/components/StarRating";
 import { ProgressBar, card } from "@/components/ui";
 import {
   colors,
@@ -608,7 +609,14 @@ function EpisodeItem({
       </View>
 
       <View style={{ alignItems: "flex-end", gap: 2 }}>
-        {ep.reaction && <Text style={{ fontSize: 13 }}>{ep.reaction}</Text>}
+        {ep.rating != null && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <Ionicons name="star" size={11} color={colors.accent} />
+            <Text style={{ color: colors.accent, fontSize: 11, fontWeight: "700" }}>
+              {ratingLabel(ep.rating)}
+            </Text>
+          </View>
+        )}
         <Text style={{ color: colors.faint, fontSize: 10 }}>
           {fmtDate(ep.airstamp)}
         </Text>

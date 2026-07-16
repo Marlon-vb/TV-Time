@@ -29,7 +29,7 @@ export interface EpisodeRow {
   summary: string | null;
   image_url: string | null;
   watched_at: string | null;
-  reaction: string | null; // emoji reaction, e.g. "🔥"
+  rating: number | null; // 0.5–5.0 in half-star steps
 }
 
 export type ShowCategory =
