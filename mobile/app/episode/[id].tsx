@@ -62,15 +62,7 @@ export default function EpisodeScreen() {
     reload();
     // Mirror to the social layer (no-ops when signed out).
     if (nextWatched) {
-      void social.recordWatch({
-        showId: show.id,
-        season: episode.season,
-        episode: episode.number,
-        rating: episode.rating,
-        showName: show.name,
-        posterUrl: show.poster_url,
-        episodeName: episode.name,
-      });
+      void social.recordWatchForEpisode(show, episode);
     } else {
       void social.unrecordWatch(show.id, episode.season, episode.number);
     }
@@ -80,15 +72,7 @@ export default function EpisodeScreen() {
     repo.setRating(episode.id, next);
     reload();
     if (next != null) {
-      void social.recordWatch({
-        showId: show.id,
-        season: episode.season,
-        episode: episode.number,
-        rating: next,
-        showName: show.name,
-        posterUrl: show.poster_url,
-        episodeName: episode.name,
-      });
+      void social.recordWatchForEpisode(show, { ...episode, rating: next });
     } else if (isWatched) {
       // Clearing a rating must retract it from the community average too.
       void social.updateWatchRating(
@@ -103,15 +87,7 @@ export default function EpisodeScreen() {
   const rewatch = () => {
     repo.logRewatch(episode.id);
     reload();
-    void social.recordWatch({
-      showId: show.id,
-      season: episode.season,
-      episode: episode.number,
-      rating: episode.rating,
-      showName: show.name,
-      posterUrl: show.poster_url,
-      episodeName: episode.name,
-    });
+    void social.recordWatchForEpisode(show, episode);
   };
 
   const share = async () => {

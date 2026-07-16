@@ -112,14 +112,22 @@ function upsertEpisodes(showId: number, episodes: RemoteEpisode[]): void {
     }
     // TVmaze deletes/merges episode records (schedule shuffles, renumbering).
     // Drop local rows that vanished upstream so they don't haunt Watch Next
-    // forever — but keep watched ones: they're the user's history.
+    // forever — but keep anything carrying user history: watched rows, and
+    // un-checked rows that still hold a rating or rewatch count.
     if (episodes.length > 0) {
-      const ids = episodes.map((e) => e.id).join(",");
-      db.runSync(
-        `DELETE FROM episodes
-         WHERE show_id = ? AND watched_at IS NULL AND id NOT IN (${ids})`,
-        showId
-      );
+      const ids = episodes
+        .map((e) => e.id)
+        .filter((id) => Number.isFinite(id))
+        .join(",");
+      if (ids) {
+        db.runSync(
+          `DELETE FROM episodes
+           WHERE show_id = ? AND watched_at IS NULL
+             AND plays = 0 AND rating IS NULL
+             AND id NOT IN (${ids})`,
+          showId
+        );
+      }
     }
   });
 }
@@ -331,6 +339,20 @@ export function countWatchedEpisodes(): number {
     getDb().getFirstSync<{ n: number }>(
       "SELECT COUNT(*) AS n FROM episodes WHERE watched_at IS NOT NULL"
     )?.n ?? 0
+  );
+}
+
+/** All watched (show, season, episode, rating) tuples in one indexed scan. */
+export function listWatchedRows(
+  showId?: number
+): { show_id: number; season: number; episode: number; rating: number | null }[] {
+  const where =
+    showId != null ? "watched_at IS NOT NULL AND show_id = ?" : "watched_at IS NOT NULL";
+  const params = showId != null ? [showId] : [];
+  return getDb().getAllSync(
+    `SELECT show_id, season, number AS episode, rating
+     FROM episodes WHERE ${where}`,
+    ...params
   );
 }
 

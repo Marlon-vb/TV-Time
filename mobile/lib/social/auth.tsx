@@ -54,10 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       void loadProfile(data.session?.user.id).finally(() => setReady(true));
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       void loadProfile(s?.user.id);
-      if (s?.user) {
+      // Only on real session starts — TOKEN_REFRESHED fires ~hourly and on
+      // every foreground; syncing there would burn a network call each time.
+      if (s?.user && (event === "INITIAL_SESSION" || event === "SIGNED_IN")) {
         void registerForSocial(s.user.email);
         // Backfill/repair the server's copy of the watch history so friends
         // and community stats see the whole library (cheap when in sync).

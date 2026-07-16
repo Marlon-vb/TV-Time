@@ -153,43 +153,37 @@ export default function AccountCard() {
 function DeleteAccountRow() {
   const [busy, setBusy] = useState(false);
 
-  const confirmDelete = () => {
+  const runDelete = async () => {
+    setBusy(true);
+    const ok = await deleteAccount();
+    setBusy(false);
+    if (!ok) {
+      Alert.alert(
+        "Couldn't delete account",
+        "Check your connection and try again."
+      );
+    }
+  };
+
+  const confirmAgain = () =>
+    Alert.alert("Are you sure?", "There is no way to undo this.", [
+      { text: "Keep my account", style: "cancel" },
+      {
+        text: "Yes, delete everything",
+        style: "destructive",
+        onPress: () => void runDelete(),
+      },
+    ]);
+
+  const confirmDelete = () =>
     Alert.alert(
       "Delete account?",
       "This permanently removes your profile, follows, shared watch history, comments, photos, and votes from TV Time's servers. Your on-device library stays.",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete forever",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "Are you sure?",
-              "There is no way to undo this.",
-              [
-                { text: "Keep my account", style: "cancel" },
-                {
-                  text: "Yes, delete everything",
-                  style: "destructive",
-                  onPress: async () => {
-                    setBusy(true);
-                    const ok = await deleteAccount();
-                    setBusy(false);
-                    if (!ok) {
-                      Alert.alert(
-                        "Couldn't delete account",
-                        "Check your connection and try again."
-                      );
-                    }
-                  },
-                },
-              ]
-            );
-          },
-        },
+        { text: "Delete forever", style: "destructive", onPress: confirmAgain },
       ]
     );
-  };
 
   return (
     <Pressable

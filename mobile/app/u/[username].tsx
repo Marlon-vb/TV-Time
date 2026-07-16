@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActionSheetIOS,
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
+import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
 import type { Profile } from "@/lib/social/types";
 
 export default function UserProfileScreen() {
@@ -28,6 +28,7 @@ export default function UserProfileScreen() {
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [following, setFollowing] = useState<boolean | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [qr, setQr] = useState(false);
 
   const isMe = me?.username === username;
@@ -37,7 +38,10 @@ export default function UserProfileScreen() {
     setProfile(p);
     if (!p) return;
     setCounts(await social.followCounts(p.id));
-    if (!isMe) setFollowing(await social.isFollowing(p.id));
+    if (!isMe) {
+      setFollowing(await social.isFollowing(p.id));
+      setBlocked((await social.getBlockedIds()).has(p.id));
+    }
   }, [username, isMe]);
 
   useEffect(() => {
@@ -110,6 +114,18 @@ export default function UserProfileScreen() {
                   <Text style={btnText(false)}>Share</Text>
                 </Bouncy>
               </>
+            ) : blocked ? (
+              <Bouncy
+                onPress={async () => {
+                  await social.unblockUser(profile.id);
+                  setBlocked(false);
+                  await load();
+                }}
+                scaleTo={0.94}
+                style={btn(false)}
+              >
+                <Text style={btnText(false)}>Unblock</Text>
+              </Bouncy>
             ) : (
               <>
                 <Bouncy onPress={toggleFollow} scaleTo={0.94} style={btn(!following)}>
@@ -128,30 +144,13 @@ export default function UserProfileScreen() {
                       },
                       async (i) => {
                         if (i === 0) {
-                          const ok = await social.reportContent({ userId: profile.id });
-                          Alert.alert(
-                            ok ? "Reported" : "Couldn't report",
-                            ok
-                              ? "Thanks — we'll take a look."
-                              : "Check your connection and try again."
-                          );
+                          await reportWithFeedback({ userId: profile.id });
                         } else if (i === 1) {
-                          Alert.alert(
-                            `Block @${profile.username}?`,
-                            "You won't see their comments or activity, and you'll stop following each other.",
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              {
-                                text: "Block",
-                                style: "destructive",
-                                onPress: async () => {
-                                  await social.blockUser(profile.id);
-                                  setFollowing(false);
-                                  await load();
-                                },
-                              },
-                            ]
-                          );
+                          confirmBlock(`@${profile.username}`, profile.id, async () => {
+                            setFollowing(false);
+                            setBlocked(true);
+                            await load();
+                          });
                         }
                       }
                     )

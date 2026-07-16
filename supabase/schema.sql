@@ -157,8 +157,18 @@ create policy "own contact hashes" on public.profile_contacts for all to authent
 
 drop policy if exists "follows readable" on public.follows;
 create policy "follows readable" on public.follows for select to authenticated using (true);
+-- Following requires that neither side has blocked the other — otherwise a
+-- blocked user could simply re-follow and regain access to the blocker's
+-- follower-scoped history.
 drop policy if exists "create own follow" on public.follows;
-create policy "create own follow" on public.follows for insert to authenticated with check (follower_id = auth.uid());
+create policy "create own follow" on public.follows for insert to authenticated with check (
+  follower_id = auth.uid()
+  and not exists (
+    select 1 from public.blocks b
+    where (b.blocker_id = followee_id and b.blocked_id = auth.uid())
+       or (b.blocker_id = auth.uid() and b.blocked_id = followee_id)
+  )
+);
 drop policy if exists "delete own follow" on public.follows;
 create policy "delete own follow" on public.follows for delete to authenticated using (follower_id = auth.uid());
 -- You may also remove one of your own followers (used when blocking someone).
@@ -188,8 +198,13 @@ drop policy if exists "write own watched" on public.watched_episodes;
 create policy "write own watched" on public.watched_episodes for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+-- Comments are public, except from users you've blocked (enforced here so
+-- every present and future comment surface honors the block).
 drop policy if exists "comments readable" on public.comments;
-create policy "comments readable" on public.comments for select to authenticated using (true);
+create policy "comments readable" on public.comments for select to authenticated using (
+  user_id = auth.uid()
+  or user_id not in (select blocked_id from public.blocks where blocker_id = auth.uid())
+);
 drop policy if exists "insert own comment" on public.comments;
 create policy "insert own comment" on public.comments for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists "delete own comment" on public.comments;
@@ -358,6 +373,39 @@ end;
 $$;
 revoke all on function public.delete_account() from public;
 grant execute on function public.delete_account() to authenticated;
+
+-- Blocking severs the follow relationship in both directions atomically —
+-- the invariant lives in the database, not in whichever client created the
+-- block row.
+create or replace function public.handle_new_block()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.follows
+   where (follower_id = new.blocker_id and followee_id = new.blocked_id)
+      or (follower_id = new.blocked_id and followee_id = new.blocker_id);
+  return new;
+end;
+$$;
+drop trigger if exists on_block_created on public.blocks;
+create trigger on_block_created
+  after insert on public.blocks for each row execute function public.handle_new_block();
+
+-- Deleting a comment always cleans up its photo, no matter which path
+-- deleted it (user action, moderation, account-deletion cascade).
+create or replace function public.handle_comment_deleted()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if old.image_url is not null and position('/comment-photos/' in old.image_url) > 0 then
+    delete from storage.objects
+     where bucket_id = 'comment-photos'
+       and name = split_part(old.image_url, '/comment-photos/', 2);
+  end if;
+  return old;
+end;
+$$;
+drop trigger if exists on_comment_deleted on public.comments;
+create trigger on_comment_deleted
+  after delete on public.comments for each row execute function public.handle_comment_deleted();
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

@@ -1,81 +1,75 @@
 import { getSetting, setSetting } from "@/lib/db";
 import * as repo from "@/lib/repo";
 import * as api from "./api";
-import type { WatchedRow } from "./api";
+import { planReconcile } from "./mirror-plan";
 
 /**
- * Keeps the server's watched_episodes in sync with the local library — the
- * local SQLite DB is always the source of truth.
+ * Keeps the server's watched_episodes in sync with the local library.
  *
  * Two tiers:
- *  - Single actions (episode screen, Watch Next check) call recordWatch/
- *    unrecordWatch directly so they also publish a feed activity.
- *  - Everything else — bulk actions, the TV Time import, historic divergence —
- *    is reconciled here in batches, WITHOUT feed activities (marking a season
- *    must not spam friends with 20 feed rows).
+ *  - Single actions (episode screen, Watch Next check, show-screen episode
+ *    toggles) call recordWatch/unrecordWatch directly so they also publish a
+ *    feed activity.
+ *  - Bulk actions and historic divergence are reconciled here in batches,
+ *    WITHOUT feed activities (marking a season must not spam friends).
  *
- * Every function silently no-ops when signed out and never throws.
+ * Safety model: the local library is the source of truth ONLY for shows it
+ * actually contains. Server rows for shows that aren't followed locally are
+ * left untouched — so signing in on a fresh install or second device can
+ * never wipe an existing server history. Removing a show's server history is
+ * an explicit act (unfollow calls deleteWatchedForShow directly).
+ *
+ * Every entry point silently no-ops when signed out and never throws.
  */
 
-const key = (r: { show_id: number; season: number; episode: number }) =>
-  `${r.show_id}:${r.season}:${r.episode}`;
-
-function localWatchedRows(showId?: number): WatchedRow[] {
-  const shows = showId != null ? [showId] : repo.listFollowedShowIds();
-  const rows: WatchedRow[] = [];
-  for (const id of shows) {
-    for (const e of repo.getEpisodes(id)) {
-      if (e.watched_at) {
-        rows.push({
-          show_id: id,
-          season: e.season,
-          episode: e.number,
-          rating: e.rating,
-        });
-      }
-    }
+/** One reconcile pass; returns false on any failure. */
+async function reconcileOnce(showId?: number): Promise<boolean> {
+  try {
+    const judge = new Set(
+      showId != null ? [showId] : repo.listFollowedShowIds()
+    );
+    const local = repo.listWatchedRows(showId);
+    const server = await api.fetchMyWatched(showId);
+    const { upserts, deletes } = planReconcile(local, server, judge);
+    // Upsert first so a mid-flight failure can only leave extra rows behind,
+    // never missing history; targeted deletes go last.
+    await api.upsertWatchedRows(upserts);
+    await api.deleteWatchedRows(deletes);
+    return true;
+  } catch {
+    return false; // offline / signed out — a later reconcile catches up
   }
-  return rows;
 }
 
-/** Diff local truth against server rows; returns the writes needed. */
-export function planReconcile(
-  local: WatchedRow[],
-  server: WatchedRow[]
-): { upserts: WatchedRow[]; staleShowIds: number[] } {
-  const localByKey = new Map(local.map((r) => [key(r), r]));
-  const staleShows = new Set<number>();
-  const matchedKeys = new Set<string>();
-  for (const s of server) {
-    const l = localByKey.get(key(s));
-    if (!l) {
-      staleShows.add(s.show_id); // server row the user no longer has watched
-    } else {
-      matchedKeys.add(key(s));
-      if ((l.rating ?? null) !== (s.rating ?? null)) staleShows.add(s.show_id);
-    }
-  }
-  // Shows with stale server rows are rewritten wholesale (tuple deletes are
-  // awkward over PostgREST); everything else just upserts what's missing.
-  const upserts = local.filter(
-    (r) => staleShows.has(r.show_id) || !matchedKeys.has(key(r))
-  );
-  return { upserts, staleShowIds: [...staleShows] };
-}
-
+// Concurrent requests queue behind the in-flight pass instead of being
+// dropped (a dropped pass used to lose the newest change until next launch).
 let running = false;
+let pending: { full: boolean; showIds: Set<number> } | null = null;
 
-async function reconcile(showId?: number): Promise<void> {
-  if (running) return;
+async function requestReconcile(showId?: number): Promise<boolean> {
+  if (running) {
+    pending ??= { full: false, showIds: new Set() };
+    if (showId == null) pending.full = true;
+    else pending.showIds.add(showId);
+    return false; // queued — the in-flight runner will pick it up
+  }
   running = true;
   try {
-    const local = localWatchedRows(showId);
-    const server = await api.fetchMyWatched(showId);
-    const { upserts, staleShowIds } = planReconcile(local, server);
-    for (const id of staleShowIds) await api.deleteWatchedForShow(id);
-    await api.upsertWatchedRows(upserts);
-  } catch {
-    /* offline / signed out — the next reconcile catches up */
+    let ok = true;
+    let next: { full: boolean; showIds: Set<number> } | null = {
+      full: showId == null,
+      showIds: new Set(showId != null ? [showId] : []),
+    };
+    while (next) {
+      if (next.full) {
+        ok = (await reconcileOnce()) && ok;
+      } else {
+        for (const id of next.showIds) ok = (await reconcileOnce(id)) && ok;
+      }
+      next = pending;
+      pending = null;
+    }
+    return ok;
   } finally {
     running = false;
   }
@@ -83,21 +77,21 @@ async function reconcile(showId?: number): Promise<void> {
 
 /** After bulk actions on one show (mark season/all/up-to, rewatch). */
 export function reconcileShow(showId: number): void {
-  void reconcile(showId);
+  void requestReconcile(showId);
 }
 
-/** Full-library reconcile — sign-in, after imports. */
+/** Full-library reconcile — after imports. */
 export function reconcileAll(): void {
-  void reconcile();
+  void requestReconcile();
 }
 
 const LAST_FULL_KEY = "mirror_last_full_at";
 
 /**
- * Launch-time sync keeper: a cheap count comparison every launch, a full
- * reconcile only when counts diverge or a day has passed. This is what
- * backfills a pre-existing library (e.g. a TV Time import done before
- * signing in) into the community layer.
+ * Launch-time sync keeper: a cheap count comparison, a full reconcile only
+ * when counts diverge or a day has passed. This is what backfills a
+ * pre-existing library (e.g. a TV Time import done before signing in) into
+ * the community layer.
  */
 export async function reconcileIfStale(): Promise<void> {
   try {
@@ -107,8 +101,10 @@ export async function reconcileIfStale(): Promise<void> {
     const last = getSetting(LAST_FULL_KEY);
     const dayOld = !last || Date.now() - Date.parse(last) > 24 * 60 * 60 * 1000;
     if (serverCount !== localCount || dayOld) {
-      await reconcile();
-      setSetting(LAST_FULL_KEY, new Date().toISOString());
+      // Stamp only after a clean, actually-run full pass.
+      if (await requestReconcile()) {
+        setSetting(LAST_FULL_KEY, new Date().toISOString());
+      }
     }
   } catch {
     /* best-effort */

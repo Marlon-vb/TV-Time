@@ -122,31 +122,52 @@ export async function followCounts(
 
 // ---------------------------------------------------------------- activities
 
+/** Remove my feed activities for one episode (optionally scoped further). */
+async function deleteEpisodeActivities(
+  me: string,
+  showId: number,
+  season: number,
+  episode: number,
+  opts: { type?: string; excludeId?: string } = {}
+): Promise<void> {
+  let q = supabase
+    .from("activities")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode);
+  if (opts.type) q = q.eq("type", opts.type);
+  if (opts.excludeId) q = q.neq("id", opts.excludeId);
+  await q;
+}
+
 export async function publishActivity(input: ActivityInput): Promise<void> {
   const me = await uid();
   if (!me) return;
-  // Replace, don't append: re-toggling or re-rating an episode must not fill
-  // friends' feeds with duplicate rows for the same episode.
+  // Replace, don't append — but insert FIRST: if the network dies between
+  // the two steps the feed keeps a row, never loses one.
+  const { data, error } = await supabase
+    .from("activities")
+    .insert({
+      user_id: me,
+      type: input.type,
+      show_id: input.showId,
+      show_name: input.showName,
+      poster_url: input.posterUrl,
+      season: input.season ?? null,
+      episode: input.episode ?? null,
+      episode_name: input.episodeName ?? null,
+      rating: input.rating ?? null,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return;
   if (input.season != null && input.episode != null && input.showId != null) {
-    await supabase
-      .from("activities")
-      .delete()
-      .eq("user_id", me)
-      .eq("show_id", input.showId)
-      .eq("season", input.season)
-      .eq("episode", input.episode);
+    await deleteEpisodeActivities(me, input.showId, input.season, input.episode, {
+      excludeId: data.id as string,
+    });
   }
-  await supabase.from("activities").insert({
-    user_id: me,
-    type: input.type,
-    show_id: input.showId,
-    show_name: input.showName,
-    poster_url: input.posterUrl,
-    season: input.season ?? null,
-    episode: input.episode ?? null,
-    episode_name: input.episodeName ?? null,
-    rating: input.rating ?? null,
-  });
 }
 
 export async function getFeed(before?: string): Promise<FeedItem[]> {
@@ -209,13 +230,26 @@ export async function unrecordWatch(
     .eq("season", season)
     .eq("episode", episode);
   // Un-watching retracts the claim — remove the stale feed activity too.
-  await supabase
-    .from("activities")
-    .delete()
-    .eq("user_id", me)
-    .eq("show_id", showId)
-    .eq("season", season)
-    .eq("episode", episode);
+  await deleteEpisodeActivities(me, showId, season, episode);
+}
+
+/**
+ * Convenience wrapper: mirror a single watch of a local episode row, feed
+ * activity included. The one payload mapping shared by every screen.
+ */
+export async function recordWatchForEpisode(
+  show: { id: number; name: string; poster_url: string | null },
+  ep: { season: number; number: number; name: string; rating: number | null }
+): Promise<void> {
+  await recordWatch({
+    showId: show.id,
+    season: ep.season,
+    episode: ep.number,
+    rating: ep.rating,
+    showName: show.name,
+    posterUrl: show.poster_url,
+    episodeName: ep.name,
+  });
 }
 
 /** Clear (or change) the rating on an already-recorded watch. */
@@ -236,14 +270,9 @@ export async function updateWatchRating(
     .eq("episode", episode);
   if (rating == null) {
     // A retracted rating shouldn't keep showing in friends' feeds.
-    await supabase
-      .from("activities")
-      .delete()
-      .eq("user_id", me)
-      .eq("show_id", showId)
-      .eq("season", season)
-      .eq("episode", episode)
-      .eq("type", "rated");
+    await deleteEpisodeActivities(me, showId, season, episode, {
+      type: "rated",
+    });
   }
 }
 
@@ -291,24 +320,67 @@ export async function countMyWatched(): Promise<number | null> {
   return error ? null : (count ?? 0);
 }
 
-/** Chunked batch upsert of watched rows (import-scale safe). */
+/**
+ * Chunked batch upsert of watched rows (import-scale safe): 500-row chunks,
+ * 4 in flight at a time. Throws on the first failed chunk so callers never
+ * mistake a partial write for success.
+ */
 export async function upsertWatchedRows(rows: WatchedRow[]): Promise<void> {
   const me = await uid();
-  if (!me || rows.length === 0) return;
-  const chunk = 500;
-  for (let i = 0; i < rows.length; i += chunk) {
-    await supabase
-      .from("watched_episodes")
-      .upsert(rows.slice(i, i + chunk).map((r) => ({ ...r, user_id: me })));
+  if (!me) throw new Error("not signed in");
+  if (rows.length === 0) return;
+  const chunkSize = 500;
+  const chunks: WatchedRow[][] = [];
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    chunks.push(rows.slice(i, i + chunkSize));
+  }
+  const width = 4;
+  for (let i = 0; i < chunks.length; i += width) {
+    const results = await Promise.all(
+      chunks.slice(i, i + width).map((c) =>
+        supabase
+          .from("watched_episodes")
+          .upsert(c.map((r) => ({ ...r, user_id: me })))
+      )
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) throw failed.error;
   }
 }
 
-/** Delete every server watched row of mine for one show. */
+/** Targeted deletes of specific server watched rows. Throws on failure. */
+export async function deleteWatchedRows(rows: WatchedRow[]): Promise<void> {
+  const me = await uid();
+  if (!me) throw new Error("not signed in");
+  const width = 4;
+  for (let i = 0; i < rows.length; i += width) {
+    const results = await Promise.all(
+      rows.slice(i, i + width).map((r) =>
+        supabase.from("watched_episodes").delete().match({
+          user_id: me,
+          show_id: r.show_id,
+          season: r.season,
+          episode: r.episode,
+        })
+      )
+    );
+    const failed = results.find((x) => x.error);
+    if (failed?.error) throw failed.error;
+  }
+}
+
+/** Delete every server watched row of mine for one show (used on unfollow). */
 export async function deleteWatchedForShow(showId: number): Promise<void> {
   const me = await uid();
   if (!me) return;
   await supabase
     .from("watched_episodes")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId);
+  // The unfollowed show's feed rows go with it.
+  await supabase
+    .from("activities")
     .delete()
     .eq("user_id", me)
     .eq("show_id", showId);

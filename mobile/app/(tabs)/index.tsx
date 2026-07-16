@@ -126,15 +126,7 @@ export default function WatchNextScreen() {
             repo.markEpisode(item.episode.id, true);
             reload();
             // Mirror to the social layer (no-op when signed out).
-            void social.recordWatch({
-              showId: item.show.id,
-              season: item.episode.season,
-              episode: item.episode.number,
-              rating: item.episode.rating,
-              showName: item.show.name,
-              posterUrl: item.show.poster_url,
-              episodeName: item.episode.name,
-            });
+            void social.recordWatchForEpisode(item.show, item.episode);
           }}
         />
       )}

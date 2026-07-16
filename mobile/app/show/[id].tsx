@@ -32,6 +32,7 @@ import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import { rescheduleAll } from "@/lib/notifications";
 import { showShareMessage } from "@/lib/share";
+import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
 import { useFocusData } from "@/lib/useFocusData";
 import type { EpisodeRow, RemoteShow, ShowRow } from "@/lib/types";
@@ -83,6 +84,9 @@ export default function ShowScreen() {
         style: "destructive",
         onPress: () => {
           repo.unfollowShow(showId);
+          // The promise above extends to the server: clear the mirrored
+          // history and this show's feed rows (no-op signed out).
+          void social.deleteWatchedForShow(showId);
           void rescheduleAll();
           router.back();
         },
@@ -90,13 +94,20 @@ export default function ShowScreen() {
     ]);
   };
 
+  // Plain local change (used by archive — no watch state touched).
   const change = (fn: () => void) => {
     fn();
     reload();
-    // Batch-sync this show's watch state to the social layer — silent (no
-    // feed activities), so marking a season doesn't spam friends' feeds.
+  };
+
+  // Bulk watch-state change: also batch-sync this show to the social layer —
+  // silent (no feed activities), so marking a season doesn't spam friends.
+  const bulkChange = (fn: () => void) => {
+    fn();
+    reload();
     mirror.reconcileShow(showId);
   };
+
 
   const show: ShowRow | null =
     data?.show ?? (preview ? remoteToRow(preview) : null);
@@ -130,6 +141,20 @@ export default function ShowScreen() {
         : null;
   const genres = JSON.parse(show.genres || "[]") as string[];
   const backdrop = show.backdrop_url ?? show.poster_url;
+
+  // Single episode toggle: mirrors like the episode screen (with a feed
+  // activity) instead of a full-show reconcile.
+  const toggleEpisode = (epId: number, isWatched: boolean) => {
+    repo.markEpisode(epId, isWatched);
+    reload();
+    const ep = repo.getEpisode(epId);
+    if (!ep) return;
+    if (isWatched) {
+      void social.recordWatchForEpisode(show, ep);
+    } else {
+      void social.unrecordWatch(show.id, ep.season, ep.number);
+    }
+  };
 
   return (
     <>
@@ -300,7 +325,7 @@ export default function ShowScreen() {
                     primary
                     onPress={() => {
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      change(() => repo.markShow(showId, true));
+                      bulkChange(() => repo.markShow(showId, true));
                     }}
                   />
                 )}
@@ -309,7 +334,7 @@ export default function ShowScreen() {
                     label="Log a rewatch"
                     onPress={() => {
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      change(() => repo.rewatchShow(showId));
+                      bulkChange(() => repo.rewatchShow(showId));
                     }}
                   />
                 )}
@@ -355,14 +380,14 @@ export default function ShowScreen() {
           {followed ? (
             <SeasonList
               episodes={episodes}
-              onToggle={(epId, w) => change(() => repo.markEpisode(epId, w))}
+              onToggle={toggleEpisode}
               onMarkSeason={(season, w) => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                change(() => repo.markSeason(showId, season, w));
+                bulkChange(() => repo.markSeason(showId, season, w));
               }}
               onMarkUpTo={(epId) => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                change(() => repo.markUpTo(showId, epId));
+                bulkChange(() => repo.markUpTo(showId, epId));
               }}
             />
           ) : (
@@ -484,12 +509,18 @@ function SeasonList({
       </Text>
       {sorted.map(([seasonNum, eps]) => {
         const watchedCount = eps.filter((e) => e.watched_at).length;
-        // "All watched" means all *aired* episodes — a mid-air season with
-        // future episodes announced can still be fully caught up.
-        const aired = eps.filter(
-          (e) => e.airstamp && e.airstamp <= nowIso
-        ).length;
-        const allWatched = aired > 0 && watchedCount >= aired;
+        // "All watched" means all *aired* episodes are watched — a mid-air
+        // season with future episodes announced can still be fully caught up.
+        // A season with only phantom watches (unaired-but-marked rows from an
+        // older build/import) counts as watched too, so UNMARK stays
+        // reachable and can clear them.
+        const airedEps = eps.filter((e) => e.airstamp && e.airstamp <= nowIso);
+        const airedWatched = airedEps.filter((e) => e.watched_at).length;
+        const allWatched =
+          airedEps.length > 0
+            ? airedWatched === airedEps.length
+            : watchedCount > 0;
+        const seasonEmpty = airedEps.length === 0 && watchedCount === 0;
         const isOpen = openSet.has(seasonNum);
         return (
           <View key={seasonNum} style={{ ...card, overflow: "hidden" }}>
@@ -525,7 +556,7 @@ function SeasonList({
               </Pressable>
               <Pressable
                 onPress={() => onMarkSeason(seasonNum, !allWatched)}
-                disabled={aired === 0 && watchedCount === 0}
+                disabled={seasonEmpty}
                 accessibilityRole="button"
                 accessibilityLabel={
                   allWatched
@@ -538,7 +569,7 @@ function SeasonList({
                   borderRadius: 8,
                   paddingHorizontal: 9,
                   paddingVertical: 5,
-                  opacity: aired === 0 && watchedCount === 0 ? 0.35 : 1,
+                  opacity: seasonEmpty ? 0.35 : 1,
                 }}
               >
                 <Text

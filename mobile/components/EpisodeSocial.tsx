@@ -19,6 +19,7 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
+import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
 import { shortAgo } from "@/lib/format-social";
 import type { Comment, EpisodeStats, Profile } from "@/lib/social/types";
 
@@ -301,32 +302,9 @@ function CommentRow({
             await social.deleteComment(c.id, c.image_url);
             await onChanged();
           } else if (!isOwn && i === 0) {
-            const ok = await social.reportContent({
-              commentId: c.id,
-              userId: c.user_id,
-            });
-            Alert.alert(
-              ok ? "Reported" : "Couldn't report",
-              ok
-                ? "Thanks — we'll review this comment."
-                : "Check your connection and try again."
-            );
+            await reportWithFeedback({ commentId: c.id, userId: c.user_id });
           } else if (!isOwn && i === 1) {
-            Alert.alert(
-              `Block ${name}?`,
-              "You won't see their comments or activity, and you'll stop following each other.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Block",
-                  style: "destructive",
-                  onPress: async () => {
-                    await social.blockUser(c.user_id);
-                    await onChanged();
-                  },
-                },
-              ]
-            );
+            confirmBlock(name, c.user_id, onChanged);
           }
         } catch {
           Alert.alert("Something went wrong", "Please try again.");

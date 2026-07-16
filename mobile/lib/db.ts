@@ -86,12 +86,13 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
     }
     handle.execSync("PRAGMA user_version = 3");
   }
-  // v4: correct imported watch dates. A TV Time import stamped every episode
-  // as watched at import time, bunching years of history into a single day and
-  // skewing the stats. Backdate those episodes to when they aired — but only
-  // rows from "bulk" days (>50 episodes stamped on one calendar day, which
-  // only an import produces), so genuine in-app marks keep their real
-  // timestamps.
+  // v4: correct bulk-stamped watch dates. A TV Time import stamped every
+  // episode as watched at import time, bunching years of history into a
+  // single day and skewing the stats. Backdate rows from "bulk" days (>50
+  // episodes stamped on one calendar day) to their air dates. By design this
+  // also treats large in-app backfills ("Mark all watched" on a long show)
+  // as history rather than a single-day binge; individually marked episodes
+  // keep their real timestamps.
   if (version < 4) {
     handle.execSync(
       `UPDATE episodes SET watched_at = airstamp
