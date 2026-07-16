@@ -175,11 +175,15 @@ export async function syncStaleShows(
 
 // ------------------------------------------------------------------- watching
 
-export function markEpisode(episodeId: number, watched: boolean): void {
+export function markEpisode(
+  episodeId: number,
+  watched: boolean,
+  at?: string
+): void {
   if (watched) {
     getDb().runSync(
       "UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1) WHERE id = ?",
-      nowIso(),
+      at ?? nowIso(),
       episodeId
     );
   } else {
@@ -275,10 +279,15 @@ export function markEpisodeBySeasonNumber(
   number: number,
   watchedAt?: string
 ): boolean {
+  // Prefer the export's own watch date, then the episode's air date, then now —
+  // so imported history lands on real dates instead of the import moment.
   const result = getDb().runSync(
-    `UPDATE episodes SET watched_at = COALESCE(watched_at, ?)
+    `UPDATE episodes
+       SET watched_at = COALESCE(watched_at, ?, airstamp, ?),
+           plays = MAX(plays, 1)
      WHERE show_id = ? AND season = ? AND number = ?`,
-    watchedAt ?? nowIso(),
+    watchedAt ?? null,
+    nowIso(),
     showId,
     season,
     number
@@ -337,6 +346,7 @@ interface ProgressAgg {
   watched_count: number;
   aired_unwatched: number;
   next_airstamp: string | null;
+  last_aired: string | null;
 }
 
 export function listShowsWithProgress(): ShowWithProgress[] {
@@ -350,7 +360,8 @@ export function listShowsWithProgress(): ShowWithProgress[] {
             SUM(CASE WHEN airstamp IS NOT NULL AND airstamp <= $now THEN 1 ELSE 0 END) AS episode_count,
             SUM(CASE WHEN watched_at IS NOT NULL THEN 1 ELSE 0 END) AS watched_count,
             SUM(CASE WHEN watched_at IS NULL AND airstamp IS NOT NULL AND airstamp <= $now THEN 1 ELSE 0 END) AS aired_unwatched,
-            MIN(CASE WHEN airstamp IS NOT NULL AND airstamp > $now THEN airstamp END) AS next_airstamp
+            MIN(CASE WHEN airstamp IS NOT NULL AND airstamp > $now THEN airstamp END) AS next_airstamp,
+            MAX(CASE WHEN airstamp IS NOT NULL AND airstamp <= $now THEN airstamp END) AS last_aired
      FROM episodes GROUP BY show_id`,
     { $now: now }
   );
@@ -363,6 +374,7 @@ export function listShowsWithProgress(): ShowWithProgress[] {
       watched_count: 0,
       aired_unwatched: 0,
       next_airstamp: null,
+      last_aired: null,
     };
     return {
       ...s,
@@ -371,6 +383,7 @@ export function listShowsWithProgress(): ShowWithProgress[] {
       watched_count: p.watched_count,
       aired_unwatched: p.aired_unwatched,
       next_airstamp: p.next_airstamp,
+      last_aired: p.last_aired,
       category: computeCategory({
         archived: s.archived === 1,
         watchedCount: p.watched_count,

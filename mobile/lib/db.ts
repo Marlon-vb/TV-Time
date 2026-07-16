@@ -86,6 +86,17 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
     }
     handle.execSync("PRAGMA user_version = 3");
   }
+  // v4: correct imported watch dates. A TV Time import stamped every episode
+  // as watched at import time, bunching years of history into a single day and
+  // skewing the stats. Backdate each watched episode to when it aired so the
+  // history reflects reality. (Marks made in-app going forward keep their real
+  // timestamp; fresh installs have nothing to backfill.)
+  if (version < 4) {
+    handle.execSync(
+      "UPDATE episodes SET watched_at = airstamp WHERE watched_at IS NOT NULL AND airstamp IS NOT NULL"
+    );
+    handle.execSync("PRAGMA user_version = 4");
+  }
 }
 
 export function getDb(): SQLite.SQLiteDatabase {

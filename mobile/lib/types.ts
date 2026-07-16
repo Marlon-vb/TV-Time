@@ -46,6 +46,7 @@ export interface ShowWithProgress extends ShowRow {
   aired_unwatched: number;
   total_episodes: number;
   next_airstamp: string | null;
+  last_aired: string | null;
   category: ShowCategory;
 }
 

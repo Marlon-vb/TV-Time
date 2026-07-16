@@ -88,4 +88,14 @@ describe("watch next sections", () => {
     expect(onlyFresh).toHaveLength(1);
     expect(onlyFresh[0].key).toBe("up_next");
   });
+
+  it("orders up next by most recently watched first", () => {
+    const items = [
+      item({ id: 1, lastWatchedDaysAgo: 10 }),
+      item({ id: 2, lastWatchedDaysAgo: 1 }),
+      item({ id: 3, lastWatchedDaysAgo: 5 }),
+    ];
+    const upNext = groupWatchNext(items, NOW).find((s) => s.key === "up_next")!;
+    expect(upNext.data.map((i) => i.show.id)).toEqual([2, 3, 1]);
+  });
 });

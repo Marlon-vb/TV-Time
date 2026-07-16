@@ -93,7 +93,8 @@ export async function runImport(
           (e) => !e.watched_at && e.airstamp && e.airstamp <= nowIso
         );
         for (const e of candidates.slice(0, unresolvedCount)) {
-          repo.markEpisode(e.id, true);
+          // Backdate to the air date so approximated history isn't all "today".
+          repo.markEpisode(e.id, true, e.airstamp ?? undefined);
           state.episodesMarked++;
           state.episodesApproximated++;
         }

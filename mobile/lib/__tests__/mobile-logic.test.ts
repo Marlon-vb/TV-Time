@@ -80,6 +80,14 @@ describe("pickUpcomingForScheduling", () => {
     expect(picked[0].airstamp).toBe(ep(2).airstamp);
     expect(picked[1].airstamp).toBe(ep(10).airstamp);
   });
+
+  it("prefers higher-priority (active) shows over sooner ones", () => {
+    const soonOther = { ...ep(2), priority: 1 };
+    const laterActive = { ...ep(10), priority: 0 };
+    const picked = pickUpcomingForScheduling([soonOther, laterActive], now, 1);
+    expect(picked).toHaveLength(1);
+    expect(picked[0].airstamp).toBe(ep(10).airstamp);
+  });
 });
 
 describe("computeCategory (shared with web)", () => {

@@ -1,14 +1,17 @@
 import { useCallback, useState } from "react";
 import {
+  ActionSheetIOS,
   FlatList,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -23,6 +26,13 @@ import {
 import { relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import { useFocusData } from "@/lib/useFocusData";
+import {
+  filterShows,
+  SHOW_SORTS,
+  sortLabel,
+  sortShows,
+  type ShowSort,
+} from "@/lib/show-sort";
 import type { ShowCategory, ShowWithProgress } from "@/lib/types";
 
 const TAB_ORDER: (ShowCategory | "all")[] = [
@@ -42,6 +52,8 @@ export default function MyShowsScreen() {
   // padding, and the two 10pt gaps between columns.
   const cardWidth = (width - 24 - 8 - 20) / 3;
   const [tab, setTab] = useState<ShowCategory | "all">("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ShowSort>("az");
   const loader = useCallback(() => repo.listShowsWithProgress(), []);
   const { data } = useFocusData(loader);
   const shows = data ?? [];
@@ -50,10 +62,24 @@ export default function MyShowsScreen() {
   for (const s of shows)
     counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
 
-  const visible =
+  const inCategory =
     tab === "all"
       ? shows.filter((s) => s.category !== "archived")
       : shows.filter((s) => s.category === tab);
+  const visible = sortShows(filterShows(inCategory, query), sort);
+
+  const chooseSort = () =>
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: "Sort shows by",
+        options: [...SHOW_SORTS.map((s) => s.label), "Cancel"],
+        cancelButtonIndex: SHOW_SORTS.length,
+        userInterfaceStyle: "dark",
+      },
+      (i) => {
+        if (i != null && i < SHOW_SORTS.length) setSort(SHOW_SORTS[i].key);
+      }
+    );
 
   return (
     <FlatList
@@ -68,6 +94,68 @@ export default function MyShowsScreen() {
       ListHeaderComponent={
         <View style={{ marginHorizontal: -12 }}>
           <ScreenHeader title="My Shows" subtitle={`${shows.length} followed`} />
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              paddingHorizontal: 16,
+              marginTop: 6,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.line,
+                borderRadius: radius.md,
+                paddingHorizontal: 12,
+              }}
+            >
+              <Ionicons name="search" size={15} color={colors.faint} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search your shows…"
+                placeholderTextColor={colors.faint}
+                autoCorrect={false}
+                style={{ flex: 1, paddingVertical: 10, color: colors.fg, fontSize: 14 }}
+              />
+              {query.length > 0 && (
+                <Pressable
+                  onPress={() => setQuery("")}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                >
+                  <Ionicons name="close-circle" size={16} color={colors.faint} />
+                </Pressable>
+              )}
+            </View>
+            <Pressable
+              onPress={chooseSort}
+              accessibilityRole="button"
+              accessibilityLabel={`Sort by ${sortLabel(sort)}`}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 12,
+                borderRadius: radius.md,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.line,
+              }}
+            >
+              <Ionicons name="swap-vertical" size={15} color={colors.muted} />
+              <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
+                {sortLabel(sort)}
+              </Text>
+            </Pressable>
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -120,11 +208,19 @@ export default function MyShowsScreen() {
       }
       ListEmptyComponent={
         <View style={{ paddingHorizontal: 4 }}>
-          <EmptyState
-            icon="albums-outline"
-            title="No shows yet"
-            body="Follow shows from Discover, or import your TV Time history from Settings."
-          />
+          {query.trim() ? (
+            <EmptyState
+              icon="search-outline"
+              title="No matches"
+              body={`No followed shows match “${query.trim()}”.`}
+            />
+          ) : (
+            <EmptyState
+              icon="albums-outline"
+              title="No shows yet"
+              body="Follow shows from Discover, or import your TV Time history from Settings."
+            />
+          )}
         </View>
       }
       renderItem={({ item }) => (

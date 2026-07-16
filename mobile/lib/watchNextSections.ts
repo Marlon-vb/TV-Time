@@ -39,9 +39,9 @@ export interface WatchNextSection {
 }
 
 /**
- * Group and order items: Up next keeps freshest-aired-first order, idle
- * shows surface the most-neglected first, not-started keeps input order.
- * Empty sections are dropped.
+ * Group and order items: Up next leads with the show you watched most recently
+ * (continue-watching), idle shows surface the most-neglected first, not-started
+ * keeps input order. Empty sections are dropped.
  */
 export function groupWatchNext(
   items: WatchNextItem[],
@@ -56,6 +56,10 @@ export function groupWatchNext(
   for (const item of items) {
     buckets[sectionForItem(item, now, idleAfterDays)].push(item);
   }
+  // Up next: most recently watched/interacted first.
+  buckets.up_next.sort((a, b) =>
+    (b.last_watched_at ?? "").localeCompare(a.last_watched_at ?? "")
+  );
   buckets.idle.sort((a, b) =>
     (a.last_watched_at ?? "").localeCompare(b.last_watched_at ?? "")
   );

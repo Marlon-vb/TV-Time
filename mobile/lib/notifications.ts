@@ -49,8 +49,20 @@ export async function rescheduleAll(): Promise<number> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   const items = repo.upcoming(180);
+  // Shows you're actively watching win the limited notification budget over
+  // ones you follow but haven't started (or have finished).
+  const activeShowIds = new Set(
+    repo
+      .listShowsWithProgress()
+      .filter((s) => s.watched_count > 0 && s.category !== "finished")
+      .map((s) => s.id)
+  );
   const picked = pickUpcomingForScheduling(
-    items.map((i) => ({ ...i, airstamp: i.episode.airstamp })),
+    items.map((i) => ({
+      ...i,
+      airstamp: i.episode.airstamp,
+      priority: activeShowIds.has(i.show.id) ? 0 : 1,
+    })),
     new Date()
   );
 
