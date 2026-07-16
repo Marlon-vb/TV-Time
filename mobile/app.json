@@ -16,9 +16,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.tvtime.personal",
-      "buildNumber": "1",
+      "buildNumber": "2",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSContactsUsageDescription": "TV Time can match your contacts to help you find friends who already use the app. Your contacts are hashed on your device and never uploaded in readable form."
       }
     },
     "android": {
@@ -38,12 +40,23 @@
       "expo-router",
       "expo-sqlite",
       "expo-background-task",
+      "expo-apple-authentication",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "TV Time matches your contacts to help you find friends who already use the app."
+        }
+      ],
       [
         "expo-notifications",
         {
           "color": "#fbd737"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "supabaseUrl": "https://dvrnfqyrljcuosjspyab.supabase.co",
+      "supabaseKey": "sb_publishable_ew2E-UCvJjbWdbA7U5_X3g_2emZRWyL"
+    }
   }
 }

@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
+import AccountCard from "@/components/AccountCard";
 import { EmptyState, ProgressBar, card } from "@/components/ui";
 import { computeAchievements, type Achievement } from "@/lib/achievements";
 import {
@@ -29,7 +30,8 @@ export default function ProfileScreen() {
     return (
       <View>
         <ScreenHeader title="Profile" />
-        <View style={{ padding: 16 }}>
+        <View style={{ padding: 16, gap: 12 }}>
+          <AccountCard />
           <EmptyState
             icon="person-outline"
             title="No stats yet"
@@ -53,6 +55,8 @@ export default function ProfileScreen() {
       }}
     >
       <ScreenHeader title="Profile" />
+
+      <AccountCard />
 
       {/* Time watched hero */}
       <View style={{ ...card, padding: 20, overflow: "hidden" }}>

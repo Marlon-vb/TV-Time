@@ -11,6 +11,7 @@ import {
 import { colors, fonts } from "@/lib/theme";
 import { getDb } from "@/lib/db";
 import { registerBackgroundSync, syncAndReschedule } from "@/lib/sync";
+import { AuthProvider } from "@/lib/social/auth";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -52,7 +53,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <>
+    <AuthProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -82,6 +83,6 @@ export default function RootLayout() {
         />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
       </Stack>
-    </>
+    </AuthProvider>
   );
 }
