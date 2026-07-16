@@ -29,7 +29,6 @@ export default function SettingsScreen() {
       <NotificationsSection />
       <ImportSection />
       <TmdbSection />
-      <PreferencesSection />
       <SyncSection />
     </ScrollView>
   );
@@ -304,43 +303,6 @@ function TmdbSection() {
         onPress={() => void save()}
       />
       {message && <Text style={bodyText}>{message}</Text>}
-    </Section>
-  );
-}
-
-/* -------------------------------------------------------------- preferences */
-
-function PreferencesSection() {
-  const [spoilers, setSpoilers] = useState(
-    getSetting("spoiler_protection") !== "0"
-  );
-  return (
-    <Section title="Preferences">
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text style={{ color: colors.fg, fontWeight: "600", fontSize: 13 }}>
-            Spoiler protection
-          </Text>
-          <Text style={bodyText}>
-            Hide episode descriptions until you&apos;ve watched them.
-          </Text>
-        </View>
-        <Switch
-          value={spoilers}
-          onValueChange={(v) => {
-            setSetting("spoiler_protection", v ? "1" : "0");
-            setSpoilers(v);
-          }}
-          trackColor={{ true: colors.accent, false: colors.overlay }}
-          thumbColor={colors.ink}
-        />
-      </View>
     </Section>
   );
 }

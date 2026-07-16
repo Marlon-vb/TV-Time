@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import {
   Pressable,
   ScrollView,
@@ -18,7 +18,6 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius, scrimGradient } from "@/lib/theme";
 import { epCode, fmtDate, fmtTime, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
-import { getSetting } from "@/lib/db";
 import { findNeighbors } from "@/lib/episodeNav";
 import { episodeShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
@@ -42,7 +41,6 @@ export default function EpisodeScreen() {
     return { episode, show, ...neighbors };
   }, [episodeId]);
   const { data, reload } = useFocusData(loader);
-  const [revealed, setRevealed] = useState(false);
 
   if (!data) {
     return (
@@ -57,8 +55,6 @@ export default function EpisodeScreen() {
     episode.airstamp && episode.airstamp <= new Date().toISOString()
   );
   const isWatched = Boolean(episode.watched_at);
-  const spoilers = getSetting("spoiler_protection") !== "0";
-  const hideSummary = spoilers && !isWatched && !revealed;
   const still = episode.image_url ?? show.backdrop_url ?? show.poster_url;
 
   const toggleWatched = (nextWatched: boolean) => {
@@ -289,10 +285,7 @@ export default function EpisodeScreen() {
 
           {/* Synopsis */}
           {episode.summary && (
-            <Pressable
-              onPress={() => hideSummary && setRevealed(true)}
-              style={{ ...card, padding: 14 }}
-            >
+            <View style={{ ...card, padding: 14 }}>
               <Text
                 style={{
                   color: colors.muted,
@@ -305,18 +298,15 @@ export default function EpisodeScreen() {
               </Text>
               <Text
                 style={{
-                  color: hideSummary ? colors.faint : colors.muted,
+                  color: colors.muted,
                   fontSize: 13,
                   lineHeight: 20,
                   marginTop: 8,
-                  fontStyle: hideSummary ? "italic" : "normal",
                 }}
               >
-                {hideSummary
-                  ? "Spoiler hidden — tap to reveal"
-                  : episode.summary}
+                {episode.summary}
               </Text>
-            </Pressable>
+            </View>
           )}
 
           {/* View show */}
@@ -365,7 +355,7 @@ export default function EpisodeScreen() {
           />
 
           {/* Prev / next */}
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flexDirection: "row", gap: 12 }}>
             <NeighborButton
               label={prev ? epCode(prev.season, prev.number) : null}
               direction="prev"
@@ -405,21 +395,41 @@ function NeighborButton({
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        paddingVertical: 13,
+        justifyContent: direction === "prev" ? "flex-start" : "flex-end",
+        gap: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         borderRadius: radius.md,
         opacity: label ? 1 : 0.35,
       }}
     >
       {direction === "prev" && (
-        <Ionicons name="chevron-back" size={14} color={colors.muted} />
+        <Ionicons name="chevron-back" size={16} color={colors.muted} />
       )}
-      <Text style={{ color: colors.fg, fontFamily: fonts.displayMedium, fontSize: 13 }}>
-        {label ?? "—"}
-      </Text>
+      <View style={{ alignItems: direction === "prev" ? "flex-start" : "flex-end" }}>
+        <Text
+          style={{
+            color: colors.faint,
+            fontSize: 10,
+            letterSpacing: 0.6,
+            textTransform: "uppercase",
+          }}
+        >
+          {direction === "prev" ? "Previous" : "Next"}
+        </Text>
+        <Text
+          style={{
+            color: colors.fg,
+            fontFamily: fonts.displayMedium,
+            fontSize: 14,
+            marginTop: 1,
+          }}
+        >
+          {label ?? "—"}
+        </Text>
+      </View>
       {direction === "next" && (
-        <Ionicons name="chevron-forward" size={14} color={colors.muted} />
+        <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       )}
     </Bouncy>
   );

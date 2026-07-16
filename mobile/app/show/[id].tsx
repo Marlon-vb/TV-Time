@@ -30,7 +30,6 @@ import {
 import { epCode, fmtDate, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
-import { getSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { showShareMessage } from "@/lib/share";
 import { useFocusData } from "@/lib/useFocusData";
@@ -62,8 +61,6 @@ export default function ShowScreen() {
         .catch(() => setPreviewFailed(true));
     }
   }, [data, preview, previewFailed, showId]);
-
-  const spoilers = getSetting("spoiler_protection") !== "0";
 
   const follow = async () => {
     setBusy(true);
@@ -354,7 +351,6 @@ export default function ShowScreen() {
           {followed ? (
             <SeasonList
               episodes={episodes}
-              spoilers={spoilers}
               onToggle={(epId, w) => change(() => repo.markEpisode(epId, w))}
               onMarkSeason={(season, w) => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -440,13 +436,11 @@ function ActionButton({
 
 function SeasonList({
   episodes,
-  spoilers,
   onToggle,
   onMarkSeason,
   onMarkUpTo,
 }: {
   episodes: EpisodeRow[];
-  spoilers: boolean;
   onToggle: (episodeId: number, watched: boolean) => void;
   onMarkSeason: (season: number, watched: boolean) => void;
   onMarkUpTo: (episodeId: number) => void;
@@ -547,7 +541,6 @@ function SeasonList({
                 <EpisodeItem
                   key={ep.id}
                   ep={ep}
-                  spoilers={spoilers}
                   onToggle={onToggle}
                   onMarkUpTo={onMarkUpTo}
                 />
@@ -564,21 +557,17 @@ function SeasonList({
 
 function EpisodeItem({
   ep,
-  spoilers,
   onToggle,
   onMarkUpTo,
 }: {
   ep: EpisodeRow;
-  spoilers: boolean;
   onToggle: (episodeId: number, watched: boolean) => void;
   onMarkUpTo: (episodeId: number) => void;
 }) {
-  const [revealed, setRevealed] = useState(false);
   const isAired = Boolean(
     ep.airstamp && ep.airstamp <= new Date().toISOString()
   );
   const isWatched = Boolean(ep.watched_at);
-  const hideSummary = spoilers && !isWatched && !revealed;
 
   const router = useRouter();
   return (
@@ -626,20 +615,17 @@ function EpisodeItem({
           </Text>
         </Text>
         {ep.summary && (
-          <Pressable onPress={() => hideSummary && setRevealed(true)}>
-            <Text
-              style={{
-                color: hideSummary ? colors.faint : colors.faint,
-                fontSize: 11,
-                marginTop: 2,
-                lineHeight: 15,
-                fontStyle: hideSummary ? "italic" : "normal",
-              }}
-              numberOfLines={2}
-            >
-              {hideSummary ? "Spoiler hidden — tap to reveal" : ep.summary}
-            </Text>
-          </Pressable>
+          <Text
+            style={{
+              color: colors.faint,
+              fontSize: 11,
+              marginTop: 2,
+              lineHeight: 15,
+            }}
+            numberOfLines={2}
+          >
+            {ep.summary}
+          </Text>
         )}
       </View>
 

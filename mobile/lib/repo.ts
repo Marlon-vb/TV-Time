@@ -425,16 +425,25 @@ export function watchNext(): WatchNextItem[] {
   }));
 }
 
-export function upcoming(days = 90): UpcomingItem[] {
+/**
+ * Every announced future episode of your shows, earliest first. Pass `days` to
+ * cap how far ahead to look; omit it (the default) to show everything we have
+ * air dates for, out to the last known episode.
+ */
+export function upcoming(days?: number): UpcomingItem[] {
   const now = nowIso();
-  const until = new Date(Date.now() + days * 86_400_000).toISOString();
+  const params: string[] = [now];
+  let upperBound = "";
+  if (days != null) {
+    upperBound = " AND e.airstamp <= ?";
+    params.push(new Date(Date.now() + days * 86_400_000).toISOString());
+  }
   const rows = getDb().getAllSync<EpisodeRow>(
     `SELECT e.* FROM episodes e
      JOIN shows s ON s.id = e.show_id AND s.archived = 0
-     WHERE e.airstamp IS NOT NULL AND e.airstamp > ? AND e.airstamp <= ?
+     WHERE e.airstamp IS NOT NULL AND e.airstamp > ?${upperBound}
      ORDER BY e.airstamp ASC`,
-    now,
-    until
+    ...params
   );
   const showCache = new Map<number, ShowRow>();
   return rows.map((episode) => {

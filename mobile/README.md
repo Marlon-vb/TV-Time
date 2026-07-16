@@ -14,15 +14,13 @@ Everything the web app does, natively:
 - **"What should I watch tonight?"** — one tap suggests an episode from your
   backlog with a reason (nearly caught up, neglected show, quick episode)
 - **Upcoming** agenda grouped by day
-- **Episode pages** — tap any episode for its still, synopsis
-  (spoiler-guarded), watched toggle, emoji reaction, and prev/next
-  navigation
+- **Episode pages** — tap any episode for its still, synopsis, watched
+  toggle, star rating, character votes, and prev/next navigation
 - **Share cards** — send "Just watched…" posts to iMessage/WhatsApp via the
   native share sheet, from any episode or show
 - **My Shows** grid with TV Time's category chips and progress bars
-- **Show pages** with season accordions, spoiler-hidden episode summaries,
-  mark season / mark all, and long-press an episode to mark
-  "watched up to here"
+- **Show pages** with season accordions, episode summaries, mark season /
+  mark all, and long-press an episode to mark "watched up to here"
 - **Discover** search over TVmaze's catalog
 - **Profile** stats: time watched, episodes per month, top shows and genres,
   plus 12 achievements to unlock (Century Club, Binge Lord, Zero Inbox…)

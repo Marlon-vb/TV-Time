@@ -187,15 +187,18 @@ function UsernameSetup() {
           disabled={busy || value.trim() === ""}
           scaleTo={0.92}
           style={{
-            paddingHorizontal: 16,
+            minWidth: 96,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            alignItems: "center",
             justifyContent: "center",
             borderRadius: radius.sm,
             backgroundColor: colors.accent,
             opacity: busy || value.trim() === "" ? 0.5 : 1,
           }}
         >
-          <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13 }}>
-            Save
+          <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 15 }}>
+            {busy ? "Saving…" : "Save"}
           </Text>
         </Bouncy>
       </View>

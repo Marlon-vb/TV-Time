@@ -61,6 +61,9 @@ export default function RootLayout() {
           headerTintColor: colors.fg,
           headerTitleStyle: { fontFamily: fonts.display, fontSize: 17 },
           headerShadowVisible: false,
+          // Show only the chevron on the back button (no "(tabs)"/screen-title
+          // text label next to it).
+          headerBackButtonDisplayMode: "minimal",
           contentStyle: { backgroundColor: colors.ink },
         }}
       >

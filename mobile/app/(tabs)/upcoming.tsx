@@ -20,7 +20,7 @@ interface DaySection {
 export default function UpcomingScreen() {
   const router = useRouter();
   const loader = useCallback((): DaySection[] => {
-    const items = repo.upcoming(90);
+    const items = repo.upcoming();
     const sections: DaySection[] = [];
     for (const item of items) {
       const day = item.episode.airstamp!.slice(0, 10);
@@ -54,7 +54,9 @@ export default function UpcomingScreen() {
         <ScreenHeader
           title="Upcoming"
           subtitle={
-            count > 0 ? `${count} episodes in the next 90 days` : null
+            count > 0
+              ? `${count} scheduled episode${count === 1 ? "" : "s"}`
+              : null
           }
         />
       }
@@ -62,7 +64,7 @@ export default function UpcomingScreen() {
         <EmptyState
           icon="calendar-outline"
           title="Nothing scheduled"
-          body="None of your shows have announced episodes in the next 90 days. New dates appear automatically after a sync."
+          body="None of your shows have announced episodes yet. New dates appear automatically after a sync."
         />
       }
       renderSectionHeader={({ section }) => (
