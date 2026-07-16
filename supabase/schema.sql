@@ -185,6 +185,14 @@ create policy "own push tokens" on public.push_tokens for all to authenticated
 -- Functions
 -- =====================================================================
 
+-- Drop first so re-running works even when a function's return type changed
+-- (Postgres won't let CREATE OR REPLACE change the return type).
+drop function if exists public.find_friends(text[], text[]);
+drop function if exists public.feed(integer, timestamptz);
+drop function if exists public.friends_who_watched(integer, integer, integer);
+drop function if exists public.episode_stats(integer, integer, integer);
+drop function if exists public.character_vote_tally(integer, integer, integer);
+
 create or replace function public.find_friends(phone_hashes text[], email_hashes text[])
 returns setof public.profiles
 language sql security definer set search_path = public as $$
