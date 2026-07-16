@@ -56,8 +56,7 @@
         {
           "color": "#fbd737"
         }
-      ],
-      "@bacons/apple-targets"
+      ]
     ],
     "extra": {
       "supabaseUrl": "https://dvrnfqyrljcuosjspyab.supabase.co",
