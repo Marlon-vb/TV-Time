@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   Pressable,
@@ -137,7 +138,9 @@ export default function EpisodeSocial({
             <CommentRow
               key={c.id}
               comment={c}
+              isOwn={c.user_id === session.user.id}
               onOpenUser={(u) => router.push(`/u/${u}` as never)}
+              onChanged={load}
               onUpvote={async () => {
                 await social.toggleUpvote(c.id, c.upvoted);
                 setComments((prev) =>
@@ -266,29 +269,99 @@ function CommentComposer({
 
 function CommentRow({
   comment: c,
+  isOwn,
   onUpvote,
   onOpenUser,
+  onChanged,
 }: {
   comment: Comment;
+  isOwn: boolean;
   onUpvote: () => void;
   onOpenUser: (username: string) => void;
+  onChanged: () => Promise<void> | void;
 }) {
   const name = c.display_name || c.username || "Someone";
+
+  // Moderation menu — delete your own comment; report or block for others'
+  // (App Store Guideline 1.2 requires both for user-generated content).
+  const openMenu = () => {
+    const options = isOwn
+      ? ["Delete comment", "Cancel"]
+      : [`Report comment`, `Block ${name}`, "Cancel"];
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex: options.length - 1,
+        destructiveButtonIndex: isOwn ? 0 : 1,
+        userInterfaceStyle: "dark",
+      },
+      async (i) => {
+        try {
+          if (isOwn && i === 0) {
+            await social.deleteComment(c.id, c.image_url);
+            await onChanged();
+          } else if (!isOwn && i === 0) {
+            const ok = await social.reportContent({
+              commentId: c.id,
+              userId: c.user_id,
+            });
+            Alert.alert(
+              ok ? "Reported" : "Couldn't report",
+              ok
+                ? "Thanks — we'll review this comment."
+                : "Check your connection and try again."
+            );
+          } else if (!isOwn && i === 1) {
+            Alert.alert(
+              `Block ${name}?`,
+              "You won't see their comments or activity, and you'll stop following each other.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Block",
+                  style: "destructive",
+                  onPress: async () => {
+                    await social.blockUser(c.user_id);
+                    await onChanged();
+                  },
+                },
+              ]
+            );
+          }
+        } catch {
+          Alert.alert("Something went wrong", "Please try again.");
+        }
+      }
+    );
+  };
+
   return (
     <View style={{ flexDirection: "row", gap: 10, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 12 }}>
       <Pressable onPress={() => c.username && onOpenUser(c.username)}>
         <Avatar name={name} url={c.avatar_url} size={34} />
       </Pressable>
       <View style={{ flex: 1, gap: 6 }}>
-        <Text style={{ fontSize: 13 }}>
-          <Text
-            style={{ color: colors.fg, fontFamily: fonts.displayMedium }}
-            onPress={() => c.username && onOpenUser(c.username)}
-          >
-            {name}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontSize: 13, flex: 1 }} numberOfLines={1}>
+            <Text
+              style={{ color: colors.fg, fontFamily: fonts.displayMedium }}
+              onPress={() => c.username && onOpenUser(c.username)}
+            >
+              {name}
+            </Text>
+            <Text style={{ color: colors.faint }}>  {shortAgo(c.created_at)}</Text>
           </Text>
-          <Text style={{ color: colors.faint }}>  {shortAgo(c.created_at)}</Text>
-        </Text>
+          <Pressable
+            onPress={openMenu}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isOwn ? "Comment options" : `Report or block ${name}`
+            }
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color={colors.faint} />
+          </Pressable>
+        </View>
         {c.body ? (
           <Text style={{ color: colors.fg, fontSize: 14, lineHeight: 19 }}>{c.body}</Text>
         ) : null}

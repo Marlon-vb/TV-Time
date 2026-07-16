@@ -89,6 +89,14 @@ export default function EpisodeScreen() {
         posterUrl: show.poster_url,
         episodeName: episode.name,
       });
+    } else if (isWatched) {
+      // Clearing a rating must retract it from the community average too.
+      void social.updateWatchRating(
+        show.id,
+        episode.season,
+        episode.number,
+        null
+      );
     }
   };
 

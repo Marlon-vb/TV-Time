@@ -32,6 +32,7 @@ import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import { rescheduleAll } from "@/lib/notifications";
 import { showShareMessage } from "@/lib/share";
+import * as mirror from "@/lib/social/mirror";
 import { useFocusData } from "@/lib/useFocusData";
 import type { EpisodeRow, RemoteShow, ShowRow } from "@/lib/types";
 
@@ -92,6 +93,9 @@ export default function ShowScreen() {
   const change = (fn: () => void) => {
     fn();
     reload();
+    // Batch-sync this show's watch state to the social layer — silent (no
+    // feed activities), so marking a season doesn't spam friends' feeds.
+    mirror.reconcileShow(showId);
   };
 
   const show: ShowRow | null =
@@ -480,7 +484,12 @@ function SeasonList({
       </Text>
       {sorted.map(([seasonNum, eps]) => {
         const watchedCount = eps.filter((e) => e.watched_at).length;
-        const allWatched = watchedCount === eps.length;
+        // "All watched" means all *aired* episodes — a mid-air season with
+        // future episodes announced can still be fully caught up.
+        const aired = eps.filter(
+          (e) => e.airstamp && e.airstamp <= nowIso
+        ).length;
+        const allWatched = aired > 0 && watchedCount >= aired;
         const isOpen = openSet.has(seasonNum);
         return (
           <View key={seasonNum} style={{ ...card, overflow: "hidden" }}>
@@ -516,12 +525,20 @@ function SeasonList({
               </Pressable>
               <Pressable
                 onPress={() => onMarkSeason(seasonNum, !allWatched)}
+                disabled={aired === 0 && watchedCount === 0}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  allWatched
+                    ? `Unmark season ${seasonNum}`
+                    : `Mark season ${seasonNum} watched`
+                }
                 style={{
                   borderWidth: 1,
                   borderColor: allWatched ? colors.line : "rgba(251,215,55,0.35)",
                   borderRadius: 8,
                   paddingHorizontal: 9,
                   paddingVertical: 5,
+                  opacity: aired === 0 && watchedCount === 0 ? 0.35 : 1,
                 }}
               >
                 <Text

@@ -109,6 +109,26 @@ create table if not exists public.push_tokens (
   primary key (user_id, token)
 );
 
+-- User-generated-content reports (App Store Guideline 1.2). Reviewed by the
+-- app owner in the Supabase dashboard.
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  comment_id uuid references public.comments(id) on delete set null,
+  reported_user_id uuid references public.profiles(id) on delete cascade,
+  reason text check (reason is null or char_length(reason) <= 500),
+  created_at timestamptz not null default now()
+);
+
+-- Blocks: hide a user's content from the blocker (App Store Guideline 1.2).
+create table if not exists public.blocks (
+  blocker_id uuid not null references public.profiles(id) on delete cascade,
+  blocked_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  check (blocker_id <> blocked_id)
+);
+
 -- =====================================================================
 -- Row Level Security
 -- =====================================================================
@@ -121,6 +141,8 @@ alter table public.comments enable row level security;
 alter table public.comment_votes enable row level security;
 alter table public.character_votes enable row level security;
 alter table public.push_tokens enable row level security;
+alter table public.reports enable row level security;
+alter table public.blocks enable row level security;
 
 drop policy if exists "profiles readable" on public.profiles;
 create policy "profiles readable" on public.profiles for select to authenticated using (true);
@@ -139,6 +161,9 @@ drop policy if exists "create own follow" on public.follows;
 create policy "create own follow" on public.follows for insert to authenticated with check (follower_id = auth.uid());
 drop policy if exists "delete own follow" on public.follows;
 create policy "delete own follow" on public.follows for delete to authenticated using (follower_id = auth.uid());
+-- You may also remove one of your own followers (used when blocking someone).
+drop policy if exists "remove follower" on public.follows;
+create policy "remove follower" on public.follows for delete to authenticated using (followee_id = auth.uid());
 
 drop policy if exists "read own and followed activities" on public.activities;
 create policy "read own and followed activities" on public.activities for select to authenticated using (
@@ -150,10 +175,15 @@ create policy "insert own activities" on public.activities for insert to authent
 drop policy if exists "delete own activities" on public.activities;
 create policy "delete own activities" on public.activities for delete to authenticated using (user_id = auth.uid());
 
--- watched_episodes: everyone signed in can read (needed for friends-who-watched
--- and community stats), but you only write your own rows.
+-- watched_episodes: your watch history is visible to you and people you let
+-- follow you — NOT to every signed-in stranger. Community aggregates
+-- (episode_stats, also_watched) go through SECURITY DEFINER functions that
+-- return only counts, never rows.
 drop policy if exists "watched readable" on public.watched_episodes;
-create policy "watched readable" on public.watched_episodes for select to authenticated using (true);
+create policy "watched readable" on public.watched_episodes for select to authenticated using (
+  user_id = auth.uid()
+  or user_id in (select followee_id from public.follows where follower_id = auth.uid())
+);
 drop policy if exists "write own watched" on public.watched_episodes;
 create policy "write own watched" on public.watched_episodes for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -171,8 +201,13 @@ drop policy if exists "write own vote" on public.comment_votes;
 create policy "write own vote" on public.comment_votes for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+-- character_votes rows reveal watch history, so the same follower scoping
+-- applies; the public tally goes through the SECURITY DEFINER function.
 drop policy if exists "charvotes readable" on public.character_votes;
-create policy "charvotes readable" on public.character_votes for select to authenticated using (true);
+create policy "charvotes readable" on public.character_votes for select to authenticated using (
+  user_id = auth.uid()
+  or user_id in (select followee_id from public.follows where follower_id = auth.uid())
+);
 drop policy if exists "write own charvote" on public.character_votes;
 create policy "write own charvote" on public.character_votes for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -180,6 +215,17 @@ create policy "write own charvote" on public.character_votes for all to authenti
 drop policy if exists "own push tokens" on public.push_tokens;
 create policy "own push tokens" on public.push_tokens for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "create own report" on public.reports;
+create policy "create own report" on public.reports for insert to authenticated
+  with check (reporter_id = auth.uid());
+drop policy if exists "read own reports" on public.reports;
+create policy "read own reports" on public.reports for select to authenticated
+  using (reporter_id = auth.uid());
+
+drop policy if exists "own blocks" on public.blocks;
+create policy "own blocks" on public.blocks for all to authenticated
+  using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
 
 -- =====================================================================
 -- Functions
@@ -193,6 +239,7 @@ drop function if exists public.friends_who_watched(integer, integer, integer);
 drop function if exists public.episode_stats(integer, integer, integer);
 drop function if exists public.character_vote_tally(integer, integer, integer);
 drop function if exists public.also_watched(integer[], integer);
+drop function if exists public.delete_account();
 
 create or replace function public.find_friends(phone_hashes text[], email_hashes text[])
 returns setof public.profiles
@@ -220,6 +267,7 @@ language sql stable security invoker set search_path = public as $$
   join public.profiles p on p.id = a.user_id
   where (a.user_id = auth.uid()
          or a.user_id in (select followee_id from public.follows where follower_id = auth.uid()))
+    and a.user_id not in (select blocked_id from public.blocks where blocker_id = auth.uid())
     and a.created_at < before
   order by a.created_at desc
   limit least(limit_count, 100);
@@ -242,11 +290,13 @@ language sql stable security invoker set search_path = public as $$
 $$;
 
 -- Community rating for an episode: average + count across everyone.
+-- SECURITY DEFINER: watch rows are follower-scoped by RLS, but these
+-- anonymous aggregates are intentionally community-wide.
 create or replace function public.episode_stats(
   p_show_id integer, p_season integer, p_episode integer
 )
 returns table (avg_rating real, rating_count integer, watch_count integer)
-language sql stable security invoker set search_path = public as $$
+language sql stable security definer set search_path = public as $$
   select
     (select avg(rating)::real from public.watched_episodes
        where show_id = p_show_id and season = p_season and episode = p_episode and rating is not null),
@@ -259,11 +309,12 @@ $$;
 -- Community collaborative filtering: shows that people who watch the same
 -- shows as you also watch, ranked by how many of those "taste neighbors"
 -- watch them. Show ids are TVmaze ids. Grows smarter as the user base grows.
+-- SECURITY DEFINER: returns only anonymous per-show counts, never rows.
 create or replace function public.also_watched(
   p_show_ids integer[], p_limit integer default 30
 )
 returns table (show_id integer, watchers integer)
-language sql stable security invoker set search_path = public as $$
+language sql stable security definer set search_path = public as $$
   select w.show_id, count(distinct w.user_id)::integer as watchers
   from public.watched_episodes w
   where w.user_id in (
@@ -276,18 +327,37 @@ language sql stable security invoker set search_path = public as $$
   limit least(p_limit, 100);
 $$;
 
--- Tally of character votes for an episode.
+-- Tally of character votes for an episode. SECURITY DEFINER: anonymous
+-- community-wide counts over follower-scoped rows.
 create or replace function public.character_vote_tally(
   p_show_id integer, p_season integer, p_episode integer
 )
 returns table (character_id integer, character_name text, votes integer)
-language sql stable security invoker set search_path = public as $$
+language sql stable security definer set search_path = public as $$
   select character_id, character_name, count(*)::integer as votes
   from public.character_votes
   where show_id = p_show_id and season = p_season and episode = p_episode
   group by character_id, character_name
   order by votes desc;
 $$;
+
+-- Full account deletion (App Store Guideline 5.1.1(v)). Removes the auth
+-- user; every social row cascades via profiles, and uploaded photos are
+-- deleted from storage. Callable only by the signed-in user, for themselves.
+create or replace function public.delete_account()
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not signed in';
+  end if;
+  delete from storage.objects
+    where bucket_id = 'comment-photos' and owner = auth.uid();
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+revoke all on function public.delete_account() from public;
+grant execute on function public.delete_account() to authenticated;
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -320,3 +390,6 @@ create policy "comment photos readable" on storage.objects for select
 drop policy if exists "upload own comment photos" on storage.objects;
 create policy "upload own comment photos" on storage.objects for insert to authenticated
   with check (bucket_id = 'comment-photos' and owner = auth.uid());
+drop policy if exists "delete own comment photos" on storage.objects;
+create policy "delete own comment photos" on storage.objects for delete to authenticated
+  using (bucket_id = 'comment-photos' and owner = auth.uid());

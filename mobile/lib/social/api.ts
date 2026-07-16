@@ -125,6 +125,17 @@ export async function followCounts(
 export async function publishActivity(input: ActivityInput): Promise<void> {
   const me = await uid();
   if (!me) return;
+  // Replace, don't append: re-toggling or re-rating an episode must not fill
+  // friends' feeds with duplicate rows for the same episode.
+  if (input.season != null && input.episode != null && input.showId != null) {
+    await supabase
+      .from("activities")
+      .delete()
+      .eq("user_id", me)
+      .eq("show_id", input.showId)
+      .eq("season", input.season)
+      .eq("episode", input.episode);
+  }
   await supabase.from("activities").insert({
     user_id: me,
     type: input.type,
@@ -197,6 +208,110 @@ export async function unrecordWatch(
     .eq("show_id", showId)
     .eq("season", season)
     .eq("episode", episode);
+  // Un-watching retracts the claim — remove the stale feed activity too.
+  await supabase
+    .from("activities")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode);
+}
+
+/** Clear (or change) the rating on an already-recorded watch. */
+export async function updateWatchRating(
+  showId: number,
+  season: number,
+  episode: number,
+  rating: number | null
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("watched_episodes")
+    .update({ rating })
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("season", season)
+    .eq("episode", episode);
+  if (rating == null) {
+    // A retracted rating shouldn't keep showing in friends' feeds.
+    await supabase
+      .from("activities")
+      .delete()
+      .eq("user_id", me)
+      .eq("show_id", showId)
+      .eq("season", season)
+      .eq("episode", episode)
+      .eq("type", "rated");
+  }
+}
+
+// ----------------------------------------------------- watched-history batch
+
+export interface WatchedRow {
+  show_id: number;
+  season: number;
+  episode: number;
+  rating: number | null;
+}
+
+/** All of my watched rows on the server (paginated past PostgREST's cap). */
+export async function fetchMyWatched(showId?: number): Promise<WatchedRow[]> {
+  const me = await uid();
+  if (!me) return [];
+  const out: WatchedRow[] = [];
+  const page = 1000;
+  for (let from = 0; ; from += page) {
+    let q = supabase
+      .from("watched_episodes")
+      .select("show_id,season,episode,rating")
+      .eq("user_id", me)
+      .order("show_id")
+      .order("season")
+      .order("episode")
+      .range(from, from + page - 1);
+    if (showId != null) q = q.eq("show_id", showId);
+    const { data, error } = await q;
+    if (error || !data) break;
+    out.push(...(data as WatchedRow[]));
+    if (data.length < page) break;
+  }
+  return out;
+}
+
+/** Count of my watched rows on the server — cheap sync check. */
+export async function countMyWatched(): Promise<number | null> {
+  const me = await uid();
+  if (!me) return null;
+  const { count, error } = await supabase
+    .from("watched_episodes")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", me);
+  return error ? null : (count ?? 0);
+}
+
+/** Chunked batch upsert of watched rows (import-scale safe). */
+export async function upsertWatchedRows(rows: WatchedRow[]): Promise<void> {
+  const me = await uid();
+  if (!me || rows.length === 0) return;
+  const chunk = 500;
+  for (let i = 0; i < rows.length; i += chunk) {
+    await supabase
+      .from("watched_episodes")
+      .upsert(rows.slice(i, i + chunk).map((r) => ({ ...r, user_id: me })));
+  }
+}
+
+/** Delete every server watched row of mine for one show. */
+export async function deleteWatchedForShow(showId: number): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("watched_episodes")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId);
 }
 
 export async function friendsWhoWatched(
@@ -241,6 +356,7 @@ export async function getComments(
   episode: number
 ): Promise<Comment[]> {
   const me = await uid();
+  const blocked = await getBlockedIds();
   const { data } = await supabase
     .from("comments")
     .select(
@@ -250,23 +366,25 @@ export async function getComments(
     .eq("season", season)
     .eq("episode", episode)
     .order("created_at", { ascending: false });
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  return ((data as any[]) ?? []).map((c) => ({
-    id: c.id,
-    user_id: c.user_id,
-    show_id: c.show_id,
-    season: c.season,
-    episode: c.episode,
-    body: c.body,
-    image_url: c.image_url,
-    created_at: c.created_at,
-    username: c.author?.username,
-    display_name: c.author?.display_name,
-    avatar_url: c.author?.avatar_url,
-    upvotes: (c.comment_votes ?? []).length,
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    upvoted: (c.comment_votes ?? []).some((v: any) => v.user_id === me),
-  }));
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  return ((data as any[]) ?? [])
+    .filter((c) => !blocked.has(c.user_id))
+    .map((c) => ({
+      id: c.id,
+      user_id: c.user_id,
+      show_id: c.show_id,
+      season: c.season,
+      episode: c.episode,
+      body: c.body,
+      image_url: c.image_url,
+      created_at: c.created_at,
+      username: c.author?.username,
+      display_name: c.author?.display_name,
+      avatar_url: c.author?.avatar_url,
+      upvotes: (c.comment_votes ?? []).length,
+      upvoted: (c.comment_votes ?? []).some((v: any) => v.user_id === me),
+    }));
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 export async function addComment(
@@ -290,8 +408,20 @@ export async function addComment(
   });
 }
 
-export async function deleteComment(commentId: string): Promise<void> {
+/** Delete a comment and, if it carried a photo, the photo itself. */
+export async function deleteComment(
+  commentId: string,
+  imageUrl?: string | null
+): Promise<void> {
   await supabase.from("comments").delete().eq("id", commentId);
+  if (imageUrl) {
+    const path = imageUrl.split("/comment-photos/")[1];
+    if (path) {
+      await supabase.storage
+        .from("comment-photos")
+        .remove([decodeURIComponent(path)]);
+    }
+  }
 }
 
 export async function toggleUpvote(
@@ -336,6 +466,83 @@ export async function uploadCommentPhoto(
   } catch {
     return null;
   }
+}
+
+// -------------------------------------------------- moderation (blocks/reports)
+
+let blockedCache: { at: number; ids: Set<string> } | null = null;
+
+/** Ids of users I've blocked (30s cache so list screens stay cheap). */
+export async function getBlockedIds(): Promise<Set<string>> {
+  const me = await uid();
+  if (!me) return new Set();
+  if (blockedCache && Date.now() - blockedCache.at < 30_000)
+    return blockedCache.ids;
+  const { data } = await supabase
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", me);
+  const ids = new Set(
+    ((data as { blocked_id: string }[]) ?? []).map((b) => b.blocked_id)
+  );
+  blockedCache = { at: Date.now(), ids };
+  return ids;
+}
+
+export async function blockUser(userId: string): Promise<void> {
+  const me = await uid();
+  if (!me || me === userId) return;
+  await supabase.from("blocks").upsert({ blocker_id: me, blocked_id: userId });
+  // Blocking also severs the relationship both ways.
+  await unfollow(userId);
+  await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", userId)
+    .eq("followee_id", me);
+  blockedCache = null;
+}
+
+export async function unblockUser(userId: string): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("blocks")
+    .delete()
+    .eq("blocker_id", me)
+    .eq("blocked_id", userId);
+  blockedCache = null;
+}
+
+/** File a report on a comment and/or user for the owner to review. */
+export async function reportContent(input: {
+  commentId?: string;
+  userId?: string;
+  reason?: string;
+}): Promise<boolean> {
+  const me = await uid();
+  if (!me) return false;
+  const { error } = await supabase.from("reports").insert({
+    reporter_id: me,
+    comment_id: input.commentId ?? null,
+    reported_user_id: input.userId ?? null,
+    reason: input.reason ?? null,
+  });
+  return !error;
+}
+
+// ------------------------------------------------------------ account deletion
+
+/**
+ * Permanently delete the signed-in account: auth user, profile, follows,
+ * activities, watched history, comments, votes, photos (server-side cascade),
+ * then end the local session. Local on-device library is untouched.
+ */
+export async function deleteAccount(): Promise<boolean> {
+  const { error } = await supabase.rpc("delete_account");
+  if (error) return false;
+  await supabase.auth.signOut();
+  return true;
 }
 
 // ------------------------------------------------- community recommendations

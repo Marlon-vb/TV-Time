@@ -20,6 +20,7 @@ import { rescheduleAll } from "@/lib/notifications";
 import { groupWatchNext } from "@/lib/watchNextSections";
 import { syncUpNextWidget } from "@/lib/widget";
 import { useFocusData } from "@/lib/useFocusData";
+import * as social from "@/lib/social/api";
 import type { WatchNextItem } from "@/lib/types";
 
 export default function WatchNextScreen() {
@@ -124,6 +125,16 @@ export default function WatchNextScreen() {
           onWatched={() => {
             repo.markEpisode(item.episode.id, true);
             reload();
+            // Mirror to the social layer (no-op when signed out).
+            void social.recordWatch({
+              showId: item.show.id,
+              season: item.episode.season,
+              episode: item.episode.number,
+              rating: item.episode.rating,
+              showName: item.show.name,
+              posterUrl: item.show.poster_url,
+              episodeName: item.episode.name,
+            });
           }}
         />
       )}

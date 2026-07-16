@@ -11,6 +11,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { registerForSocial } from "./api";
+import { reconcileIfStale } from "./mirror";
 import type { Profile } from "./types";
 
 interface AuthState {
@@ -56,7 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       void loadProfile(s?.user.id);
-      if (s?.user) void registerForSocial(s.user.email);
+      if (s?.user) {
+        void registerForSocial(s.user.email);
+        // Backfill/repair the server's copy of the watch history so friends
+        // and community stats see the whole library (cheap when in sync).
+        void reconcileIfStale();
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);

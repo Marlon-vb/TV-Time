@@ -30,7 +30,9 @@ export interface EpisodeRow {
   image_url: string | null;
   watched_at: string | null;
   rating: number | null; // 0.5–5.0 in half-star steps
-  plays: number; // times watched (0 = unwatched, 2+ = rewatched)
+  plays: number; // times watched (2+ = rewatched); survives an un-check so
+  //               rewatch history isn't lost — watched_at is the source of
+  //               truth for whether an episode currently counts as watched
 }
 
 export type ShowCategory =

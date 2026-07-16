@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -109,11 +111,59 @@ export default function UserProfileScreen() {
                 </Bouncy>
               </>
             ) : (
-              <Bouncy onPress={toggleFollow} scaleTo={0.94} style={btn(!following)}>
-                <Text style={btnText(!following)}>
-                  {following == null ? "…" : following ? "Following" : "Follow"}
-                </Text>
-              </Bouncy>
+              <>
+                <Bouncy onPress={toggleFollow} scaleTo={0.94} style={btn(!following)}>
+                  <Text style={btnText(!following)}>
+                    {following == null ? "…" : following ? "Following" : "Follow"}
+                  </Text>
+                </Bouncy>
+                <Bouncy
+                  onPress={() =>
+                    ActionSheetIOS.showActionSheetWithOptions(
+                      {
+                        options: ["Report user", `Block @${profile.username}`, "Cancel"],
+                        destructiveButtonIndex: 1,
+                        cancelButtonIndex: 2,
+                        userInterfaceStyle: "dark",
+                      },
+                      async (i) => {
+                        if (i === 0) {
+                          const ok = await social.reportContent({ userId: profile.id });
+                          Alert.alert(
+                            ok ? "Reported" : "Couldn't report",
+                            ok
+                              ? "Thanks — we'll take a look."
+                              : "Check your connection and try again."
+                          );
+                        } else if (i === 1) {
+                          Alert.alert(
+                            `Block @${profile.username}?`,
+                            "You won't see their comments or activity, and you'll stop following each other.",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Block",
+                                style: "destructive",
+                                onPress: async () => {
+                                  await social.blockUser(profile.id);
+                                  setFollowing(false);
+                                  await load();
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      }
+                    )
+                  }
+                  scaleTo={0.94}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Report or block ${name}`}
+                  style={{ ...btn(false), minWidth: 44, paddingHorizontal: 12 }}
+                >
+                  <Ionicons name="ellipsis-horizontal" size={16} color={colors.fg} />
+                </Bouncy>
+              </>
             )}
           </View>
         </View>

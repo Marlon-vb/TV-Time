@@ -17,6 +17,7 @@ import { card } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
 import * as repo from "@/lib/repo";
+import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
 import type { RemoteShow } from "@/lib/types";
 
@@ -77,6 +78,8 @@ export default function DiscoverScreen() {
     try {
       await repo.followShow(show.id);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // New episodes of this show should alert like everything else.
+      void rescheduleAll().catch(() => {});
       setResults((rs) =>
         rs.map((r) => (r.id === show.id ? { ...r, followed: true } : r))
       );

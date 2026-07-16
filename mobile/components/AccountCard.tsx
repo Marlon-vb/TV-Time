@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Bouncy from "@/components/Bouncy";
 import { card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
+import { deleteAccount } from "@/lib/social/api";
 
 /**
  * Sign-in / account block shown at the top of the Profile tab. Handles the
@@ -49,8 +57,9 @@ export default function AccountCard() {
           }}
         >
           Sign in to follow friends, see what they&apos;re watching, and react
-          together. Your watch history stays on your device — only what you
-          choose to share is posted.
+          together. Episodes you mark as watched are shared with people who
+          follow you; you can delete your account and everything you&apos;ve
+          shared at any time.
         </Text>
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
@@ -134,7 +143,75 @@ export default function AccountCard() {
       </View>
 
       {needsUsername && <UsernameSetup />}
+
+      <DeleteAccountRow />
     </View>
+  );
+}
+
+/** App Store 5.1.1(v): in-app account deletion, double-confirmed. */
+function DeleteAccountRow() {
+  const [busy, setBusy] = useState(false);
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently removes your profile, follows, shared watch history, comments, photos, and votes from TV Time's servers. Your on-device library stays.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete forever",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Are you sure?",
+              "There is no way to undo this.",
+              [
+                { text: "Keep my account", style: "cancel" },
+                {
+                  text: "Yes, delete everything",
+                  style: "destructive",
+                  onPress: async () => {
+                    setBusy(true);
+                    const ok = await deleteAccount();
+                    setBusy(false);
+                    if (!ok) {
+                      Alert.alert(
+                        "Couldn't delete account",
+                        "Check your connection and try again."
+                      );
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <Pressable
+      onPress={confirmDelete}
+      disabled={busy}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel="Delete account"
+      style={{
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+        paddingTop: 12,
+        opacity: busy ? 0.5 : 1,
+      }}
+    >
+      <Text style={{ color: colors.danger, fontSize: 12, fontWeight: "600" }}>
+        {busy ? "Deleting account…" : "Delete account…"}
+      </Text>
+      <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
+        Permanently removes your profile and everything you&apos;ve shared.
+      </Text>
+    </Pressable>
   );
 }
 

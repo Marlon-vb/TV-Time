@@ -16,6 +16,11 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+/** Run many writes atomically (and much faster than auto-commit per row). */
+export function inTransaction(fn: () => void): void {
+  getDb().withTransactionSync(fn);
+}
+
 /** Normalize provider airstamps to UTC ISO so string comparison is safe. */
 function utcStamp(airstamp: string | null): string | null {
   if (!airstamp) return null;
@@ -105,6 +110,17 @@ function upsertEpisodes(showId: number, episodes: RemoteEpisode[]): void {
         e.imageUrl
       );
     }
+    // TVmaze deletes/merges episode records (schedule shuffles, renumbering).
+    // Drop local rows that vanished upstream so they don't haunt Watch Next
+    // forever — but keep watched ones: they're the user's history.
+    if (episodes.length > 0) {
+      const ids = episodes.map((e) => e.id).join(",");
+      db.runSync(
+        `DELETE FROM episodes
+         WHERE show_id = ? AND watched_at IS NULL AND id NOT IN (${ids})`,
+        showId
+      );
+    }
   });
 }
 
@@ -187,8 +203,10 @@ export function markEpisode(
       episodeId
     );
   } else {
+    // Keep plays: an accidental un-check must not erase rewatch history.
+    // Re-marking restores the old count via MAX(plays, 1).
     getDb().runSync(
-      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE id = ?",
+      "UPDATE episodes SET watched_at = NULL WHERE id = ?",
       episodeId
     );
   }
@@ -220,15 +238,20 @@ export function markSeason(
   watched: boolean
 ): void {
   if (watched) {
+    // Aired episodes only — a mid-air season must not get future episodes
+    // stamped watched (they'd never show up in Watch Next).
     getDb().runSync(
-      "UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1) WHERE show_id = ? AND season = ? AND watched_at IS NULL",
+      `UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1)
+       WHERE show_id = ? AND season = ? AND watched_at IS NULL
+         AND airstamp IS NOT NULL AND airstamp <= ?`,
       nowIso(),
       showId,
-      season
+      season,
+      nowIso()
     );
   } else {
     getDb().runSync(
-      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE show_id = ? AND season = ?",
+      "UPDATE episodes SET watched_at = NULL WHERE show_id = ? AND season = ?",
       showId,
       season
     );
@@ -247,7 +270,7 @@ export function markShow(showId: number, watched: boolean): void {
     );
   } else {
     getDb().runSync(
-      "UPDATE episodes SET watched_at = NULL, plays = 0 WHERE show_id = ?",
+      "UPDATE episodes SET watched_at = NULL WHERE show_id = ?",
       showId
     );
   }
@@ -296,6 +319,20 @@ export function markEpisodeBySeasonNumber(
 }
 
 // -------------------------------------------------------------------- queries
+
+export function listFollowedShowIds(): number[] {
+  return getDb()
+    .getAllSync<{ id: number }>("SELECT id FROM shows")
+    .map((r) => r.id);
+}
+
+export function countWatchedEpisodes(): number {
+  return (
+    getDb().getFirstSync<{ n: number }>(
+      "SELECT COUNT(*) AS n FROM episodes WHERE watched_at IS NOT NULL"
+    )?.n ?? 0
+  );
+}
 
 export function getShowRow(showId: number): ShowRow | null {
   return (

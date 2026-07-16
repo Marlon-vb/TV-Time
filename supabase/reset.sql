@@ -6,6 +6,8 @@
 -- and `comments` had different columns — CREATE TABLE IF NOT EXISTS won't
 -- alter an existing table, so the columns must be recreated.
 
+drop table if exists public.reports cascade;
+drop table if exists public.blocks cascade;
 drop table if exists public.comment_votes cascade;
 drop table if exists public.character_votes cascade;
 drop table if exists public.push_tokens cascade;
