@@ -15,7 +15,12 @@ need to set up; it's free to start and stays free until you have real scale.
 ### 2. Create the database tables
 1. In the project → **SQL Editor** → **New query**.
 2. Open [`schema.sql`](./schema.sql), copy the whole file, paste it in, **Run**.
-3. It should say success. (Re-running it later is safe.)
+3. It should say success.
+
+> Upgrading from an earlier version of the schema? `CREATE TABLE IF NOT
+> EXISTS` won't add new columns to tables that already exist, so run
+> [`reset.sql`](./reset.sql) first (it drops the social tables — safe on a
+> project with no real users yet), then run `schema.sql`.
 
 ### 3. Turn on Sign in with Apple
 1. In the project → **Authentication** → **Providers** → **Apple** → enable it.
