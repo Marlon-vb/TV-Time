@@ -18,6 +18,9 @@
       "bundleIdentifier": "app.tvtime.personal",
       "buildNumber": "2",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.tvtime.personal"]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSContactsUsageDescription": "TV Time can match your contacts to help you find friends who already use the app. Your contacts are hashed on your device and never uploaded in readable form.",
@@ -53,7 +56,8 @@
         {
           "color": "#fbd737"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "extra": {
       "supabaseUrl": "https://dvrnfqyrljcuosjspyab.supabase.co",

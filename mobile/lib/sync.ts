@@ -2,6 +2,7 @@ import * as BackgroundTask from "expo-background-task";
 import * as TaskManager from "expo-task-manager";
 import * as repo from "./repo";
 import { rescheduleAll } from "./notifications";
+import { syncUpNextWidget } from "./widget";
 
 /**
  * Keeping air dates fresh: a full pass refreshes stale shows from TVmaze and
@@ -17,6 +18,7 @@ export async function syncAndReschedule(): Promise<{
 }> {
   const result = await repo.syncStaleShows();
   await rescheduleAll();
+  syncUpNextWidget();
   return result;
 }
 

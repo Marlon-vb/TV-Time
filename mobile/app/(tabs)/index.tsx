@@ -19,6 +19,7 @@ import { epCode, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import { rescheduleAll } from "@/lib/notifications";
 import { groupWatchNext } from "@/lib/watchNextSections";
+import { syncUpNextWidget } from "@/lib/widget";
 import { useFocusData } from "@/lib/useFocusData";
 import type { WatchNextItem } from "@/lib/types";
 
@@ -26,6 +27,8 @@ export default function WatchNextScreen() {
   const router = useRouter();
   const loader = useCallback(() => {
     const items = repo.watchNext();
+    // Keep the home-screen widget in sync with what we show here.
+    syncUpNextWidget(items);
     return { items, sections: groupWatchNext(items, new Date()) };
   }, []);
   const { data, reload } = useFocusData(loader);
