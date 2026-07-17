@@ -28,6 +28,8 @@ import {
   sendTestNotification,
   setNotificationsEnabled,
 } from "@/lib/notifications";
+import { useAuth } from "@/lib/social/auth";
+import { deleteAccount } from "@/lib/social/api";
 
 export default function SettingsScreen() {
   return (
@@ -37,6 +39,7 @@ export default function SettingsScreen() {
       <BackupSection />
       <TmdbSection />
       <SyncSection />
+      <AccountSection />
     </ScrollView>
   );
 }
@@ -405,6 +408,71 @@ function TmdbSection() {
         onPress={() => void save()}
       />
       {message && <Text style={bodyText}>{message}</Text>}
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ account */
+
+/**
+ * App Store 5.1.1(v): in-app account deletion, double-confirmed. Lives at the
+ * bottom of Settings — a destructive rarity shouldn't sit on the Profile card.
+ */
+function AccountSection() {
+  const { ready, configured, session } = useAuth();
+  const [busy, setBusy] = useState(false);
+
+  if (!configured || !ready || !session) return null;
+
+  const runDelete = async () => {
+    setBusy(true);
+    const ok = await deleteAccount();
+    setBusy(false);
+    if (!ok) {
+      Alert.alert(
+        "Couldn't delete account",
+        "Check your connection and try again."
+      );
+    }
+  };
+
+  const confirmAgain = () =>
+    Alert.alert("Are you sure?", "There is no way to undo this.", [
+      { text: "Keep my account", style: "cancel" },
+      {
+        text: "Yes, delete everything",
+        style: "destructive",
+        onPress: () => void runDelete(),
+      },
+    ]);
+
+  const confirmDelete = () =>
+    Alert.alert(
+      "Delete account?",
+      "This permanently removes your profile, follows, shared watch history, comments, photos, and votes from TV Time's servers. Your on-device library stays.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete forever", style: "destructive", onPress: confirmAgain },
+      ]
+    );
+
+  return (
+    <Section title="Account">
+      <Pressable
+        onPress={confirmDelete}
+        disabled={busy}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel="Delete account"
+        style={{ opacity: busy ? 0.5 : 1 }}
+      >
+        <Text style={{ color: colors.danger, fontSize: 12, fontWeight: "600" }}>
+          {busy ? "Deleting account…" : "Delete account…"}
+        </Text>
+        <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
+          Permanently removes your profile and everything you&apos;ve shared.
+        </Text>
+      </Pressable>
     </Section>
   );
 }
