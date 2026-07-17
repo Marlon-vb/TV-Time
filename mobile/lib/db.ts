@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS episodes (
   image_url TEXT,
   watched_at TEXT,
   rating REAL,
+  community_rating REAL,
   plays INTEGER NOT NULL DEFAULT 0
 );
 
@@ -130,6 +131,14 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
       handle.execSync("ALTER TABLE shows ADD COLUMN review TEXT");
     }
     handle.execSync("PRAGMA user_version = 6");
+  }
+  // v7: TVmaze community rating per episode (0–10). Distinct from `rating`,
+  // which is the user's own star rating. Backfilled on the next sync.
+  if (version < 7) {
+    if (!hasColumn("community_rating")) {
+      handle.execSync("ALTER TABLE episodes ADD COLUMN community_rating REAL");
+    }
+    handle.execSync("PRAGMA user_version = 7");
   }
 }
 

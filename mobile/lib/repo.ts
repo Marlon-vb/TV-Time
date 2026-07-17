@@ -87,8 +87,8 @@ function upsertEpisodes(showId: number, episodes: RemoteEpisode[]): void {
     for (const e of episodes) {
       db.runSync(
         `INSERT INTO episodes (id, show_id, season, number, name, airdate, airstamp,
-                               runtime, summary, image_url, watched_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                               runtime, summary, image_url, community_rating, watched_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
          ON CONFLICT(id) DO UPDATE SET
            season = excluded.season,
            number = excluded.number,
@@ -97,7 +97,8 @@ function upsertEpisodes(showId: number, episodes: RemoteEpisode[]): void {
            airstamp = excluded.airstamp,
            runtime = excluded.runtime,
            summary = excluded.summary,
-           image_url = excluded.image_url`,
+           image_url = excluded.image_url,
+           community_rating = excluded.community_rating`,
         e.id,
         showId,
         e.season,
@@ -107,7 +108,8 @@ function upsertEpisodes(showId: number, episodes: RemoteEpisode[]): void {
         utcStamp(e.airstamp),
         e.runtime,
         e.summary,
-        e.imageUrl
+        e.imageUrl,
+        e.rating
       );
     }
     // TVmaze deletes/merges episode records (schedule shuffles, renumbering).

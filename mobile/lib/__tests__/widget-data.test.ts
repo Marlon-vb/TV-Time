@@ -46,6 +46,7 @@ function item(
       image_url: null,
       watched_at: null,
       rating: null,
+      community_rating: null,
       plays: 0,
     },
     aired_unwatched: airedUnwatched,

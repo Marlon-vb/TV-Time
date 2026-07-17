@@ -182,6 +182,30 @@ export default function EpisodeScreen() {
                 .filter(Boolean)
                 .join("  ·  ")}
             </Text>
+            {episode.community_rating != null && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 7,
+                }}
+              >
+                <Ionicons name="star" size={13} color={colors.accent} />
+                <Text
+                  style={{
+                    color: colors.fg,
+                    fontSize: 13,
+                    fontFamily: fonts.displayMedium,
+                  }}
+                >
+                  {episode.community_rating.toFixed(1)}
+                </Text>
+                <Text style={{ color: colors.faint, fontSize: 11 }}>
+                  / 10 · viewer rating
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 

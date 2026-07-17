@@ -864,14 +864,23 @@ const EpisodeItem = memo(function EpisodeItem({
       </View>
 
       <View style={{ alignItems: "flex-end", gap: 2 }}>
-        {ep.rating != null && (
+        {ep.rating != null ? (
+          // Your own star rating (gold).
           <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
             <Ionicons name="star" size={11} color={colors.accent} />
             <Text style={{ color: colors.accent, fontSize: 11, fontWeight: "700" }}>
               {ratingLabel(ep.rating)}
             </Text>
           </View>
-        )}
+        ) : ep.community_rating != null ? (
+          // The crowd's rating (grey, 0–10) — only when you haven't rated it.
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <Ionicons name="star" size={11} color={colors.muted} />
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "700" }}>
+              {ep.community_rating.toFixed(1)}
+            </Text>
+          </View>
+        ) : null}
         <Text style={{ color: colors.faint, fontSize: 10 }}>
           {fmtDate(ep.airstamp)}
         </Text>

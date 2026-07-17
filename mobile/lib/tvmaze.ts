@@ -61,6 +61,7 @@ function mapEpisode(e: any): RemoteEpisode | null {
     runtime: e.runtime ?? null,
     summary: stripHtml(e.summary),
     imageUrl: e.image?.original ?? e.image?.medium ?? null,
+    rating: typeof e.rating?.average === "number" ? e.rating.average : null,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
