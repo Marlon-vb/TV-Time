@@ -140,6 +140,60 @@ export async function getAiringToday(limit = 12): Promise<RemoteShow[]> {
     .filter((s) => s.posterUrl);
 }
 
+export interface RatedShow {
+  show: RemoteShow;
+  imdb: number; // IMDb rating, 0–10
+}
+
+/**
+ * The canonical IMDb top-rated TV series. IMDb has no free API, so the ratings
+ * are bundled here (they're stable to ±0.1 over years); each title is resolved
+ * to a live TVmaze show at runtime purely for its poster and navigation.
+ * Sorted highest-first.
+ */
+const IMDB_TOP: { title: string; imdb: number }[] = [
+  { title: "Breaking Bad", imdb: 9.5 },
+  { title: "Planet Earth II", imdb: 9.4 },
+  { title: "Band of Brothers", imdb: 9.4 },
+  { title: "Chernobyl", imdb: 9.3 },
+  { title: "The Wire", imdb: 9.3 },
+  { title: "Avatar: The Last Airbender", imdb: 9.3 },
+  { title: "Game of Thrones", imdb: 9.2 },
+  { title: "The Sopranos", imdb: 9.2 },
+  { title: "Sherlock", imdb: 9.1 },
+  { title: "Rick and Morty", imdb: 9.1 },
+  { title: "Better Call Saul", imdb: 9.0 },
+  { title: "The Office", imdb: 9.0 },
+  { title: "True Detective", imdb: 8.9 },
+  { title: "Succession", imdb: 8.9 },
+];
+
+/**
+ * Resolve the IMDb top-rated canon to real TVmaze shows (with posters).
+ * Rate-limit-friendly: small concurrent batches with a pause between waves.
+ */
+export async function getTopRated(): Promise<RatedShow[]> {
+  const out: RatedShow[] = [];
+  const width = 3;
+  for (let i = 0; i < IMDB_TOP.length; i += width) {
+    const batch = await Promise.all(
+      IMDB_TOP.slice(i, i + width).map(async (entry) => {
+        const show = await singleSearch(entry.title).catch(() => null);
+        return show && show.posterUrl ? { show, imdb: entry.imdb } : null;
+      })
+    );
+    for (const r of batch) if (r) out.push(r);
+    if (i + width < IMDB_TOP.length) {
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  // A title could resolve to a show already present — keep the first (highest).
+  const seen = new Set<number>();
+  return out.filter((r) =>
+    seen.has(r.show.id) ? false : (seen.add(r.show.id), true)
+  );
+}
+
 export interface CastPerson {
   personId: number;
   personName: string;

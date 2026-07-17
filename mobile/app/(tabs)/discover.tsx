@@ -45,6 +45,37 @@ async function airingTonight(): Promise<RemoteShow[]> {
   return shows;
 }
 
+// Bump when the IMDB_TOP canon changes to force clients to re-resolve.
+const TOP_RATED_CACHE_KEY = "top_rated_cache_v1";
+const TOP_RATED_VERSION = 1;
+
+/** The IMDb top-rated canon. Static list → cache until the version changes. */
+async function topRated(): Promise<tvmaze.RatedShow[]> {
+  try {
+    const raw = getSetting(TOP_RATED_CACHE_KEY);
+    if (raw) {
+      const cached = JSON.parse(raw) as {
+        version: number;
+        shows: tvmaze.RatedShow[];
+      };
+      // Only trust a healthy cache — a rate-limited partial resolve refetches.
+      if (cached.version === TOP_RATED_VERSION && cached.shows.length >= 10) {
+        return cached.shows;
+      }
+    }
+  } catch {
+    // corrupt cache — refetch below
+  }
+  const shows = await tvmaze.getTopRated();
+  if (shows.length >= 10) {
+    setSetting(
+      TOP_RATED_CACHE_KEY,
+      JSON.stringify({ version: TOP_RATED_VERSION, shows })
+    );
+  }
+  return shows;
+}
+
 export default function DiscoverScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -57,6 +88,7 @@ export default function DiscoverScreen() {
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [recsLoading, setRecsLoading] = useState(true);
   const [tonight, setTonight] = useState<RemoteShow[]>([]);
+  const [best, setBest] = useState<tvmaze.RatedShow[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -71,6 +103,14 @@ export default function DiscoverScreen() {
     airingTonight()
       .then((shows) => {
         if (alive) setTonight(shows);
+      })
+      .catch(() => {
+        // offline — the rail simply doesn't render
+      });
+    // The IMDb top-rated canon (cached long-term after the first resolve).
+    topRated()
+      .then((shows) => {
+        if (alive) setBest(shows);
       })
       .catch(() => {
         // offline — the rail simply doesn't render
@@ -186,6 +226,18 @@ export default function DiscoverScreen() {
                   onOpen={(id) => router.push(`/show/${id}` as never)}
                 />
               ) : null}
+              {best.length > 0 && (
+                <Rail
+                  title="TOP RATED OF ALL TIME"
+                  items={best.map((r) => ({
+                    id: r.show.id,
+                    name: r.show.name,
+                    posterUrl: r.show.posterUrl,
+                    sub: `★ ${r.imdb.toFixed(1)} IMDb`,
+                  }))}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
+              )}
               {tonight.length > 0 && (
                 <Rail
                   title="AIRING TONIGHT"
