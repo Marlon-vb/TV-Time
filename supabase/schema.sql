@@ -432,8 +432,15 @@ drop trigger if exists on_comment_deleted on public.comments;
 create trigger on_comment_deleted
   after delete on public.comments for each row execute function public.handle_comment_deleted();
 
+-- The owner account new members auto-follow on signup, so their feed isn't
+-- empty on day one. Change this if your username is different.
+create or replace function public.owner_username()
+returns text language sql immutable as $$ select 'marlonvb' $$;
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  owner_id uuid;
 begin
   insert into public.profiles (id, username, display_name)
   values (
@@ -442,6 +449,17 @@ begin
     nullif(new.raw_user_meta_data->>'full_name', '')
   )
   on conflict (id) do nothing;
+
+  -- Auto-follow the owner. Skips cleanly if the owner account doesn't exist
+  -- yet or is the new user themselves (can't follow yourself).
+  select id into owner_id from public.profiles
+  where username = public.owner_username();
+  if owner_id is not null and owner_id <> new.id then
+    insert into public.follows (follower_id, followee_id)
+    values (new.id, owner_id)
+    on conflict do nothing;
+  end if;
+
   return new;
 end;
 $$;
@@ -449,6 +467,17 @@ $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users for each row execute function public.handle_new_user();
+
+-- Backfill: everyone who signed up before this trigger existed now follows the
+-- owner too. Idempotent, and a no-op if the owner account doesn't exist yet.
+insert into public.follows (follower_id, followee_id)
+select p.id, o.id
+from public.profiles p
+cross join (
+  select id from public.profiles where username = public.owner_username()
+) o
+where p.id <> o.id
+on conflict do nothing;
 
 -- =====================================================================
 -- Storage: a public bucket for comment photos
