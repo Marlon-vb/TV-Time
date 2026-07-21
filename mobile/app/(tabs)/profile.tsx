@@ -141,7 +141,9 @@ export default function ProfileScreen() {
           </View>
           {data.movies.minutes > 0 && (
             <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
-              {Math.round(data.movies.minutes / 60)}h
+              {data.movies.minutes >= 60
+                ? `${Math.round(data.movies.minutes / 60)}h`
+                : `${data.movies.minutes}m`}
             </Text>
           )}
         </View>

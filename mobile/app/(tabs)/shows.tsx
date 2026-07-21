@@ -433,7 +433,8 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
   useEffect(() => {
     const q = query.trim();
     if (!q) {
-      setResults([]);
+      generation.current++; // invalidate any in-flight search so a late
+      setResults([]); //        response can't repopulate a cleared box
       setStatus("idle");
       return;
     }
