@@ -1,3 +1,30 @@
+/** A tracked movie or documentary film (source: Apple iTunes Search API). */
+export interface MovieRow {
+  id: number; // iTunes trackId (primary key)
+  title: string;
+  year: number | null;
+  poster_url: string | null;
+  genre: string | null;
+  runtime: number | null; // minutes
+  overview: string | null;
+  release_date: string | null; // ISO
+  added_at: string; // when you added it to your library
+  watched_at: string | null; // null = still on your watchlist
+  rating: number | null; // your star rating, ½–5
+}
+
+/** A movie as returned from an iTunes search (not yet tracked). */
+export interface RemoteMovie {
+  id: number;
+  title: string;
+  year: number | null;
+  posterUrl: string | null;
+  genre: string | null;
+  runtime: number | null; // minutes
+  overview: string | null;
+  releaseDate: string | null;
+}
+
 export interface ShowRow {
   id: number; // TVmaze show id (primary key)
   name: string;

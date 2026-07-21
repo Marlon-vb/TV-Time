@@ -39,6 +39,20 @@ CREATE TABLE IF NOT EXISTS episodes (
   plays INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS movies (
+  id INTEGER PRIMARY KEY,
+  title TEXT NOT NULL,
+  year INTEGER,
+  poster_url TEXT,
+  genre TEXT,
+  runtime INTEGER,
+  overview TEXT,
+  release_date TEXT,
+  added_at TEXT NOT NULL,
+  watched_at TEXT,
+  rating REAL
+);
+
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
 CREATE INDEX IF NOT EXISTS idx_episodes_airstamp ON episodes(airstamp);
 CREATE INDEX IF NOT EXISTS idx_shows_tvdb ON shows(tvdb_id);

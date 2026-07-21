@@ -16,11 +16,15 @@ import {
 } from "@/lib/theme";
 import { minutesHuman, monthLabel } from "@/lib/format";
 import * as repo from "@/lib/repo";
+import * as movies from "@/lib/movies";
 import { useFocusData } from "@/lib/useFocusData";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const loader = useCallback(() => repo.stats(), []);
+  const loader = useCallback(
+    () => ({ ...repo.stats(), movies: movies.movieStats() }),
+    []
+  );
   const { data } = useFocusData(loader);
 
   if (!data) return null;
@@ -114,6 +118,34 @@ export default function ProfileScreen() {
         </View>
         <Ionicons name="chevron-forward" size={15} color={colors.faint} />
       </Bouncy>
+
+      {/* Movies */}
+      {(data.movies.watched > 0 || data.movies.watchlist > 0) && (
+        <View
+          style={{
+            ...card,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            padding: 14,
+          }}
+        >
+          <Ionicons name="film-outline" size={18} color={colors.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }}>
+              Movies
+            </Text>
+            <Text style={{ color: colors.faint, fontSize: 11, marginTop: 1 }}>
+              {data.movies.watched} watched · {data.movies.watchlist} on watchlist
+            </Text>
+          </View>
+          {data.movies.minutes > 0 && (
+            <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
+              {Math.round(data.movies.minutes / 60)}h
+            </Text>
+          )}
+        </View>
+      )}
 
       {/* Monthly activity */}
       {data.monthly.length > 1 && (

@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -13,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
@@ -26,6 +28,8 @@ import {
 } from "@/lib/theme";
 import { relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
+import * as movies from "@/lib/movies";
+import * as itunes from "@/lib/itunes";
 import { useFocusData } from "@/lib/useFocusData";
 import {
   filterShows,
@@ -34,7 +38,14 @@ import {
   sortShows,
   type ShowSort,
 } from "@/lib/show-sort";
-import type { ShowCategory, ShowWithProgress } from "@/lib/types";
+import type {
+  MovieRow,
+  RemoteMovie,
+  ShowCategory,
+  ShowWithProgress,
+} from "@/lib/types";
+
+type LibMode = "shows" | "movies";
 
 const TAB_ORDER: (ShowCategory | "all")[] = [
   "all",
@@ -45,7 +56,79 @@ const TAB_ORDER: (ShowCategory | "all")[] = [
   "archived",
 ];
 
-export default function MyShowsScreen() {
+export default function LibraryScreen() {
+  const [mode, setMode] = useState<LibMode>("shows");
+  return mode === "shows" ? (
+    <ShowsLibrary mode={mode} onMode={setMode} />
+  ) : (
+    <MoviesLibrary mode={mode} onMode={setMode} />
+  );
+}
+
+/* ------------------------------------------------------- Shows / Movies toggle */
+
+function LibraryToggle({
+  mode,
+  onMode,
+}: {
+  mode: LibMode;
+  onMode: (m: LibMode) => void;
+}) {
+  const seg = (m: LibMode, label: string, icon: "tv" | "film") => {
+    const active = mode === m;
+    return (
+      <Pressable
+        onPress={() => onMode(m)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={`${label} library`}
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          paddingVertical: 8,
+          borderRadius: radius.sm,
+          backgroundColor: active ? colors.overlay : "transparent",
+        }}
+      >
+        <Ionicons name={icon} size={14} color={active ? colors.fg : colors.faint} />
+        <Text
+          style={{
+            color: active ? colors.fg : colors.faint,
+            fontSize: 13,
+            fontFamily: fonts.displayMedium,
+          }}
+        >
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        marginHorizontal: 16,
+        marginTop: 6,
+        gap: 3,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.line,
+        borderRadius: radius.sm + 3,
+        padding: 3,
+      }}
+    >
+      {seg("shows", "Shows", "tv")}
+      {seg("movies", "Movies", "film")}
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------- shows */
+
+function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) => void }) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   // Fixed 3-up card width so a long title can never stretch a card and break
@@ -105,9 +188,6 @@ export default function MyShowsScreen() {
       data={visible}
       keyExtractor={(s) => String(s.id)}
       numColumns={3}
-      // 250-show grids: render a screenful fast, recycle aggressively.
-      // (No removeClippedSubviews: it detaches the header's focused search
-      // TextInput when scrolled offscreen and can blank grid cells.)
       initialNumToRender={12}
       windowSize={7}
       maxToRenderPerBatch={12}
@@ -125,13 +205,14 @@ export default function MyShowsScreen() {
       columnWrapperStyle={{ gap: 10, paddingHorizontal: 4 }}
       ListHeaderComponent={
         <View style={{ marginHorizontal: -12 }}>
-          <ScreenHeader title="My Shows" subtitle={`${shows.length} followed`} />
+          <ScreenHeader title="Library" subtitle={`${shows.length} shows`} />
+          <LibraryToggle mode={mode} onMode={onMode} />
           <View
             style={{
               flexDirection: "row",
               gap: 8,
               paddingHorizontal: 16,
-              marginTop: 6,
+              marginTop: 10,
             }}
           >
             <View
@@ -297,8 +378,6 @@ function ShowCard({
           src={show.poster_url}
           name={show.name}
           width={"100%"}
-          // Real 2:3 poster aspect instead of a fixed height that cropped
-          // artwork on larger devices.
           height={Math.round(width * 1.5)}
           radius={0}
         />
@@ -330,6 +409,278 @@ function ShowCard({
             : `${show.watched_count}/${show.total_episodes} watched`}
         </Text>
         <ProgressBar value={show.watched_count} max={show.total_episodes} height={4} />
+      </View>
+    </Bouncy>
+  );
+}
+
+/* ------------------------------------------------------------------ movies */
+
+function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) => void }) {
+  const router = useRouter();
+  const loader = useCallback(() => movies.listMovies(), []);
+  const { data, reload } = useFocusData(loader);
+  const mine = data ?? [];
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<RemoteMovie[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
+    "idle"
+  );
+  const generation = useRef(0);
+  const searching = query.trim().length > 0;
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setResults([]);
+      setStatus("idle");
+      return;
+    }
+    const gen = ++generation.current;
+    const timer = setTimeout(async () => {
+      setStatus("loading");
+      try {
+        const found = await itunes.searchMovies(q);
+        if (gen !== generation.current) return;
+        setResults(found);
+        setStatus("done");
+      } catch {
+        if (gen === generation.current) setStatus("error");
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const addedIds = new Set(mine.map((m) => m.id));
+
+  const add = (m: RemoteMovie) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    movies.addMovie(m);
+    reload();
+  };
+
+  const watchedCount = mine.filter((m) => m.watched_at).length;
+
+  return (
+    <FlatList
+      data={(searching ? results : mine) as (RemoteMovie | MovieRow)[]}
+      keyExtractor={(item) => String(item.id)}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingBottom: TAB_BAR_CLEARANCE,
+        gap: 8,
+      }}
+      ListHeaderComponent={
+        <View>
+          <View style={{ marginHorizontal: -16 }}>
+            <ScreenHeader
+              title="Library"
+              subtitle={
+                mine.length > 0
+                  ? `${mine.length} movie${mine.length === 1 ? "" : "s"} · ${watchedCount} watched`
+                  : null
+              }
+            />
+            <LibraryToggle mode={mode} onMode={onMode} />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.md,
+              paddingHorizontal: 12,
+              marginTop: 10,
+              marginBottom: 4,
+            }}
+          >
+            <Ionicons name="search" size={15} color={colors.faint} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search movies & documentaries to add…"
+              placeholderTextColor={colors.faint}
+              autoCorrect={false}
+              style={{ flex: 1, paddingVertical: 11, color: colors.fg, fontSize: 14 }}
+            />
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => setQuery("")}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Ionicons name="close-circle" size={16} color={colors.faint} />
+              </Pressable>
+            )}
+          </View>
+          {searching && status === "loading" && (
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 14 }} />
+          )}
+          {searching && status === "error" && (
+            <Text style={{ color: colors.danger, fontSize: 13, marginTop: 10 }}>
+              Search failed — check your connection and try again.
+            </Text>
+          )}
+          {searching && status === "done" && results.length === 0 && (
+            <Text style={{ color: colors.muted, fontSize: 13, marginTop: 10 }}>
+              No movies found for “{query.trim()}”.
+            </Text>
+          )}
+        </View>
+      }
+      ListEmptyComponent={
+        searching ? null : (
+          <EmptyState
+            icon="film-outline"
+            title="No movies yet"
+            body="Search above to add movies and documentaries to your library. Track what you've watched and want to watch."
+          />
+        )
+      }
+      renderItem={({ item }) =>
+        searching ? (
+          <SearchResultRow
+            movie={item as RemoteMovie}
+            added={addedIds.has(item.id)}
+            onAdd={() => add(item as RemoteMovie)}
+            onOpen={() => router.push(`/movie/${item.id}` as never)}
+          />
+        ) : (
+          <MovieRowCard
+            movie={item as MovieRow}
+            onPress={() => router.push(`/movie/${item.id}` as never)}
+          />
+        )
+      }
+    />
+  );
+}
+
+/** A movie already in your library. */
+function MovieRowCard({
+  movie,
+  onPress,
+}: {
+  movie: MovieRow;
+  onPress: () => void;
+}) {
+  const watched = Boolean(movie.watched_at);
+  const meta = [movie.year ? String(movie.year) : null, movie.genre]
+    .filter(Boolean)
+    .join("  ·  ");
+  return (
+    <Bouncy
+      onPress={onPress}
+      style={{
+        ...card,
+        flexDirection: "row",
+        gap: 12,
+        alignItems: "center",
+        padding: 10,
+      }}
+    >
+      <Poster src={movie.poster_url} name={movie.title} width={46} height={68} radius={8} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
+          {movie.title}
+        </Text>
+        {meta ? (
+          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
+        <Text
+          style={{
+            color: watched ? colors.ok : colors.faint,
+            fontSize: 11,
+            marginTop: 3,
+            fontFamily: fonts.displayMedium,
+          }}
+        >
+          {watched ? "✓ Watched" : "Watchlist"}
+        </Text>
+      </View>
+      {movie.rating != null && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+          <Ionicons name="star" size={12} color={colors.accent} />
+          <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
+            {Number.isInteger(movie.rating) ? movie.rating : movie.rating.toFixed(1)}
+          </Text>
+        </View>
+      )}
+    </Bouncy>
+  );
+}
+
+/** An iTunes search result you can add. */
+function SearchResultRow({
+  movie,
+  added,
+  onAdd,
+  onOpen,
+}: {
+  movie: RemoteMovie;
+  added: boolean;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  const meta = [
+    movie.year ? String(movie.year) : null,
+    movie.genre,
+    movie.runtime ? `${movie.runtime} min` : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+  return (
+    <Bouncy
+      onPress={added ? onOpen : onAdd}
+      style={{
+        ...card,
+        flexDirection: "row",
+        gap: 12,
+        alignItems: "center",
+        padding: 10,
+      }}
+    >
+      <Poster src={movie.posterUrl} name={movie.title} width={50} height={74} radius={8} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
+          {movie.title}
+        </Text>
+        {meta ? (
+          <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
+        {movie.overview ? (
+          <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3, lineHeight: 15 }} numberOfLines={2}>
+            {movie.overview}
+          </Text>
+        ) : null}
+      </View>
+      <View
+        style={{
+          paddingHorizontal: 13,
+          paddingVertical: 10,
+          borderRadius: radius.sm,
+          backgroundColor: added ? colors.overlay : colors.accent,
+        }}
+      >
+        <Text
+          style={{
+            color: added ? colors.muted : colors.ink,
+            fontWeight: "800",
+            fontSize: 12,
+          }}
+        >
+          {added ? "Added ✓" : "+ Add"}
+        </Text>
       </View>
     </Bouncy>
   );

@@ -29,11 +29,26 @@ export interface BackupShow {
   episodes: BackupEpisode[];
 }
 
+export interface BackupMovie {
+  id: number; // iTunes track id
+  title: string;
+  year: number | null;
+  poster_url: string | null;
+  genre: string | null;
+  runtime: number | null;
+  overview: string | null;
+  release_date: string | null;
+  watched_at: string | null;
+  rating: number | null;
+}
+
 export interface BackupFile {
   app: "tv-time";
   version: 1;
   exported_at: string;
   shows: BackupShow[];
+  // Optional so older backups (shows-only) still validate as version 1.
+  movies?: BackupMovie[];
 }
 
 /** Snapshot the library (only episodes carrying user data). */
@@ -61,6 +76,11 @@ export function buildBackup(now: Date = new Date()): BackupFile {
         s.id
       ),
     })),
+    movies: db.getAllSync<BackupMovie>(
+      `SELECT id, title, year, poster_url, genre, runtime, overview,
+              release_date, watched_at, rating
+       FROM movies ORDER BY title`
+    ),
   };
 }
 
@@ -160,11 +180,44 @@ export async function restoreBackup(
       state.failedShows.push(show.name);
     }
   }
+  // Movies restore locally and instantly (no network). Existing local watch
+  // state wins ties, same as shows.
+  let restoredMovies = 0;
+  for (const m of backup.movies ?? []) {
+    try {
+      db.runSync(
+        `INSERT INTO movies (id, title, year, poster_url, genre, runtime,
+                             overview, release_date, added_at, watched_at, rating)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           watched_at = COALESCE(movies.watched_at, excluded.watched_at),
+           rating = COALESCE(movies.rating, excluded.rating)`,
+        m.id,
+        m.title,
+        m.year,
+        m.poster_url,
+        m.genre,
+        m.runtime,
+        m.overview,
+        m.release_date,
+        backup.exported_at,
+        m.watched_at,
+        m.rating
+      );
+      restoredMovies++;
+    } catch {
+      // skip a damaged movie row
+    }
+  }
+
   state.progress = 1;
   const failNote = state.failedShows.length
     ? ` ${state.failedShows.length} show(s) couldn't be restored.`
     : "";
-  state.message = `Restored ${state.restoredShows} show${state.restoredShows === 1 ? "" : "s"}.${failNote}`;
+  const movieNote = restoredMovies
+    ? ` and ${restoredMovies} movie${restoredMovies === 1 ? "" : "s"}`
+    : "";
+  state.message = `Restored ${state.restoredShows} show${state.restoredShows === 1 ? "" : "s"}${movieNote}.${failNote}`;
   onProgress({ ...state });
   // Mirror the restored history to the social layer (no-op signed out — the
   // sign-in reconcile backfills it later instead).

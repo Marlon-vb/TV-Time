@@ -119,6 +119,14 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="movie/[id]"
+          options={{
+            title: "",
+            headerTransparent: true,
+            headerBlurEffect: "dark",
+          }}
+        />
+        <Stack.Screen
           name="u/[username]"
           options={{ title: "", headerTransparent: true, headerBlurEffect: "dark" }}
         />
