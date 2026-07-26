@@ -111,9 +111,17 @@ export default function EpisodeScreen() {
   };
 
   const rewatch = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     repo.logRewatch(episode.id);
     reload();
     void social.recordWatchForEpisode(show, episode);
+  };
+
+  // Tapping the check logs a watch. If it's already watched, that's a
+  // rewatch (+1 play); un-watching lives on the "Mark as unwatched" link.
+  const onCheckPress = (next: boolean) => {
+    if (isWatched) rewatch();
+    else toggleWatched(next);
   };
 
   const share = async () => {
@@ -250,31 +258,32 @@ export default function EpisodeScreen() {
               checked={isWatched}
               disabled={!isAired}
               size={48}
-              onToggle={toggleWatched}
+              onToggle={onCheckPress}
             />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }}>
                 {isWatched
-                  ? "Watched"
+                  ? episode.plays > 1
+                    ? `Watched ${episode.plays}×`
+                    : "Watched"
                   : isAired
                     ? "Mark as watched"
                     : "Hasn't aired yet"}
               </Text>
               {isWatched && episode.watched_at && (
                 <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
-                  on {fmtDate(episode.watched_at)}
-                  {episode.plays > 1 ? ` · watched ${episode.plays}×` : ""}
+                  on {fmtDate(episode.watched_at)} · tap ✓ to log a rewatch
                 </Text>
               )}
               {isWatched && (
                 <Pressable
-                  onPress={rewatch}
+                  onPress={() => toggleWatched(false)}
                   hitSlop={10}
                   accessibilityRole="button"
                   style={{ marginTop: 4 }}
                 >
-                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
-                    + Log a rewatch
+                  <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>
+                    Mark as unwatched
                   </Text>
                 </Pressable>
               )}

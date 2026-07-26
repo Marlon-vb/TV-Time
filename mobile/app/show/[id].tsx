@@ -344,32 +344,6 @@ export default function ShowScreen() {
                     }}
                   />
                 )}
-                {/* aired.length, not the watched count — rewatchShow only
-                    bumps aired episodes, and imports can leave unaired rows
-                    marked watched that would inflate the promised number. */}
-                {behind === 0 && aired.length > 0 && (
-                  <ActionButton
-                    label="Log a rewatch"
-                    onPress={() => {
-                      Alert.alert(
-                        "Log a rewatch?",
-                        `This adds one more watch to every aired episode (${aired.length} episodes) and moves them to today.`,
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Log rewatch",
-                            onPress: () => {
-                              void Haptics.impactAsync(
-                                Haptics.ImpactFeedbackStyle.Medium
-                              );
-                              bulkChange(() => repo.rewatchShow(showId));
-                            },
-                          },
-                        ]
-                      );
-                    }}
-                  />
-                )}
                 <ActionButton
                   label={show.archived === 1 ? "Unarchive" : "Archive"}
                   onPress={() =>
