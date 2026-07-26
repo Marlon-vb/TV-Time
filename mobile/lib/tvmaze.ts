@@ -103,6 +103,60 @@ export async function singleSearch(name: string): Promise<RemoteShow | null> {
   return data ? mapShow(data) : null;
 }
 
+/**
+ * Series premieres (season 1, episode 1) scheduled over the next few weeks,
+ * across both broadcast (US) and streaming — so you can follow a show before
+ * it airs and get notified the moment it drops. Key-free: scans TVmaze's daily
+ * schedule. Caller caches the result.
+ */
+export async function getPremieringSoon(
+  days = 14,
+  limit = 12
+): Promise<RemoteShow[]> {
+  const start = new Date();
+  const urls: string[] = [];
+  for (let i = 0; i < days; i++) {
+    const date = new Date(start.getTime() + i * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    urls.push(`/schedule?country=US&date=${date}`); // broadcast + cable
+    urls.push(`/schedule/web?date=${date}`); // streaming (global)
+  }
+  const byShow = new Map<number, { show: RemoteShow; weight: number }>();
+  const width = 3;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  for (let i = 0; i < urls.length; i += width) {
+    const batch = await Promise.all(
+      urls.slice(i, i + width).map((u) => tvFetch(u).catch(() => null))
+    );
+    for (const entries of batch) {
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries as any[]) {
+        // A series premiere is the very first episode.
+        if (entry?.season !== 1 || entry?.number !== 1) continue;
+        const s = entry?._embedded?.show ?? entry?.show; // web vs broadcast shape
+        if (!s?.id || byShow.has(s.id)) continue;
+        // Use the scheduled premiere date (more reliable than show.premiered,
+        // which is often null for not-yet-aired shows).
+        const show = mapShow(s);
+        byShow.set(s.id, {
+          show: { ...show, premiered: entry.airdate || show.premiered },
+          weight: typeof s.weight === "number" ? s.weight : 0,
+        });
+      }
+    }
+    if (i + width < urls.length) {
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  return [...byShow.values()]
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, limit)
+    .map((e) => e.show)
+    .filter((s) => s.posterUrl);
+}
+
 export interface CastMember {
   characterId: number;
   characterName: string;

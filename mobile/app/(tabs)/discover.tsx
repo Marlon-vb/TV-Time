@@ -45,6 +45,35 @@ async function airingTonight(): Promise<RemoteShow[]> {
   return shows;
 }
 
+/** "Premieres Sep 15" from a YYYY-MM-DD date (noon-anchored to dodge TZ drift). */
+function premiereLabel(date: string | null): string | null {
+  if (!date) return null;
+  const d = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return `Premieres ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
+
+const PREMIERING_CACHE_KEY = "premiering_soon_cache_v1";
+
+/** Series premieres coming in the next couple weeks, cached per calendar day. */
+async function premieringSoon(): Promise<RemoteShow[]> {
+  const today = new Date().toDateString();
+  try {
+    const raw = getSetting(PREMIERING_CACHE_KEY);
+    if (raw) {
+      const cached = JSON.parse(raw) as { date: string; shows: RemoteShow[] };
+      if (cached.date === today && cached.shows.length > 0) return cached.shows;
+    }
+  } catch {
+    // corrupt cache — refetch below
+  }
+  const shows = await tvmaze.getPremieringSoon();
+  if (shows.length > 0) {
+    setSetting(PREMIERING_CACHE_KEY, JSON.stringify({ date: today, shows }));
+  }
+  return shows;
+}
+
 // Bump when the IMDB_TOP canon changes to force clients to re-resolve.
 const TOP_RATED_CACHE_KEY = "top_rated_cache_v1";
 const TOP_RATED_VERSION = 1;
@@ -89,6 +118,7 @@ export default function DiscoverScreen() {
   const [recsLoading, setRecsLoading] = useState(true);
   const [tonight, setTonight] = useState<RemoteShow[]>([]);
   const [best, setBest] = useState<tvmaze.RatedShow[]>([]);
+  const [premieres, setPremieres] = useState<RemoteShow[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -111,6 +141,14 @@ export default function DiscoverScreen() {
     topRated()
       .then((shows) => {
         if (alive) setBest(shows);
+      })
+      .catch(() => {
+        // offline — the rail simply doesn't render
+      });
+    // Upcoming series premieres (cached per day).
+    premieringSoon()
+      .then((shows) => {
+        if (alive) setPremieres(shows);
       })
       .catch(() => {
         // offline — the rail simply doesn't render
@@ -226,6 +264,18 @@ export default function DiscoverScreen() {
                   onOpen={(id) => router.push(`/show/${id}` as never)}
                 />
               ) : null}
+              {premieres.length > 0 && (
+                <Rail
+                  title="PREMIERING SOON"
+                  items={premieres.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                    posterUrl: s.posterUrl,
+                    sub: premiereLabel(s.premiered) ?? s.network,
+                  }))}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
+              )}
               {best.length > 0 && (
                 <Rail
                   title="TOP RATED OF ALL TIME"

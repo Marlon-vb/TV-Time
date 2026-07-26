@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import {
+  PanResponder,
   Pressable,
   ScrollView,
   Share,
@@ -11,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
@@ -42,6 +44,29 @@ export default function EpisodeScreen() {
   }, [episodeId]);
   const { data, reload } = useFocusData(loader);
 
+  // Swipe the hero left/right to move between episodes. A ref holds the latest
+  // neighbors so the (stable) PanResponder always sees the current episode.
+  const navRef = useRef<{
+    prev: { id: number } | null;
+    next: { id: number } | null;
+  }>({ prev: null, next: null });
+  const go = (target: { id: number } | null) => {
+    if (!target) return;
+    void Haptics.selectionAsync();
+    router.replace(`/episode/${target.id}` as never);
+  };
+  const heroPan = useRef(
+    PanResponder.create({
+      // Only claim clearly-horizontal swipes so vertical scrolling still works.
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 24 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx > 60) go(navRef.current.prev);
+        else if (g.dx < -60) go(navRef.current.next);
+      },
+    })
+  ).current;
+
   if (!data) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -51,6 +76,7 @@ export default function EpisodeScreen() {
   }
 
   const { episode, show, prev, next } = data;
+  navRef.current = { prev, next };
   const isAired = Boolean(
     episode.airstamp && episode.airstamp <= new Date().toISOString()
   );
@@ -112,8 +138,9 @@ export default function EpisodeScreen() {
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        {/* Hero still */}
-        <View style={{ minHeight: 250 }}>
+        {/* Hero still — swipe left/right (or tap the chevrons) to move between
+            episodes. */}
+        <View style={{ minHeight: 250 }} {...heroPan.panHandlers}>
           {still && (
             <Image
               source={{ uri: still }}
@@ -207,6 +234,8 @@ export default function EpisodeScreen() {
               </View>
             )}
           </View>
+          {prev && <HeroChevron side="left" onPress={() => go(prev)} />}
+          {next && <HeroChevron side="right" onPress={() => go(next)} />}
         </View>
 
         <View style={{ paddingHorizontal: 18, gap: 12, marginTop: 14 }}>
@@ -435,5 +464,49 @@ function NeighborButton({
         <Ionicons name="chevron-forward" size={16} color={colors.muted} />
       )}
     </Bouncy>
+  );
+}
+
+/** Tap target + affordance for episode paging, overlaid on the hero edges. */
+function HeroChevron({
+  side,
+  onPress,
+}: {
+  side: "left" | "right";
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={side === "left" ? "Previous episode" : "Next episode"}
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        justifyContent: "center",
+        ...(side === "left" ? { left: 8 } : { right: 8 }),
+      }}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "rgba(11,12,20,0.5)",
+          borderWidth: 1,
+          borderColor: colors.lineStrong,
+        }}
+      >
+        <Ionicons
+          name={side === "left" ? "chevron-back" : "chevron-forward"}
+          size={18}
+          color={colors.fg}
+        />
+      </View>
+    </Pressable>
   );
 }
