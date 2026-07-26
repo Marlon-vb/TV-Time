@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
+import GifPicker from "@/components/GifPicker";
 import StarRating from "@/components/StarRating";
 import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -129,9 +130,11 @@ export default function EpisodeSocial({
       <View style={{ ...card, padding: 14, gap: 12 }}>
         <Text style={label}>DISCUSSION</Text>
         <CommentComposer
-          onPost={async (body, uri) => {
-            let imageUrl: string | null = null;
-            if (uri) imageUrl = await social.uploadCommentPhoto(uri);
+          onPost={async (body, uri, gifUrl) => {
+            // A GIF is already a hosted URL — use it directly. A photo needs
+            // uploading to our storage first.
+            let imageUrl: string | null = gifUrl;
+            if (!imageUrl && uri) imageUrl = await social.uploadCommentPhoto(uri);
             await social.addComment(showId, season, episode, body, imageUrl, {
               showName,
               posterUrl,
@@ -180,11 +183,20 @@ function friendsWatchedText(friends: Profile[]): string {
 function CommentComposer({
   onPost,
 }: {
-  onPost: (body: string, uri: string | null) => Promise<void>;
+  onPost: (
+    body: string,
+    uri: string | null,
+    gifUrl: string | null
+  ) => Promise<void>;
 }) {
   const [body, setBody] = useState("");
   const [uri, setUri] = useState<string | null>(null);
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const [posting, setPosting] = useState(false);
+
+  // A photo and a GIF are mutually exclusive — one attachment per comment.
+  const preview = gifUrl ?? uri;
 
   const pickImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -192,16 +204,20 @@ function CommentComposer({
       quality: 0.7,
       allowsEditing: false,
     });
-    if (!res.canceled && res.assets[0]) setUri(res.assets[0].uri);
+    if (!res.canceled && res.assets[0]) {
+      setUri(res.assets[0].uri);
+      setGifUrl(null);
+    }
   };
 
   const post = async () => {
-    if (!body.trim() && !uri) return;
+    if (!body.trim() && !uri && !gifUrl) return;
     setPosting(true);
     try {
-      await onPost(body, uri);
+      await onPost(body, uri, gifUrl);
       setBody("");
       setUri(null);
+      setGifUrl(null);
     } catch {
       Alert.alert("Couldn't post", "Please try again.");
     } finally {
@@ -211,13 +227,28 @@ function CommentComposer({
 
   return (
     <View style={{ gap: 8 }}>
-      {uri && (
+      <GifPicker
+        visible={gifOpen}
+        onClose={() => setGifOpen(false)}
+        onSelect={(url) => {
+          setGifUrl(url);
+          setUri(null);
+        }}
+      />
+      {preview && (
         <View style={{ alignSelf: "flex-start" }}>
-          <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 10 }} contentFit="cover" />
+          <Image
+            source={{ uri: preview }}
+            style={{ width: 80, height: 80, borderRadius: 10 }}
+            contentFit="cover"
+          />
           <Pressable
-            onPress={() => setUri(null)}
+            onPress={() => {
+              setUri(null);
+              setGifUrl(null);
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Remove photo"
+            accessibilityLabel="Remove attachment"
             style={{ position: "absolute", top: -6, right: -6, backgroundColor: colors.ink, borderRadius: 10 }}
           >
             <Ionicons name="close-circle" size={20} color={colors.fg} />
@@ -230,7 +261,7 @@ function CommentComposer({
             flex: 1,
             flexDirection: "row",
             alignItems: "center",
-            gap: 8,
+            gap: 10,
             backgroundColor: colors.raised,
             borderWidth: 1,
             borderColor: colors.line,
@@ -246,6 +277,23 @@ function CommentComposer({
             multiline
             style={{ flex: 1, color: colors.fg, fontSize: 14, paddingVertical: 10, maxHeight: 100 }}
           />
+          <Pressable
+            onPress={() => setGifOpen(true)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Add a GIF"
+            style={{
+              borderWidth: 1,
+              borderColor: colors.lineStrong,
+              borderRadius: 6,
+              paddingHorizontal: 5,
+              paddingVertical: 1,
+            }}
+          >
+            <Text style={{ color: colors.muted, fontSize: 11, fontWeight: "800" }}>
+              GIF
+            </Text>
+          </Pressable>
           <Pressable
             onPress={pickImage}
             hitSlop={6}
