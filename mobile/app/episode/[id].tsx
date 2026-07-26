@@ -1,10 +1,12 @@
 import { useCallback, useRef } from "react";
 import {
+  Animated,
   PanResponder,
   Pressable,
   ScrollView,
   Share,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -33,6 +35,9 @@ export default function EpisodeScreen() {
   const episodeId = Number(id);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // Taller hero so the whole still is visible and the title sits lower.
+  const heroHeight = Math.round(width * 0.9);
 
   const loader = useCallback(() => {
     const episode = repo.getEpisode(episodeId);
@@ -55,14 +60,34 @@ export default function EpisodeScreen() {
     void Haptics.selectionAsync();
     router.replace(`/episode/${target.id}` as never);
   };
+  // The hero tracks the finger as you drag, then springs back or navigates —
+  // so the swipe feels responsive instead of a dead zone until release.
+  const dragX = useRef(new Animated.Value(0)).current;
   const heroPan = useRef(
     PanResponder.create({
-      // Only claim clearly-horizontal swipes so vertical scrolling still works.
+      // Claim horizontal-dominant drags early; leave vertical scroll alone.
       onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 24 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
+        Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
+      onPanResponderMove: (_, g) => {
+        // Damped follow; extra resistance toward an edge with no neighbour.
+        const n = navRef.current;
+        const canGo = g.dx > 0 ? Boolean(n.prev) : Boolean(n.next);
+        dragX.setValue(g.dx * (canGo ? 0.45 : 0.1));
+      },
       onPanResponderRelease: (_, g) => {
-        if (g.dx > 60) go(navRef.current.prev);
-        else if (g.dx < -60) go(navRef.current.next);
+        const n = navRef.current;
+        const flick = Math.abs(g.vx) > 0.3; // a quick flick counts too
+        if ((g.dx > 45 || (flick && g.dx > 14)) && n.prev) go(n.prev);
+        else if ((g.dx < -45 || (flick && g.dx < -14)) && n.next) go(n.next);
+        Animated.spring(dragX, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 24,
+          bounciness: 6,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
       },
     })
   ).current;
@@ -147,7 +172,10 @@ export default function EpisodeScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Hero still — swipe left/right to move between episodes. */}
-        <View style={{ minHeight: 250 }} {...heroPan.panHandlers}>
+        <Animated.View
+          style={{ minHeight: heroHeight, transform: [{ translateX: dragX }] }}
+          {...heroPan.panHandlers}
+        >
           {still && (
             <Image
               source={{ uri: still }}
@@ -241,7 +269,7 @@ export default function EpisodeScreen() {
               </View>
             )}
           </View>
-        </View>
+        </Animated.View>
 
         <View style={{ paddingHorizontal: 18, gap: 12, marginTop: 14 }}>
           {/* Watched + share row */}
