@@ -535,13 +535,18 @@ export async function addComment(
   season: number,
   episode: number,
   body: string,
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  ctx?: {
+    showName: string | null;
+    posterUrl: string | null;
+    episodeName?: string | null;
+  }
 ): Promise<void> {
   const me = await uid();
   if (!me) return;
   const trimmed = body.trim();
   if (!trimmed && !imageUrl) return;
-  await supabase.from("comments").insert({
+  const { error } = await supabase.from("comments").insert({
     user_id: me,
     show_id: showId,
     season,
@@ -549,6 +554,31 @@ export async function addComment(
     body: trimmed || null,
     image_url: imageUrl ?? null,
   });
+  if (error) return;
+  // Surface the comment in friends' feeds — one 'commented' activity per
+  // episode (deduped by type, so it never wipes the watched/rated entry).
+  if (ctx) {
+    const { data } = await supabase
+      .from("activities")
+      .insert({
+        user_id: me,
+        type: "commented",
+        show_id: showId,
+        show_name: ctx.showName,
+        poster_url: ctx.posterUrl,
+        season,
+        episode,
+        episode_name: ctx.episodeName ?? null,
+      })
+      .select("id")
+      .single();
+    if (data) {
+      await deleteEpisodeActivities(me, showId, season, episode, {
+        type: "commented",
+        excludeId: data.id as string,
+      });
+    }
+  }
 }
 
 /** Delete a comment and, if it carried a photo, the photo itself. */

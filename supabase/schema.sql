@@ -36,11 +36,11 @@ create table if not exists public.follows (
 );
 create index if not exists idx_follows_followee on public.follows(followee_id);
 
--- Activity feed events (watched / rated / finished / started).
+-- Activity feed events (watched / rated / finished / started / commented).
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  type text not null check (type in ('watched','rated','finished','started')),
+  type text not null check (type in ('watched','rated','finished','started','commented')),
   show_id integer,
   show_name text,
   poster_url text,
@@ -51,6 +51,10 @@ create table if not exists public.activities (
   created_at timestamptz not null default now()
 );
 create index if not exists idx_activities_user_time on public.activities(user_id, created_at desc);
+-- Widen the type check for existing installs (additive; safe to re-run).
+alter table public.activities drop constraint if exists activities_type_check;
+alter table public.activities add constraint activities_type_check
+  check (type in ('watched','rated','finished','started','commented'));
 
 -- Watched log — one row per (user, episode) a friend has seen. Powers the
 -- "friends who watched" indicator, per episode and per show.
@@ -432,15 +436,8 @@ drop trigger if exists on_comment_deleted on public.comments;
 create trigger on_comment_deleted
   after delete on public.comments for each row execute function public.handle_comment_deleted();
 
--- The owner account new members auto-follow on signup, so their feed isn't
--- empty on day one. Change this if your username is different.
-create or replace function public.owner_username()
-returns text language sql immutable as $$ select 'marlonvb' $$;
-
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
-declare
-  owner_id uuid;
 begin
   insert into public.profiles (id, username, display_name)
   values (
@@ -449,17 +446,6 @@ begin
     nullif(new.raw_user_meta_data->>'full_name', '')
   )
   on conflict (id) do nothing;
-
-  -- Auto-follow the owner. Skips cleanly if the owner account doesn't exist
-  -- yet or is the new user themselves (can't follow yourself).
-  select id into owner_id from public.profiles
-  where username = public.owner_username();
-  if owner_id is not null and owner_id <> new.id then
-    insert into public.follows (follower_id, followee_id)
-    values (new.id, owner_id)
-    on conflict do nothing;
-  end if;
-
   return new;
 end;
 $$;
@@ -468,16 +454,8 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users for each row execute function public.handle_new_user();
 
--- Backfill: everyone who signed up before this trigger existed now follows the
--- owner too. Idempotent, and a no-op if the owner account doesn't exist yet.
-insert into public.follows (follower_id, followee_id)
-select p.id, o.id
-from public.profiles p
-cross join (
-  select id from public.profiles where username = public.owner_username()
-) o
-where p.id <> o.id
-on conflict do nothing;
+-- (Auto-follow-the-owner on signup was removed. Existing follows are kept.)
+drop function if exists public.owner_username();
 
 -- =====================================================================
 -- Storage: a public bucket for comment photos

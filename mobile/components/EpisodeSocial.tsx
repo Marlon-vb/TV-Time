@@ -31,10 +31,16 @@ export default function EpisodeSocial({
   showId,
   season,
   episode,
+  showName,
+  posterUrl,
+  episodeName,
 }: {
   showId: number;
   season: number;
   episode: number;
+  showName: string | null;
+  posterUrl: string | null;
+  episodeName?: string | null;
 }) {
   const { session } = useAuth();
   const router = useRouter();
@@ -126,7 +132,11 @@ export default function EpisodeSocial({
           onPost={async (body, uri) => {
             let imageUrl: string | null = null;
             if (uri) imageUrl = await social.uploadCommentPhoto(uri);
-            await social.addComment(showId, season, episode, body, imageUrl);
+            await social.addComment(showId, season, episode, body, imageUrl, {
+              showName,
+              posterUrl,
+              episodeName,
+            });
             await load();
           }}
         />

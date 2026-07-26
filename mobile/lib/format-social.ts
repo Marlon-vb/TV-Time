@@ -15,6 +15,8 @@ export function feedActivityText(item: FeedItem): string {
       return `finished ${item.show_name ?? "a show"}`;
     case "started":
       return `started ${item.show_name ?? "a show"}`;
+    case "commented":
+      return `commented on ${item.show_name ?? "a show"}${code}`;
     case "watched":
     default:
       return `watched ${item.show_name ?? "a show"}${code}`;

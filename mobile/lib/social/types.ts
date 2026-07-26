@@ -6,7 +6,12 @@ export interface Profile {
   created_at: string;
 }
 
-export type ActivityType = "watched" | "rated" | "finished" | "started";
+export type ActivityType =
+  | "watched"
+  | "rated"
+  | "finished"
+  | "started"
+  | "commented";
 
 /** A row from the feed() RPC — an activity joined with its author. */
 export interface FeedItem {

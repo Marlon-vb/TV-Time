@@ -390,6 +390,9 @@ export default function EpisodeScreen() {
             showId={show.id}
             season={episode.season}
             episode={episode.number}
+            showName={show.name}
+            posterUrl={show.poster_url}
+            episodeName={episode.name}
           />
 
           {/* Prev / next */}
