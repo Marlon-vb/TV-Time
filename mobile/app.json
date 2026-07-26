@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.tvtime.personal",
+      "appleTeamId": "2RKZ63T7G7",
       "buildNumber": "2",
       "usesAppleSignIn": true,
       "entitlements": {
