@@ -16,13 +16,18 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
+import * as itunes from "@/lib/itunes";
 import * as repo from "@/lib/repo";
+import * as movies from "@/lib/movies";
 import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
-import type { RemoteShow } from "@/lib/types";
+import type { RemoteMovie, RemoteShow } from "@/lib/types";
 
-type Result = RemoteShow & { followed: boolean };
+// A search hit — a TV show (TVmaze) or a movie/documentary (iTunes).
+type SearchItem =
+  | { kind: "show"; show: RemoteShow; followed: boolean }
+  | { kind: "movie"; movie: RemoteMovie; added: boolean };
 
 const AIRING_CACHE_KEY = "airing_today_cache_v1";
 
@@ -108,7 +113,7 @@ async function topRated(): Promise<tvmaze.RatedShow[]> {
 export default function DiscoverScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Result[]>([]);
+  const [results, setResults] = useState<SearchItem[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
   );
@@ -168,21 +173,39 @@ export default function DiscoverScreen() {
     const gen = ++generation.current;
     const timer = setTimeout(async () => {
       setStatus("loading");
-      try {
-        const shows = await tvmaze.searchShows(q);
-        if (gen !== generation.current) return;
-        setResults(
-          shows.map((s) => ({ ...s, followed: repo.isFollowed(s.id) }))
-        );
-        setStatus("done");
-      } catch {
-        if (gen === generation.current) setStatus("error");
+      // Search both sources at once; TV shows first, then movies/docs.
+      const [showsRes, moviesRes] = await Promise.allSettled([
+        tvmaze.searchShows(q),
+        itunes.searchMovies(q),
+      ]);
+      if (gen !== generation.current) return;
+      if (showsRes.status === "rejected" && moviesRes.status === "rejected") {
+        setStatus("error");
+        return;
       }
+      const showItems: SearchItem[] =
+        showsRes.status === "fulfilled"
+          ? showsRes.value.map((s) => ({
+              kind: "show",
+              show: s,
+              followed: repo.isFollowed(s.id),
+            }))
+          : [];
+      const movieItems: SearchItem[] =
+        moviesRes.status === "fulfilled"
+          ? moviesRes.value.map((m) => ({
+              kind: "movie",
+              movie: m,
+              added: movies.isMovieAdded(m.id),
+            }))
+          : [];
+      setResults([...showItems, ...movieItems]);
+      setStatus("done");
     }, 350);
     return () => clearTimeout(timer);
   }, [query]);
 
-  const follow = async (show: Result) => {
+  const follow = async (show: RemoteShow) => {
     setBusyId(show.id);
     try {
       await repo.followShow(show.id);
@@ -190,7 +213,11 @@ export default function DiscoverScreen() {
       // New episodes of this show should alert like everything else.
       void rescheduleAll().catch(() => {});
       setResults((rs) =>
-        rs.map((r) => (r.id === show.id ? { ...r, followed: true } : r))
+        rs.map((r) =>
+          r.kind === "show" && r.show.id === show.id
+            ? { ...r, followed: true }
+            : r
+        )
       );
     } catch {
       // leave unfollowed; user can retry
@@ -199,10 +226,22 @@ export default function DiscoverScreen() {
     }
   };
 
+  const addMovie = (m: RemoteMovie) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    movies.addMovie(m); // instant, local
+    setResults((rs) =>
+      rs.map((r) =>
+        r.kind === "movie" && r.movie.id === m.id ? { ...r, added: true } : r
+      )
+    );
+  };
+
   return (
     <FlatList
       data={results}
-      keyExtractor={(s) => String(s.id)}
+      keyExtractor={(item) =>
+        item.kind === "show" ? `show-${item.show.id}` : `movie-${item.movie.id}`
+      }
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,
@@ -232,7 +271,7 @@ export default function DiscoverScreen() {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search 80,000+ shows…"
+              placeholder="Search shows, movies & documentaries…"
               placeholderTextColor={colors.faint}
               autoCorrect={false}
               style={{
@@ -312,68 +351,140 @@ export default function DiscoverScreen() {
           )}
           {status === "done" && results.length === 0 && (
             <Text style={{ color: colors.muted, fontSize: 13 }}>
-              No shows found for “{query.trim()}”.
+              No shows or movies found for “{query.trim()}”.
             </Text>
           )}
         </View>
       }
-      renderItem={({ item }) => (
-        <Bouncy
-          onPress={() => router.push(`/show/${item.id}` as never)}
-          style={{
-            ...card,
-            flexDirection: "row",
-            gap: 12,
-            alignItems: "center",
-            padding: 10,
-          }}
-        >
-          <Poster src={item.posterUrl} name={item.name} width={54} height={78} radius={9} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
-              {[
-                item.premiered?.slice(0, 4),
-                item.network,
-                item.status,
-                item.genres.slice(0, 2).join(", "),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </Text>
-            {item.summary && (
-              <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3, lineHeight: 15 }} numberOfLines={2}>
-                {item.summary}
-              </Text>
-            )}
-          </View>
-          <Bouncy
-            onPress={() => !item.followed && follow(item)}
-            disabled={item.followed || busyId === item.id}
-            scaleTo={0.92}
-            style={{
-              paddingHorizontal: 13,
-              paddingVertical: 10,
-              borderRadius: radius.sm,
-              backgroundColor: item.followed ? colors.overlay : colors.accent,
-              opacity: busyId === item.id ? 0.5 : 1,
-            }}
-          >
-            <Text
-              style={{
-                color: item.followed ? colors.muted : colors.ink,
-                fontWeight: "800",
-                fontSize: 12,
-              }}
-            >
-              {item.followed ? "Following ✓" : "+ Follow"}
-            </Text>
-          </Bouncy>
-        </Bouncy>
-      )}
+      renderItem={({ item }) =>
+        item.kind === "show" ? (
+          <ShowResultRow
+            show={item.show}
+            followed={item.followed}
+            busy={busyId === item.show.id}
+            onOpen={() => router.push(`/show/${item.show.id}` as never)}
+            onFollow={() => follow(item.show)}
+          />
+        ) : (
+          <MovieResultRow
+            movie={item.movie}
+            added={item.added}
+            onAdd={() => addMovie(item.movie)}
+            onOpen={() => router.push(`/movie/${item.movie.id}` as never)}
+          />
+        )
+      }
     />
+  );
+}
+
+/** A TV-show search result with a Follow button. */
+function ShowResultRow({
+  show,
+  followed,
+  busy,
+  onOpen,
+  onFollow,
+}: {
+  show: RemoteShow;
+  followed: boolean;
+  busy: boolean;
+  onOpen: () => void;
+  onFollow: () => void;
+}) {
+  return (
+    <Bouncy
+      onPress={onOpen}
+      style={{ ...card, flexDirection: "row", gap: 12, alignItems: "center", padding: 10 }}
+    >
+      <Poster src={show.posterUrl} name={show.name} width={54} height={78} radius={9} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
+          {show.name}
+        </Text>
+        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+          {["TV", show.premiered?.slice(0, 4), show.network, show.status]
+            .filter(Boolean)
+            .join(" · ")}
+        </Text>
+        {show.summary && (
+          <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3, lineHeight: 15 }} numberOfLines={2}>
+            {show.summary}
+          </Text>
+        )}
+      </View>
+      <Bouncy
+        onPress={() => !followed && onFollow()}
+        disabled={followed || busy}
+        scaleTo={0.92}
+        style={{
+          paddingHorizontal: 13,
+          paddingVertical: 10,
+          borderRadius: radius.sm,
+          backgroundColor: followed ? colors.overlay : colors.accent,
+          opacity: busy ? 0.5 : 1,
+        }}
+      >
+        <Text style={{ color: followed ? colors.muted : colors.ink, fontWeight: "800", fontSize: 12 }}>
+          {followed ? "Following ✓" : "+ Follow"}
+        </Text>
+      </Bouncy>
+    </Bouncy>
+  );
+}
+
+/** A movie/documentary search result with an Add button. */
+function MovieResultRow({
+  movie,
+  added,
+  onAdd,
+  onOpen,
+}: {
+  movie: RemoteMovie;
+  added: boolean;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  const meta = [
+    movie.genre === "Documentary" ? "Documentary" : "Movie",
+    movie.year ? String(movie.year) : null,
+    movie.genre && movie.genre !== "Documentary" ? movie.genre : null,
+    movie.runtime ? `${movie.runtime} min` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Bouncy
+      onPress={added ? onOpen : onAdd}
+      style={{ ...card, flexDirection: "row", gap: 12, alignItems: "center", padding: 10 }}
+    >
+      <Poster src={movie.posterUrl} name={movie.title} width={54} height={78} radius={9} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 14 }} numberOfLines={1}>
+          {movie.title}
+        </Text>
+        <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+          {meta}
+        </Text>
+        {movie.overview && (
+          <Text style={{ color: colors.faint, fontSize: 11, marginTop: 3, lineHeight: 15 }} numberOfLines={2}>
+            {movie.overview}
+          </Text>
+        )}
+      </View>
+      <View
+        style={{
+          paddingHorizontal: 13,
+          paddingVertical: 10,
+          borderRadius: radius.sm,
+          backgroundColor: added ? colors.overlay : colors.accent,
+        }}
+      >
+        <Text style={{ color: added ? colors.muted : colors.ink, fontWeight: "800", fontSize: 12 }}>
+          {added ? "Added ✓" : "+ Add"}
+        </Text>
+      </View>
+    </Bouncy>
   );
 }
 
