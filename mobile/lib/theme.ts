@@ -1,5 +1,5 @@
 /**
- * TV Time design system: deep-space navy, a single confident yellow,
+ * TV App design system: deep-space navy, a single confident yellow,
  * Space Grotesk for display type (system SF for body), soft hairline
  * borders, and one gradient used everywhere accent color appears.
  */

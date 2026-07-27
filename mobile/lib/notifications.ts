@@ -86,7 +86,7 @@ export async function rescheduleAll(): Promise<number> {
 export async function sendTestNotification(): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "TV Time",
+      title: "TV App",
       body: "Test notification — new episodes will show up like this.",
       data: { url: "/upcoming" },
     },

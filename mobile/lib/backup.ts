@@ -88,7 +88,7 @@ export function buildBackup(now: Date = new Date()): BackupFile {
 export function parseBackup(json: string): BackupFile {
   const data = JSON.parse(json) as BackupFile;
   if (data?.app !== "tv-time" || data.version !== 1) {
-    throw new Error("Not a TV Time backup file.");
+    throw new Error("Not a TV App backup file.");
   }
   if (!Array.isArray(data.shows)) throw new Error("Backup has no shows.");
   for (const s of data.shows) {
@@ -109,7 +109,7 @@ export async function exportAndShare(): Promise<void> {
   file.write(JSON.stringify(backup));
   await Sharing.shareAsync(file.uri, {
     mimeType: "application/json",
-    dialogTitle: "Export TV Time backup",
+    dialogTitle: "Export TV App backup",
   });
 }
 

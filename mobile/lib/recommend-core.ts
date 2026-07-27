@@ -19,7 +19,7 @@ export interface CandidateShow {
   weight: number; // TVmaze popularity (0–100)
   actors: string[]; // your actors appearing in it
   creators: string[]; // your creators who made it
-  watchers: number; // TV Time taste-neighbors watching it
+  watchers: number; // TV App taste-neighbors watching it
 }
 
 /** Genre → 0..1 weight, from minutes watched per genre. */

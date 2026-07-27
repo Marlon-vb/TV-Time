@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "TV Time",
+    "name": "TV App",
     "slug": "tv-time",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,8 +24,8 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSContactsUsageDescription": "TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.",
-        "NSPhotoLibraryUsageDescription": "TV Time lets you attach a photo to your episode comments."
+        "NSContactsUsageDescription": "TV App matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.",
+        "NSPhotoLibraryUsageDescription": "TV App lets you attach a photo to your episode comments."
       }
     },
     "android": {
@@ -49,13 +49,13 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read."
+          "contactsPermission": "TV App matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "TV Time lets you attach a photo to your episode comments.",
+          "photosPermission": "TV App lets you attach a photo to your episode comments.",
           "cameraPermission": false,
           "microphonePermission": false
         }

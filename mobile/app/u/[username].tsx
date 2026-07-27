@@ -198,7 +198,7 @@ export default function UserProfileScreen() {
                 <Bouncy
                   onPress={() =>
                     void Share.share({
-                      message: `Follow me on TV Time — I'm @${profile.username}. Got the app? Tap ${deepLink} — otherwise search @${profile.username} once you're in.`,
+                      message: `Follow me on TV App — I'm @${profile.username}. Got the app? Tap ${deepLink} — otherwise search @${profile.username} once you're in.`,
                     })
                   }
                   scaleTo={0.94}

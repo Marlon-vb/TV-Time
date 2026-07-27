@@ -125,7 +125,7 @@ function NotificationsSection() {
     const ok = await setNotificationsEnabled(on);
     if (on && !ok) {
       setMessage(
-        "Notifications are blocked for TV Time — allow them in iOS Settings → Notifications."
+        "Notifications are blocked for TV App — allow them in iOS Settings → Notifications."
       );
       setEnabled(false);
       return;
@@ -489,7 +489,7 @@ function AccountSection() {
   const confirmDelete = () =>
     Alert.alert(
       "Delete account?",
-      "This permanently removes your profile, follows, shared watch history, comments, photos, and votes from TV Time's servers. Your on-device library stays.",
+      "This permanently removes your profile, follows, shared watch history, comments, photos, and votes from TV App's servers. Your on-device library stays.",
       [
         { text: "Cancel", style: "cancel" },
         { text: "Delete forever", style: "destructive", onPress: confirmAgain },

@@ -28,7 +28,7 @@ export type { Recommendation } from "./recommend-core";
  *  2. Taste profile (local): candidates are boosted by how well their genres
  *     match what you actually watch, weighted by minutes.
  *  3. Community (our Supabase): "people who watch your shows also watch…"
- *     from TV Time's own users — real collaborative filtering that gets
+ *     from TV App's own users — real collaborative filtering that gets
  *     smarter as the user base grows. Optional signal; empty is fine.
  *
  * Every candidate is a real TVmaze show, so opening/following works directly.

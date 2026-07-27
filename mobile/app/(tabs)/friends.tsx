@@ -313,8 +313,8 @@ function FindFriends({
   const invite = async () => {
     await Share.share({
       message: myUsername
-        ? `Follow me on TV Time — I'm @${myUsername}. Got the app? Tap tvtime://u/${myUsername} — otherwise search @${myUsername} once you're in.`
-        : "Join me on TV Time!",
+        ? `Follow me on TV App — I'm @${myUsername}. Got the app? Tap tvtime://u/${myUsername} — otherwise search @${myUsername} once you're in.`
+        : "Join me on TV App!",
     });
   };
 
@@ -377,7 +377,7 @@ function FindFriends({
           )}
           {contacts === "denied" && (
             <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
-              Contacts access is off. Allow it in Settings → TV Time to find
+              Contacts access is off. Allow it in Settings → TV App to find
               friends from your address book.
             </Text>
           )}
@@ -386,7 +386,7 @@ function FindFriends({
               <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
                 {contacts.length > 0
                   ? "In your contacts"
-                  : "No contacts are on TV Time yet — invite someone!"}
+                  : "No contacts are on TV App yet — invite someone!"}
               </Text>
               {contacts.map((p) => (
                 <UserRow

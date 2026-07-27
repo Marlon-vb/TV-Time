@@ -13,7 +13,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>TV Time</string>
+    <string>TV App</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -54,9 +54,9 @@
       <true/>
     </dict>
     <key>NSContactsUsageDescription</key>
-    <string>TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.</string>
+    <string>TV App matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>TV Time lets you attach a photo to your episode comments.</string>
+    <string>TV App lets you attach a photo to your episode comments.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
