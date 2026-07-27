@@ -1,0 +1,894 @@
+/* ---------------------------------------------------------------------------
+   __APP__ — site styles.
+
+   The palette and type are lifted from the app's own design system
+   (mobile/lib/theme.ts) so the site and the product read as one thing:
+   deep-space navy, a single yellow-to-amber accent gradient, Space Grotesk for
+   display type and the system face for body copy — exactly what the app does.
+
+   Everything is token-driven so the light theme is a re-declaration of the
+   tokens rather than a second set of component rules.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("sg-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("sg-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  --ground: #0b0c14;
+  --surface: #141623;
+  --raised: #1c1f31;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.13);
+  --fg: #f4f5fa;
+  --muted: #9aa0b8;
+  --faint: #7a80a0;
+  --accent: #fbd737;
+  --accent-deep: #f5a623;
+  /* Text-safe accent: the yellow itself only ever fills, never sets type on
+     a light ground, where it would fall under 3:1. */
+  --accent-text: #fbd737;
+  --on-accent: #0b0c14;
+  --ok: #4ade80;
+
+  --display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+
+  --measure: 68ch;
+  --pad: clamp(20px, 5vw, 40px);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --ground: #eef0f6;
+    --surface: #ffffff;
+    --raised: #f7f8fc;
+    --line: rgba(11, 12, 20, 0.1);
+    --line-2: rgba(11, 12, 20, 0.18);
+    --fg: #12141d;
+    --muted: #515873;
+    --faint: #646b88;
+    --accent-text: #7c5300;
+    color-scheme: light;
+  }
+}
+
+/* The in-page theme toggle must beat the media query in both directions. */
+:root[data-theme="light"] {
+  --ground: #eef0f6;
+  --surface: #ffffff;
+  --raised: #f7f8fc;
+  --line: rgba(11, 12, 20, 0.1);
+  --line-2: rgba(11, 12, 20, 0.18);
+  --fg: #12141d;
+  --muted: #515873;
+  --faint: #646b88;
+  --accent-text: #7c5300;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --ground: #0b0c14;
+  --surface: #141623;
+  --raised: #1c1f31;
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.13);
+  --fg: #f4f5fa;
+  --muted: #9aa0b8;
+  --faint: #7a80a0;
+  --accent-text: #fbd737;
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------- baseline */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+a {
+  color: var(--accent-text);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+/* Small uppercase section label — the app uses these above every rail. */
+.eyebrow {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+.skip:focus {
+  left: 12px;
+  top: 12px;
+  z-index: 50;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 22px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  text-decoration: none;
+}
+.brand svg {
+  width: 30px;
+  height: 30px;
+  flex: none;
+}
+
+.masthead nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 26px);
+}
+.masthead nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.masthead nav a:hover {
+  color: var(--fg);
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.theme-toggle:hover {
+  color: var(--fg);
+  border-color: var(--faint);
+}
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* -------------------------------------------------------------------- hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(32px, 6vw, 72px);
+  align-items: center;
+  padding-block: clamp(28px, 5vw, 56px) clamp(36px, 5vw, 60px);
+}
+
+.hero h1 {
+  font-size: clamp(38px, 6.4vw, 66px);
+  margin-block: 18px 0;
+}
+
+.hero .lede {
+  color: var(--muted);
+  font-size: clamp(17px, 2vw, 19.5px);
+  max-width: 44ch;
+  margin-block: 20px 0;
+}
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+  margin-top: 32px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  color: var(--on-accent);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+.btn:hover {
+  filter: brightness(1.06);
+}
+.btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.cta-note {
+  color: var(--faint);
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------- the phone mockup */
+
+.device-stage {
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+/* Warm glow behind the phone: the app's accent, heavily diffused. */
+.device-stage::before {
+  content: "";
+  position: absolute;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 215, 55, 0.17), transparent 68%);
+  filter: blur(14px);
+  z-index: 0;
+}
+
+.device {
+  position: relative;
+  z-index: 1;
+  width: min(304px, 84vw);
+  aspect-ratio: 304 / 620;
+  background: #0b0c14;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 42px;
+  padding: 9px;
+  box-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.screen {
+  height: 100%;
+  background: #0b0c14;
+  border-radius: 34px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #f4f5fa;
+  position: relative;
+}
+
+.notch {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 20px;
+  background: #000;
+  border-radius: 999px;
+  z-index: 3;
+}
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #f4f5fa;
+  font-family: var(--body);
+}
+.status-icons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  opacity: 0.9;
+}
+.status-icons i {
+  display: block;
+  width: 3px;
+  height: 8px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.status-icons i:nth-child(1) {
+  height: 4px;
+}
+.status-icons i:nth-child(2) {
+  height: 6px;
+}
+
+.screen-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px 8px;
+}
+.screen-head svg {
+  width: 19px;
+  height: 19px;
+}
+.screen-head span {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.screen-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 0 14px;
+}
+
+.rail-label {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7a80a0;
+  margin: 13px 4px 8px;
+}
+
+.ep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #141623;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.poster {
+  width: 38px;
+  height: 54px;
+  border-radius: 7px;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+}
+/* Each poster is an abstract colour field — no real artwork is used. */
+.poster.a {
+  background: linear-gradient(150deg, #3c4a7a, #101426 70%);
+}
+.poster.b {
+  background: linear-gradient(150deg, #7a3c4a, #241016 70%);
+}
+.poster.c {
+  background: linear-gradient(150deg, #2f6a5e, #0e2320 70%);
+}
+.poster.d {
+  background: linear-gradient(150deg, #6a5a2f, #231d0e 70%);
+}
+.poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 55%, rgba(0, 0, 0, 0.45));
+}
+
+.ep-text {
+  flex: 1;
+  min-width: 0;
+}
+.ep-title {
+  font-weight: 600;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ep-meta {
+  color: #9aa0b8;
+  font-size: 9.5px;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  margin-top: 7px;
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fbd737, #f5a623);
+}
+
+.tick {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  flex: none;
+}
+.tick.on {
+  border-color: transparent;
+  background: linear-gradient(135deg, #fbd737, #f5a623);
+  display: grid;
+  place-items: center;
+}
+.tick.on svg {
+  width: 12px;
+  height: 12px;
+  color: #0b0c14;
+}
+
+.tabbar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 11px 8px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: #101320;
+}
+.tabbar svg {
+  width: 19px;
+  height: 19px;
+  color: #575d78;
+}
+.tabbar svg.on {
+  color: #fbd737;
+}
+
+/* ---------------------------------------------------------------- sections */
+
+section {
+  padding-block: clamp(48px, 8vw, 96px);
+}
+
+.section-head {
+  max-width: 60ch;
+  margin-bottom: clamp(28px, 4vw, 44px);
+}
+.section-head h2 {
+  font-size: clamp(28px, 4.2vw, 42px);
+  margin-top: 14px;
+}
+.section-head p {
+  color: var(--muted);
+  margin-bottom: 0;
+  margin-top: 16px;
+}
+
+/* Features are presented as a watchlist: each one is a screen you can tick
+   off, labelled with the tab it actually lives in. */
+.watchlist {
+  border-top: 1px solid var(--line);
+}
+
+/* Wide screens split each row into name and explanation, so the list fills the
+   measure instead of stranding half the page. */
+.feature {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 20px;
+  align-items: start;
+  padding-block: clamp(22px, 3vw, 30px);
+  border-bottom: 1px solid var(--line);
+}
+
+.feature-name,
+.feature-desc {
+  grid-column: 2;
+}
+
+@media (min-width: 900px) {
+  .feature {
+    grid-template-columns: 30px minmax(230px, 330px) 1fr;
+    gap: 8px 44px;
+  }
+  .feature-desc {
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 6px;
+  }
+}
+
+.feature .check {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  display: grid;
+  place-items: center;
+  margin-top: 4px;
+}
+.feature .check svg {
+  width: 14px;
+  height: 14px;
+  color: var(--on-accent);
+}
+
+.feature h3 {
+  font-size: clamp(19px, 2.2vw, 23px);
+  margin-top: 7px;
+  letter-spacing: -0.015em;
+}
+.feature p {
+  color: var(--muted);
+  margin: 9px 0 0;
+  max-width: 60ch;
+  font-size: 16px;
+}
+
+/* ------------------------------------------------------------ privacy band */
+
+.band {
+  background: var(--surface);
+  border-block: 1px solid var(--line);
+}
+
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.card {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 22px;
+}
+.card h3 {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.card p {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 9px 0 0;
+}
+
+/* ----------------------------------------------------------------- closing */
+
+.closing {
+  text-align: center;
+  padding-block: clamp(56px, 9vw, 104px);
+}
+.closing h2 {
+  font-size: clamp(28px, 4.6vw, 46px);
+  margin-inline: auto;
+  max-width: 18ch;
+}
+.closing p {
+  color: var(--muted);
+  max-width: 52ch;
+  margin: 18px auto 0;
+}
+.closing .cta-row {
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------ footer */
+
+footer {
+  border-top: 1px solid var(--line);
+  padding-block: 44px 56px;
+  color: var(--faint);
+  font-size: 14px;
+}
+footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  margin-bottom: 26px;
+}
+footer nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+footer nav a:hover {
+  color: var(--fg);
+  text-decoration: underline;
+}
+footer p {
+  max-width: 78ch;
+  margin: 0 0 12px;
+  line-height: 1.65;
+}
+footer a {
+  color: var(--faint);
+}
+
+/* -------------------------------------------------------- document pages */
+
+.doc {
+  padding-block: clamp(28px, 5vw, 52px) clamp(56px, 9vw, 96px);
+}
+.doc-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 28px;
+  margin-bottom: 40px;
+}
+.doc-head h1 {
+  font-size: clamp(32px, 5vw, 46px);
+  margin-top: 14px;
+}
+.doc-head .meta {
+  color: var(--faint);
+  font-size: 14.5px;
+  margin: 16px 0 0;
+}
+
+.doc article {
+  max-width: var(--measure);
+}
+.doc article h2 {
+  font-size: clamp(21px, 2.6vw, 26px);
+  margin-top: 52px;
+  scroll-margin-top: 24px;
+}
+.doc article h3 {
+  font-size: 18px;
+  margin-top: 34px;
+}
+.doc article p,
+.doc article li {
+  color: var(--muted);
+}
+.doc article p {
+  margin: 16px 0;
+}
+.doc article strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+.doc article ul,
+.doc article ol {
+  padding-left: 22px;
+  margin: 16px 0;
+}
+.doc article li {
+  margin: 9px 0;
+}
+.doc article li::marker {
+  color: var(--faint);
+}
+.doc article hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 46px 0;
+}
+.doc article code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+/* Long legal tables must scroll inside their own box, never the page. */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin: 22px 0;
+  max-width: var(--measure);
+}
+.doc article table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14.5px;
+  min-width: 460px;
+}
+.doc article th,
+.doc article td {
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  vertical-align: top;
+}
+.doc article th {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.doc article tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* A pull-out for the plain-English summary at the top of each legal page. */
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+  padding: 20px 22px;
+  margin-bottom: 8px;
+  max-width: var(--measure);
+}
+.summary p:first-child {
+  margin-top: 0;
+}
+.summary p:last-child {
+  margin-bottom: 0;
+}
+
+.toc {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 20px 24px;
+  margin: 32px 0 8px;
+  max-width: var(--measure);
+}
+.toc p {
+  margin: 0 0 12px;
+}
+.toc ol {
+  columns: 2;
+  column-gap: 30px;
+  margin: 0;
+  padding-left: 20px;
+}
+.toc li {
+  margin: 5px 0;
+  break-inside: avoid;
+}
+.toc a {
+  text-decoration: none;
+}
+.toc a:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 880px) {
+  .hero {
+    grid-template-columns: 1fr;
+    text-align: left;
+    padding-bottom: clamp(36px, 8vw, 60px);
+  }
+  .device-stage {
+    order: -1;
+    margin-bottom: 8px;
+  }
+  .toc ol {
+    columns: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 16px;
+  }
+  .masthead nav a.hide-sm {
+    display: none;
+  }
+  .feature {
+    grid-template-columns: 24px 1fr;
+    gap: 15px;
+  }
+  .feature .check {
+    width: 21px;
+    height: 21px;
+  }
+  .feature .check svg {
+    width: 11px;
+    height: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

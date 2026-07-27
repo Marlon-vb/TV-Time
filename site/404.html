@@ -1,0 +1,75 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__APP__ — page not found</title>
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0b0c14" />
+<link rel="icon" href="/TV-Time/assets/favicon.png" />
+<link rel="stylesheet" href="/TV-Time/assets/style.css" />
+
+<!-- GitHub Pages serves this file for any unmatched path at any depth, so unlike
+     every other page here its asset links must be absolute from the domain root,
+     including the /TV-Time/ project prefix. -->
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="/TV-Time/" aria-label="__APP__ home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fbd737" />
+            <stop offset="1" stop-color="#f5a623" />
+          </linearGradient>
+        </defs>
+        <line x1="42" y1="34" x2="35" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <line x1="58" y1="34" x2="65" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <rect x="24" y="34" width="52" height="42" rx="11" fill="none" stroke="url(#g)" stroke-width="6" />
+        <path d="M45 46 L45 64 L61 55 Z" fill="url(#g)" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" />
+      </svg>
+      __APP__
+    </a>
+    <nav>
+      <a href="/TV-Time/support/">Support</a>
+    </nav>
+  </header>
+</div>
+
+<main id="main">
+  <section class="closing">
+    <div class="wrap">
+      <p class="eyebrow">404</p>
+      <h2>Nothing airing on this channel.</h2>
+      <p>
+        That page doesn't exist. It may have moved, or the link may have picked up a
+        stray character.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="/TV-Time/">Back to the start</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="/TV-Time/privacy/">Privacy Policy</a>
+      <a href="/TV-Time/terms/">Terms of Use</a>
+      <a href="/TV-Time/support/">Support</a>
+      <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+    </nav>
+    <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try {
+      var saved = localStorage.getItem("theme");
+      if (saved) root.setAttribute("data-theme", saved);
+    } catch (e) {}
+    document.getElementById("yr").textContent = new Date().getFullYear();
+  })();
+</script>

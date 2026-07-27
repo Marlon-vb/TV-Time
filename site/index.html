@@ -1,0 +1,440 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__APP__ — track the shows, movies and documentaries you watch</title>
+<meta
+  name="description"
+  content="__APP__ is an iPhone app that tracks the TV shows, movies and documentaries you watch. Your library lives on your phone. The social part is optional."
+/>
+<meta name="theme-color" content="#0b0c14" />
+<link rel="icon" href="assets/favicon.png" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<link rel="stylesheet" href="assets/style.css" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="__APP__ — track what you watch" />
+<meta
+  property="og:description"
+  content="Your library lives on your phone. The social part is optional. Free, on TestFlight."
+/>
+<meta property="og:image" content="assets/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="__APP__ home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fbd737" />
+            <stop offset="1" stop-color="#f5a623" />
+          </linearGradient>
+        </defs>
+        <line x1="42" y1="34" x2="35" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <line x1="58" y1="34" x2="65" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <rect x="24" y="34" width="52" height="42" rx="11" fill="none" stroke="url(#g)" stroke-width="6" />
+        <path d="M45 46 L45 64 L61 55 Z" fill="url(#g)" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" />
+      </svg>
+      __APP__
+    </a>
+    <nav>
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#privacy">Privacy</a>
+      <a href="support/">Support</a>
+      <button class="theme-toggle" type="button" id="themeBtn" aria-label="Switch colour theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </nav>
+  </header>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">iPhone · free · in beta</p>
+        <h1>Everything you watch, stored on your own phone.</h1>
+        <p class="lede">
+          __APP__ tracks the TV shows, movies and documentaries you watch, and opens
+          on the episodes waiting for you. No account needed. The social part is
+          entirely optional.
+        </p>
+        <div class="cta-row">
+          <a class="btn" href="#testflight">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2 3 20h18L12 2Zm0 5.6 5.1 10.2H6.9L12 7.6Z" />
+            </svg>
+            Join the TestFlight beta
+          </a>
+          <span class="cta-note">Not on the App Store yet</span>
+        </div>
+      </div>
+
+      <!-- Hand-built mock of the app's Watch Next screen. The poster shapes are
+           abstract colour fields and every title is fictional — no real artwork
+           or show name appears anywhere on this site. -->
+      <div class="device-stage">
+        <div class="device" role="img" aria-label="The __APP__ Watch Next screen, showing the next unwatched episode of each show you follow.">
+          <div class="screen">
+            <div class="notch"></div>
+            <div class="status">
+              <span>21:04</span>
+              <span class="status-icons"><i></i><i></i><i></i></span>
+            </div>
+
+            <div class="screen-head">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <line x1="42" y1="34" x2="35" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+                <line x1="58" y1="34" x2="65" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+                <rect x="24" y="34" width="52" height="42" rx="11" fill="none" stroke="url(#g)" stroke-width="6" />
+                <path d="M45 46 L45 64 L61 55 Z" fill="url(#g)" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" />
+              </svg>
+              <span>Watch Next</span>
+            </div>
+
+            <div class="screen-body">
+              <p class="rail-label">Up next</p>
+
+              <div class="ep">
+                <div class="poster a"></div>
+                <div class="ep-text">
+                  <div class="ep-title">The Longest Winter</div>
+                  <div class="ep-meta">S2E4 · Tonight, 21:00</div>
+                  <div class="bar"><span style="width: 62%"></span></div>
+                </div>
+                <div class="tick"></div>
+              </div>
+
+              <div class="ep">
+                <div class="poster b"></div>
+                <div class="ep-text">
+                  <div class="ep-title">Harbour Lights</div>
+                  <div class="ep-meta">S1E9 · 3 behind</div>
+                  <div class="bar"><span style="width: 41%"></span></div>
+                </div>
+                <div class="tick"></div>
+              </div>
+
+              <div class="ep">
+                <div class="poster c"></div>
+                <div class="ep-text">
+                  <div class="ep-title">Nightjar</div>
+                  <div class="ep-meta">S4E2 · Watched just now</div>
+                  <div class="bar"><span style="width: 88%"></span></div>
+                </div>
+                <div class="tick on">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+              </div>
+
+              <p class="rail-label">Haven't watched in a while</p>
+
+              <div class="ep">
+                <div class="poster d"></div>
+                <div class="ep-text">
+                  <div class="ep-title">Salt &amp; Iron</div>
+                  <div class="ep-meta">S1E3 · 6 weeks ago</div>
+                  <div class="bar"><span style="width: 18%"></span></div>
+                </div>
+                <div class="tick"></div>
+              </div>
+
+              <p class="rail-label">Haven't started</p>
+
+              <div class="ep">
+                <div class="poster a" style="background: linear-gradient(150deg, #5a3f6e, #1a1226 70%)"></div>
+                <div class="ep-text">
+                  <div class="ep-title">The Quiet Hours</div>
+                  <div class="ep-meta">S1E1 · 8 episodes</div>
+                  <div class="bar"><span style="width: 0%"></span></div>
+                </div>
+                <div class="tick"></div>
+              </div>
+            </div>
+
+            <div class="tabbar" aria-hidden="true">
+              <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="14" rx="3" /><path d="m8 3 4 3 4-3" stroke-linecap="round" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="9" rx="1.5" />
+                <rect x="3" y="15" width="7" height="6" rx="1.5" /><rect x="14" y="15" width="7" height="6" rx="1.5" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" stroke-linecap="round" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" stroke-linecap="round" />
+              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ features -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">What it does</p>
+        <h2>Seven screens, and none of them ask you to sign up.</h2>
+        <p>
+          Everything below works with no account, offline, on the plane. Tick them
+          off as you go.
+        </p>
+      </div>
+
+      <div class="watchlist">
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Watch Next</p>
+            <h3>Your backlog, already sorted</h3>
+          </div>
+          <p class="feature-desc">
+            Three groups — up next, haven't watched in a while, haven't started.
+              Tap the circle to mark an episode watched. The same list runs as a
+              home-screen widget.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Library</p>
+            <h3>Shows and movies in one place</h3>
+          </div>
+          <p class="feature-desc">
+            A poster grid with progress bars, four sort orders, and filters for
+              Watching, Up to date, Not started, Finished and Archived. Movies and
+              documentaries get their own watchlist.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Upcoming</p>
+            <h3>Air dates, as a list or a calendar</h3>
+          </div>
+          <p class="feature-desc">
+            Every announced episode from the shows you follow, by day with air time
+              and network, or as a month calendar. Alerts are scheduled on your phone,
+              with no server involved.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Episodes</p>
+            <h3>Swipe through a season</h3>
+          </div>
+          <p class="feature-desc">
+            Still, air date and synopsis on a full page, with spoilers hidden until
+              you ask. Mark it watched, tap the check again to log a rewatch, and rate
+              it from half a star to five.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Discover</p>
+            <h3>One search box, four rails</h3>
+          </div>
+          <p class="feature-desc">
+            Search TV, movies and documentaries in one place. Below that:
+              recommendations built from the cast, creators and genres you already
+              watch, plus premiering soon, all-time greats and airing tonight.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Friends · optional</p>
+            <h3>The social part is opt-in</h3>
+          </div>
+          <p class="feature-desc">
+            Sign in with Apple to follow friends, see what they watched and rated,
+              and join the comment thread on an episode — with community ratings and a
+              best-character vote. Skip it and the app is unchanged.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="feature-name">
+            <p class="eyebrow">Profile</p>
+            <h3>How much time it actually took</h3>
+          </div>
+          <p class="feature-desc">
+            Your profile totals the months, days and hours you've watched, plus your
+              most-watched shows and top genres. The diary lists every episode, day by
+              day.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- privacy -->
+  <section class="band" id="privacy">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Your data</p>
+        <h2>It lives on your phone, not on someone's server.</h2>
+        <p>
+          Your library — every show, episode, watch date, rating and movie — is a
+          single database file on your iPhone, and the whole app works signed out.
+        </p>
+      </div>
+
+      <div class="privacy-grid">
+        <div class="card">
+          <h3>No tracking, at all</h3>
+          <p>
+            No analytics SDK, no ad network, no crash reporter, no tracking of any
+            kind, and there never has been.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Signing in is a choice</h3>
+          <p>
+            Sign in with Apple only turns on the friends layer. From then on the
+            episodes you mark watched are mirrored so the people who follow you can
+            see them.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Comments are public</h3>
+          <p>
+            Episode comments and any photo or GIF you attach are visible to other
+            signed-in users, so treat those as public.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Leaving is one tap</h3>
+          <p>
+            Delete your account from Settings and everything on the server goes with
+            it. The library on your device stays exactly where it is.
+          </p>
+        </div>
+      </div>
+
+      <p style="margin-top: 26px; color: var(--faint); font-size: 15px; max-width: 74ch">
+        Artwork and air dates are fetched from TVmaze and Apple whether or not you
+        sign in, so some requests always leave your phone. The full detail is in the
+        <a href="privacy/">privacy policy</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- closing -->
+  <section class="closing" id="testflight">
+    <div class="wrap">
+      <p class="eyebrow">Get it</p>
+      <h2>The beta is open on TestFlight.</h2>
+      <p>
+        It's one person's iPhone app and it's free. If you have an export from
+        another TV tracking app, you can import it on the first run.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="mailto:info@montyinc.net?subject=__APP__%20beta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <rect x="2.5" y="4.5" width="19" height="15" rx="2.5" />
+            <path d="m3 7 9 6 9-6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Ask for an invite
+        </a>
+        <span class="cta-note">iPhone, iOS 16 and later</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="privacy/">Privacy Policy</a>
+      <a href="terms/">Terms of Use</a>
+      <a href="support/">Support</a>
+      <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+    </nav>
+    <p>
+      __APP__ is an independent app made by one person. It is not affiliated with,
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network or
+      streaming service, and it does not link to or provide any video.
+    </p>
+    <p>
+      TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
+      CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
+      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
+      not endorsed or certified by TMDB.
+    </p>
+    <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
+  </div>
+</footer>
+
+<script>
+  // Theme choice persists; otherwise the OS preference wins.
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try {
+      saved = localStorage.getItem("theme");
+    } catch (e) {}
+    if (saved) root.setAttribute("data-theme", saved);
+
+    var btn = document.getElementById("themeBtn");
+    btn.addEventListener("click", function () {
+      var dark = !matchMedia("(prefers-color-scheme: light)").matches;
+      var current = root.getAttribute("data-theme") || (dark ? "dark" : "light");
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {}
+    });
+
+    document.getElementById("yr").textContent = new Date().getFullYear();
+  })();
+</script>
