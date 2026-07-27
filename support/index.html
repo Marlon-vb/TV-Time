@@ -1,0 +1,290 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__APP__ — Support</title>
+<meta
+  name="description"
+  content="Help for __APP__: how to reach us, plus answers on accounts, watch history, rewatches, friends, notifications, importing, backups, deleting your account and reporting abuse."
+/>
+<meta name="theme-color" content="#0b0c14" />
+<link rel="icon" href="../assets/favicon.png" />
+<link rel="apple-touch-icon" href="../assets/icon-192.png" />
+<link rel="stylesheet" href="../assets/style.css" />
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../" aria-label="__APP__ home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fbd737" />
+            <stop offset="1" stop-color="#f5a623" />
+          </linearGradient>
+        </defs>
+        <line x1="42" y1="34" x2="35" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <line x1="58" y1="34" x2="65" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <rect x="24" y="34" width="52" height="42" rx="11" fill="none" stroke="url(#g)" stroke-width="6" />
+        <path d="M45 46 L45 64 L61 55 Z" fill="url(#g)" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" />
+      </svg>
+      __APP__
+    </a>
+    <nav>
+      <a class="hide-sm" href="../#features">Features</a>
+      <a class="hide-sm" href="../#privacy">Privacy</a>
+      <a href="../support/">Support</a>
+      <button class="theme-toggle" type="button" id="themeBtn" aria-label="Switch colour theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </nav>
+  </header>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <div class="doc">
+      <div class="doc-head">
+        <p class="eyebrow">Help</p>
+        <h1>Support</h1>
+        <p class="meta">
+          __APP__ for iPhone · Last updated 27 July 2026 · Published by Monty Inc ·
+          <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+        </p>
+      </div>
+
+      <div class="summary">
+        <p>__APP__ helps you track the TV shows, movies and documentaries you watch — what's up next, what's airing soon, and what your friends thought of it. Your library lives on your iPhone.</p>
+        <p>If something isn't working, or you just can't find a setting, this page should get you unstuck.</p>
+        <p>The <a href="../privacy/">Privacy Policy</a> and <a href="../terms/">Terms of Use</a> are also linked inside the app, under <strong>Settings → Legal</strong> and under the Sign in with Apple button.</p>
+      </div>
+
+      <article>
+        <h2 id="how-to-get-help">How to get help</h2>
+        <p>Email <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong>.</p>
+        <p>__APP__ is made by one person, so replies aren't instant — but every message gets read, and most get an answer within a week. Reports of abusive content or abusive users are handled much faster: see <a href="#report-a-problem-or-abusive-content">Report a problem or abusive content</a>.</p>
+        <p>To help us help you, please include:</p>
+        <ul>
+          <li>Your iPhone model and iOS version</li>
+          <li>The version of __APP__ you're running</li>
+          <li>Which screen you were on and what you tapped</li>
+          <li>Your @username, <strong>only</strong> if the issue involves friends, comments or your account</li>
+          <li>A screenshot, if you have one</li>
+        </ul>
+        <p>Please don't send passwords or Apple ID credentials — we will never ask for them, and we don't have any way to use them.</p>
+
+        <hr />
+
+        <h2 id="frequently-asked-questions">Frequently asked questions</h2>
+
+        <h3 id="do-i-need-an-account">Do I need an account to use __APP__?</h3>
+        <p>No. Following shows, marking episodes watched, rating episodes, your movie watchlist, the upcoming calendar, episode notifications, the home-screen widget, importing, backups and recommendations all work with no account at all.</p>
+        <p>Signing in with Apple is only needed for the social side: friends, the activity feed, community episode ratings, "best character" votes and comments. If you never sign in, the Friends tab simply shows a sign-in prompt and the social block on each episode page is replaced with one too.</p>
+
+        <h3 id="where-is-my-data-stored">Where is my data stored? Is it private?</h3>
+        <p>Everything you track — shows, episodes, watch dates, episode ratings, rewatch counts, your movie watchlist and your settings — is stored in a single database file on your iPhone. It works offline and it belongs to you.</p>
+        <p>If you sign in, some of it is mirrored to our backend (a Supabase project hosted in [SUPABASE REGION]) so the social features can work:</p>
+        <ul>
+          <li><strong>Your watch history</strong> (show, season, episode, episode rating) is uploaded and is visible only to you and the people who follow you. Community-wide numbers, like an episode's average rating, are shown as anonymous totals only.</li>
+          <li><strong>Comments and comment upvotes</strong> are visible to every signed-in __APP__ user.</li>
+          <li><strong>Photos you attach to a comment are publicly accessible</strong> — anyone with the image URL can open it without an account, and the URL contains your account ID. Please don't attach anything you wouldn't post publicly.</li>
+          <li><strong>Your profile</strong> (username, display name) and who you follow are visible to any signed-in user.</li>
+        </ul>
+        <p>Your movies and documentaries are never uploaded — they're local only.</p>
+        <p>We have no analytics, no advertising, no tracking SDK and no crash-reporting SDK. We don't build a profile of you and we don't sell anything to anyone.</p>
+        <p>One thing worth knowing even if you're signed out: when the Discover tab builds recommendations, it sends the list of show IDs you follow to our backend to look up anonymous "people who watch this also watch…" counts. Nothing is stored, but the request does reach our servers.</p>
+
+        <h3 id="how-do-i-mark-an-episode-as-watched">How do I mark an episode as watched?</h3>
+        <p>Three ways:</p>
+        <ul>
+          <li>On the <strong>Watch Next</strong> screen, tap the circle on an episode card.</li>
+          <li>On an <strong>episode page</strong>, tap the watch button.</li>
+          <li>On a <strong>show page</strong>, use "Mark season" or "Mark all watched", or long-press an episode to mark everything up to and including it.</li>
+        </ul>
+        <p>Bulk marking (season / all watched) deliberately doesn't create a post in your friends' feed — only individual episode watches do. To be clear about what that does and doesn't mean: if you're signed in, those episodes are still added to your mirrored watch history, which the people who follow you can see on your profile. Only the feed post is suppressed, not the record itself.</p>
+
+        <h3 id="how-do-i-log-a-rewatch">How do I log a rewatch?</h3>
+        <p>Tap the checkmark again on an episode that's already marked watched. Each tap logs another play — there's no separate rewatch button, it's the same control.</p>
+        <p>If a watch date is wrong, open <strong>History</strong> from your profile and correct the date there.</p>
+
+        <h3 id="how-do-i-undo-a-rewatch">I logged a rewatch by accident. How do I undo it?</h3>
+        <p>Open the episode. Once an episode has more than one play, the episode screen shows an <strong>"Undo a rewatch"</strong> link — tap it and the most recent play is removed, leaving the earlier ones intact.</p>
+        <p>If you want to remove the episode from your watched list entirely instead, tap the watch button to un-watch it. That also removes the episode from our servers and pulls the matching activity from your friends' feed.</p>
+
+        <h3 id="how-do-i-find-friends">How do I find friends?</h3>
+        <p>Sign in with Apple, pick a username, then on the Friends tab you can:</p>
+        <ul>
+          <li><strong>Search by username</strong></li>
+          <li><strong>Scan your contacts</strong> — tap the "From contacts" chip. __APP__ reads only the <strong>email addresses</strong> in your address book. It never reads or sends phone numbers. Each address is turned into a one-way SHA-256 hash on your iPhone, and only those hashes are sent to check for matches against other users. Names and raw email addresses never leave your phone, and the hashes we receive aren't stored in our database. (A hash of an email address is a weak pseudonym rather than true anonymity — we'd rather say that plainly.)</li>
+          <li><strong>Send an invite link or show your QR code</strong> — both open your profile straight in the app.</li>
+        </ul>
+        <p><strong>If you used Apple's "Hide My Email"</strong>, contact matching won't find you: we can only match on the private <code>@privaterelay.appleid.com</code> address Apple gave us, so a friend who has your real email in their contacts won't get a match. Share your username or invite link instead.</p>
+
+        <h3 id="why-was-my-comment-rejected-or-why-cant-i-post-another-one-yet">Why was my comment rejected, or why can't I post another one yet?</h3>
+        <p>Comments are screened <strong>before</strong> they're posted, not after. Every submission is checked on the way in against a blocklist of slurs and child-exploitation terms, plus common spam shapes (link dumps, repeated pasting, gibberish). Anything that matches is refused and never appears in the app.</p>
+        <p>There's also a rate limit of <strong>5 comments per minute</strong> per account, which is there to stop flooding. If you hit it, wait a moment and try again.</p>
+        <p>Reports are separate and are reviewed by a human: <strong>every report is actioned within 24 hours</strong>, and content that breaks the rules is removed. Repeat or serious offenders lose their account.</p>
+        <p>If a perfectly reasonable comment got caught by the filter — it happens, especially with show titles and character names — email <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong> with the text and we'll fix the rule.</p>
+
+        <h3 id="do-episode-notifications-need-an-account">Do episode notifications need an account or a server?</h3>
+        <p>No. "New episode is out" alerts are scheduled directly on your iPhone from your own library, with nothing going through a server. Turn them on with the <strong>Episode notifications</strong> switch in Settings.</p>
+        <p>Two things to know:</p>
+        <ul>
+          <li>iOS limits how many notifications an app can have pending, so roughly your next 60 upcoming episodes are scheduled at a time. The list is rebuilt every time you open the app and during background refresh.</li>
+          <li>If you have notifications enabled <strong>and</strong> you're signed in, __APP__ also uses that same permission to send social pushes — a new follower, someone liking your comment, or a new comment on an episode you commented on. It reuses the permission you already granted rather than asking again. If you'd rather not receive those, sign out or turn off notifications for __APP__ in iOS Settings.</li>
+        </ul>
+        <p>Archived shows stop generating notifications entirely.</p>
+
+        <h3 id="a-show-is-missing-or-wrong">A show is missing, has the wrong artwork, or an air date looks wrong. What can I do?</h3>
+        <p>__APP__ doesn't own the show data — TV shows, episodes, air dates, networks and cast all come from <strong>TVmaze</strong>, and movies and documentaries come from <strong>Apple's iTunes Search API</strong>. If something is missing or wrong there, it will be wrong in the app too.</p>
+        <p>Things to try:</p>
+        <ul>
+          <li>Pull to refresh, or use the force-sync button in Settings. The app also refreshes on launch and roughly every 12 hours in the background.</li>
+          <li>Search using the show's original-language or English title.</li>
+          <li>For better posters and stills, add your own free <strong>TMDB</strong> key in Settings (optional — the app works fine without it).</li>
+          <li>Corrections to the underlying show data are best submitted to TVmaze directly. Email us if you're not sure whether it's a data problem or an app bug.</li>
+        </ul>
+
+        <h3 id="can-i-import-my-library">Can I import my library from another TV tracking app?</h3>
+        <p>Yes. Request your data export from the app you're leaving, then in __APP__ go to <strong>Settings → Import</strong> and pick the zip file (or the CSVs inside it) from Files or iCloud Drive.</p>
+        <p>Adding a free <strong>TMDB</strong> key in Settings before you import improves episode matching noticeably, because most exports identify episodes by TVDB IDs rather than the IDs __APP__ uses.</p>
+
+        <h3 id="can-i-back-up-my-library">Can I back up my library or move to a new phone?</h3>
+        <p>Yes, and you should — there is no automatic cloud restore.</p>
+        <p>In <strong>Settings → Backup</strong>, export a backup file containing your shows, watch dates, episode ratings, play counts and movies. iOS hands it to the share sheet, so you decide where it goes: Files, iCloud Drive, email, wherever. We never upload it or see it.</p>
+        <p>On the new phone, install __APP__ and restore from that file. Restoring is additive — it never deletes anything you've already marked watched.</p>
+        <p>Note that even if you're signed in, the watch history mirrored to our servers exists so your followers can see your activity. It is <strong>not</strong> a restore mechanism. Keep a backup file.</p>
+
+        <h3 id="how-do-i-report-a-user-or-a-comment">How do I report a user or a comment?</h3>
+        <p>Open the comment (or the person's profile) and use <strong>Report</strong> or <strong>Block</strong>.</p>
+        <ul>
+          <li><strong>Report</strong> flags the comment or user for review.</li>
+          <li><strong>Block</strong> hides that person's content from you and removes any follows between you in both directions, immediately.</li>
+        </ul>
+        <p>You can also email <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong>. See the section below.</p>
+
+        <h3 id="how-do-i-delete-my-account">How do I delete my account?</h3>
+        <p>Go to <strong>Settings → Account → Delete account</strong>. You'll be asked to confirm twice, then everything tied to your account is removed from our servers: your profile, your username, the email hash used for contact matching, your follows in both directions, your feed activity, your mirrored watch history, your comments and any photos attached to them, your upvotes, your character votes, your push token, your blocks in both directions, and reports — both the ones you filed and the ones filed about you.</p>
+        <p><strong>Your on-device library stays.</strong> Deleting your account removes the social side; your shows, watch dates and episode ratings remain on your iPhone and the app keeps working signed out.</p>
+        <p>Two things deletion can't reach: GIFs in your comments were never hosted by us (they're GIPHY links, and the comment itself is gone), and any backup file you already exported to Files or iCloud is yours to delete.</p>
+        <p>Signing out is different — it just ends the session on this device and deletes nothing.</p>
+        <p>You can also delete smaller pieces at any time: un-watching an episode removes it from the server and pulls the matching feed activity, clearing a rating removes the "rated" activity, unfollowing a show removes every server-side watch record and activity for that show, and deleting a comment deletes its photo too.</p>
+
+        <h3 id="how-long-do-you-keep-my-data">How long do you keep my data?</h3>
+        <p>Indefinitely, until you delete it. There's no automatic expiry or purge — that's a deliberate choice, since your watch history is meant to be a long-term record. Anything you delete, or everything if you delete your account, is removed at that point. The only automatic cleanup is push tokens, which are dropped once Apple tells us a device no longer accepts notifications.</p>
+
+        <h3 id="is-there-an-android-version">Is there an Android version?</h3>
+        <p>No. __APP__ is an iPhone app (it runs on iPad too). The home-screen widget, Sign in with Apple and the iOS share sheet are all built on iOS-only frameworks, and there is no Android build.</p>
+
+        <h3 id="what-the-app-does-not-do">Why can't I find a "where to watch" link, custom lists, or direct messages?</h3>
+        <p>Those aren't in the app. To be upfront about the current limits:</p>
+        <ul>
+          <li>No video playback, streaming links or "where to watch" / provider availability.</li>
+          <li>Movies and documentaries are tracked locally only — no comments, community ratings, friend activity or release notifications for them. All social features are TV-episode-only.</li>
+          <li>Ratings are per-episode only.</li>
+          <li>No direct messages, no show-level discussion boards, no reactions to watch activity. Comments live on individual episodes and the only reaction is an upvote.</li>
+          <li>No custom lists, tags or collections — just the built-in categories (Watching, Up to date, Not started, Finished, Archived).</li>
+          <li>No trailers, cast biographies or photo galleries.</li>
+          <li>Sign in with Apple is the only sign-in method. There's no email/password or Google option.</li>
+          <li>Dark interface only; there's no light mode.</li>
+          <li>The home-screen widget only appears in a real installed build.</li>
+        </ul>
+
+        <h3 id="why-does-the-app-ask-for-permissions">Why does the app ask for contacts, photos or notifications?</h3>
+        <p>Every permission is optional, and the app is fully usable if you decline all of them.</p>
+        <ul>
+          <li><strong>Contacts</strong> — asked only when you tap "From contacts" on Friends → Find friends. Only email addresses are read, and only hashes of them are sent, as described above.</li>
+          <li><strong>Photos</strong> — asked only if you attach a photo to an episode comment. Read access only; __APP__ never writes to your photo library.</li>
+          <li><strong>Notifications</strong> — asked only when you turn on the Episode notifications switch in Settings.</li>
+          <li><strong>Background App Refresh</strong> — used to refresh air dates and rebuild your notification schedule roughly every 12 hours.</li>
+        </ul>
+        <p>The app does not use the camera or the microphone, and doesn't ask for either.</p>
+
+        <hr />
+
+        <h2 id="report-a-problem-or-abusive-content">Report a problem or abusive content</h2>
+        <p>If you see a comment, photo or user that breaks the rules — harassment, hate, sexual content involving minors, threats, spam or anything else objectionable — report it.</p>
+        <p><strong>In the app:</strong> use <strong>Report</strong> on the comment or profile. Use <strong>Block</strong> as well if you don't want to see that person again; blocking takes effect immediately and severs any follows between you.</p>
+        <p><strong>By email:</strong> <a href="mailto:info@montyinc.net">info@montyinc.net</a> — include the @username involved, and a screenshot or a description of the comment and which episode it was on.</p>
+        <p><strong>Every report is reviewed and actioned within 24 hours.</strong> Content that violates our rules is removed and repeat or serious offenders lose their account. Reporting is anonymous to the person you reported. If a report needs a follow-up, we'll only contact you if you emailed us.</p>
+        <p>Comments are also filtered on submission, before they ever appear, and rate-limited — see <a href="#why-was-my-comment-rejected-or-why-cant-i-post-another-one-yet">Why was my comment rejected</a> above.</p>
+        <p>__APP__ is rated <strong>12+</strong> on the App Store. It hosts user-generated comments, photos and GIFs, so it isn't intended for young children. Creating an account requires you to be at least 13, or 16 where local law sets a higher age — see the <a href="../terms/">Terms of Use</a>.</p>
+
+        <hr />
+
+        <h2 id="attribution">Attribution</h2>
+        <ul>
+          <li>TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under CC BY-SA.</li>
+          <li>Movie and documentary data from Apple's iTunes Search API. Apple does not endorse __APP__.</li>
+          <li>GIFs powered by GIPHY.</li>
+          <li>
+            <img src="../assets/tmdb.svg" alt="TMDB" style="width: 92px; margin: 4px 0 8px" />
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </li>
+          <li>__APP__ is an independent app. It is not affiliated with, endorsed by or connected to TV Time (Whip Media Group), TVmaze, GIPHY, TMDB, Apple, or any network, studio or streaming service whose shows appear in it.</li>
+        </ul>
+
+        <hr />
+
+        <h2 id="who-makes-the-app">Who makes __APP__</h2>
+        <p>__APP__ is made by <strong>Monty Inc</strong>.</p>
+        <ul>
+          <li>Email: <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong></li>
+          <li>Post: <strong>[POSTAL ADDRESS]</strong></li>
+          <li>Website: <a href="https://marlon-vb.github.io/TV-Time">https://marlon-vb.github.io/TV-Time</a></li>
+          <li><a href="../privacy/">Privacy Policy</a> · <a href="../terms/">Terms of Use</a></li>
+        </ul>
+        <p>Last updated: 27 July 2026</p>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="../privacy/">Privacy Policy</a>
+      <a href="../terms/">Terms of Use</a>
+      <a href="../support/">Support</a>
+      <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+    </nav>
+    <p>
+      __APP__ is an independent app made by one person. It is not affiliated with,
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network or
+      streaming service, and it does not link to or provide any video.
+    </p>
+    <p>
+      TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
+      CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
+      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
+      not endorsed or certified by TMDB.
+    </p>
+    <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
+  </div>
+</footer>
+
+<script>
+  // Theme choice persists; otherwise the OS preference wins.
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try {
+      saved = localStorage.getItem("theme");
+    } catch (e) {}
+    if (saved) root.setAttribute("data-theme", saved);
+
+    var btn = document.getElementById("themeBtn");
+    btn.addEventListener("click", function () {
+      var dark = !matchMedia("(prefers-color-scheme: light)").matches;
+      var current = root.getAttribute("data-theme") || (dark ? "dark" : "light");
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {}
+    });
+
+    document.getElementById("yr").textContent = new Date().getFullYear();
+  })();
+</script>

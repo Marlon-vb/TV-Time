@@ -1,0 +1,598 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>__APP__ — Privacy Policy</title>
+<meta
+  name="description"
+  content="How __APP__ handles your data: your library stays on your iPhone, signing in is optional, and there is no analytics, advertising or tracking of any kind."
+/>
+<meta name="theme-color" content="#0b0c14" />
+<link rel="icon" href="../assets/favicon.png" />
+<link rel="apple-touch-icon" href="../assets/icon-192.png" />
+<link rel="stylesheet" href="../assets/style.css" />
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../" aria-label="__APP__ home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fbd737" />
+            <stop offset="1" stop-color="#f5a623" />
+          </linearGradient>
+        </defs>
+        <line x1="42" y1="34" x2="35" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <line x1="58" y1="34" x2="65" y2="22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" />
+        <rect x="24" y="34" width="52" height="42" rx="11" fill="none" stroke="url(#g)" stroke-width="6" />
+        <path d="M45 46 L45 64 L61 55 Z" fill="url(#g)" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" />
+      </svg>
+      __APP__
+    </a>
+    <nav>
+      <a class="hide-sm" href="../#features">Features</a>
+      <a class="hide-sm" href="../#privacy">Privacy</a>
+      <a href="../support/">Support</a>
+      <button class="theme-toggle" type="button" id="themeBtn" aria-label="Switch colour theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </nav>
+  </header>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <div class="doc">
+      <div class="doc-head">
+        <p class="eyebrow">Legal</p>
+        <h1>Privacy Policy</h1>
+        <p class="meta">
+          __APP__ for iPhone · Effective 27 July 2026 · Published by Monty Inc ·
+          <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+        </p>
+      </div>
+
+      <div class="summary">
+        <h2 id="the-short-version">The short version</h2>
+        <ul>
+          <li><strong>__APP__ works entirely on your phone.</strong> Your shows, episodes, watch dates, episode ratings, rewatch counts and movie watchlist live in a database file on your iPhone. Not on our servers.</li>
+          <li><strong>You never have to sign in.</strong> Tracking, ratings, upcoming episodes, notifications, the widget, Discover, import and backup all work with no account at all.</li>
+          <li><strong>Signing in with Apple is optional.</strong> It only turns on the social side: friends, the activity feed, comments, community ratings and character votes.</li>
+          <li><strong>We have no analytics, no advertising, no tracking and no crash-reporting tools.</strong> There is no SDK of that kind anywhere in the app.</li>
+          <li><strong>We do not sell your data, and we never share it for advertising.</strong></li>
+          <li><strong>You can delete your account and everything you shared from inside the app</strong>, in Settings → Account.</li>
+        </ul>
+        <p>The rest of this page explains exactly what happens, in detail.</p>
+      </div>
+
+      <nav class="toc" aria-label="Sections of this policy">
+        <p>Jump to a section:</p>
+        <ol>
+          <li><a href="#what-stays-on-your-iphone">What stays on your iPhone</a></li>
+          <li><a href="#what-we-store-on-our-server">What we store on our server</a></li>
+          <li><a href="#sign-in-with-apple">Sign in with Apple</a></li>
+          <li><a href="#finding-friends-through-your-contacts">Finding friends through your contacts</a></li>
+          <li><a href="#who-can-see-what">Who can see what</a></li>
+          <li><a href="#comment-filtering-and-moderation">Comment filtering and moderation</a></li>
+          <li><a href="#other-services-the-app-talks-to">Other services the app talks to</a></li>
+          <li><a href="#notifications">Notifications</a></li>
+          <li><a href="#what-we-do-not-do">What we do not do</a></li>
+          <li><a href="#why-we-are-allowed-to-hold-this">Why we are allowed to hold this</a></li>
+          <li><a href="#security-plainly-stated">Security, plainly stated</a></li>
+          <li><a href="#your-choices-and-your-rights">Your choices and your rights</a></li>
+          <li><a href="#if-you-are-in-california">If you are in California</a></li>
+          <li><a href="#deleting-your-account">Deleting your account</a></li>
+          <li><a href="#how-long-we-keep-things">How long we keep things</a></li>
+          <li><a href="#children">Children</a></li>
+          <li><a href="#apple-app-privacy-labels">How this maps to Apple's App Privacy labels</a></li>
+          <li><a href="#changes-to-this-policy">Changes to this policy</a></li>
+          <li><a href="#who-we-are">Who we are, and how to reach us</a></li>
+        </ol>
+      </nav>
+
+      <article>
+        <h2 id="what-stays-on-your-iphone">1. What stays on your iPhone</h2>
+        <p>All of this is stored in a single SQLite database on your device. It is never uploaded by us.</p>
+        <ul>
+          <li><strong>Your TV library</strong> — the shows you follow, every episode, whether you watched it, when you watched it, how many times, your star rating for that episode, and whether you archived the show. Ratings are per episode.</li>
+          <li><strong>Your movies and documentaries watchlist</strong> — title, year, artwork and metadata, when you added it, when you watched it and your rating. Movies are local-only. They are never mirrored to our server and never appear in the feed or in comments.</li>
+          <li><strong>Your settings</strong> — whether episode notifications are on, and any optional TMDB or GIPHY key you chose to paste in. Those keys are stored in the app's local database as plain text (not the iOS Keychain), and are only ever sent to TMDB or GIPHY themselves.</li>
+          <li><strong>Your home-screen widget snapshot</strong> — a tiny piece of text (show name, episode code, "aired N days ago", backlog count) shared with the widget through a private iOS app group. It stays on the device.</li>
+          <li><strong>Your episode alerts</strong> — "new episode is out" notifications are scheduled by iOS on your phone, from your local library. No server is involved in them at all.</li>
+          <li><strong>Your sign-in session</strong> — if you sign in, the login tokens are stored on the device so you stay signed in.</li>
+          <li><strong>Older leftover fields</strong> — the database and the backup file still contain a couple of unused columns left behind by features that were removed from the app. Nothing writes to them, they stay empty, and nothing in them is ever sent anywhere.</li>
+        </ul>
+        <p><strong>Backups.</strong> When you export a backup, the app writes a JSON file of your library into its own temporary folder and hands it to the normal iOS share sheet. Where it goes next — Files, iCloud Drive, Mail, another app — is your choice. We never upload it and never see it.</p>
+        <p><strong>If you delete the app,</strong> everything above goes with it. That is also why moving to a new phone means exporting a backup yourself; we have no cloud restore.</p>
+
+        <hr />
+
+        <h2 id="what-we-store-on-our-server">2. What we store on our server, and only when you are signed in</h2>
+        <p>If you sign in with Apple, the following is stored in our backend (hosted by Supabase). If you never sign in, none of it exists, and the app makes no request to our backend at all.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>What</th>
+                <th>What it contains</th>
+                <th>Who can see it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Account</strong></td>
+                <td>Your Apple user identifier and the email address Apple gives us — your real address, or an <code>@privaterelay.appleid.com</code> alias if you chose Hide My Email. Plus sign-up and last-sign-in times.</td>
+                <td>Us only</td>
+              </tr>
+              <tr>
+                <td><strong>Profile</strong></td>
+                <td>Your username, your display name and when the profile was created. A placeholder username (<code>user_</code> plus part of your account id) is generated until you pick one. Your display name is taken from Apple's name field the very first time you authorise, if you chose to share it. See section 12 for what you can and cannot change yourself.</td>
+                <td>Any signed-in user</td>
+              </tr>
+              <tr>
+                <td><strong>Email hash for friend matching</strong></td>
+                <td>A SHA-256 hash of your account email. See section 4.</td>
+                <td>Us only, plus the matching lookup described in section 4</td>
+              </tr>
+              <tr>
+                <td><strong>Follows</strong></td>
+                <td>Who you follow and who follows you.</td>
+                <td>Any signed-in user</td>
+              </tr>
+              <tr>
+                <td><strong>Activity events</strong></td>
+                <td>"Watched", "rated", "started", "finished", "commented" — with the show name, poster, season, episode, episode name, your episode rating and the time. Written for individual episode actions only, not for "mark season watched" or "mark all watched".</td>
+                <td>You, and people who follow you</td>
+              </tr>
+              <tr>
+                <td><strong>Watch history</strong></td>
+                <td>Every episode you mark watched: show, season, episode number, your star rating for that episode and the date. When you first sign in, your existing local library is uploaded in one go — this can be thousands of episodes.</td>
+                <td>You, and people who follow you. Community-wide numbers are only ever released as anonymous totals.</td>
+              </tr>
+              <tr>
+                <td><strong>Comments</strong></td>
+                <td>Your comment text (up to 2,000 characters), the episode it belongs to, and any attached photo or GIF link.</td>
+                <td><strong>Every signed-in user</strong>, except people who have blocked you</td>
+              </tr>
+              <tr>
+                <td><strong>Comment photos</strong></td>
+                <td>The image file itself. See the warning in section 5.</td>
+                <td><strong>Anyone with the link, signed in or not</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Upvotes</strong></td>
+                <td>Which comments you upvoted.</td>
+                <td>Any signed-in user</td>
+              </tr>
+              <tr>
+                <td><strong>Character votes</strong></td>
+                <td>Your "best character this episode" pick.</td>
+                <td>You, and people who follow you. The public leaderboard is anonymous counts only.</td>
+              </tr>
+              <tr>
+                <td><strong>Push token</strong></td>
+                <td>The push token for your device, so we can deliver social notifications.</td>
+                <td>Us only</td>
+              </tr>
+              <tr>
+                <td><strong>Reports and blocks</strong></td>
+                <td>Who you reported or blocked, and why (in practice the app sends no reason text).</td>
+                <td>Us, for moderation. Only you can read your own reports and blocks.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Two more things are sent to our server but <strong>not stored</strong> anywhere:</p>
+        <ul>
+          <li><strong>Contact hashes</strong>, when you use "Find friends from contacts" (section 4).</li>
+          <li><strong>A list of up to 100 show IDs you follow</strong>, used to work out "other people who watch this also watch…" recommendations. The server answers with anonymous watcher counts and keeps nothing. This lookup only runs when you are signed in; signed out, the app checks first and never sends it.</li>
+        </ul>
+        <p><strong>IP addresses.</strong> Any request to our backend, like any request on the internet, reveals your device's IP address to the server handling it. We do not log it into a database or use it to profile you, but we cannot claim our hosting provider keeps no record of it.</p>
+
+        <hr />
+
+        <h2 id="sign-in-with-apple">3. Sign in with Apple</h2>
+        <p>Sign in with Apple is the only way to create an account. There is no password, no Google login and no email sign-up. Before you sign in, the app shows a line under the Apple button confirming that signing in means you accept the Terms of Use and this Privacy Policy. Both are also linked from Settings → Legal at any time.</p>
+        <p>When you sign in, we ask Apple for your <strong>name</strong> and <strong>email</strong>. Apple gives us a signed token containing your Apple user identifier and your email address. If you chose <strong>Hide My Email</strong>, the address we receive is an Apple relay alias, not your real one — that is fine, and it is all we ever see.</p>
+        <p>Your <strong>name</strong> is handled slightly differently. Apple only releases it on the very first authorisation, and only if you agree to share it. If it comes through, the app saves it as your public display name. If you decline, or if that one moment fails (say you were offline), we simply never have your name — Apple will not send it again.</p>
+        <p>We never receive your Apple password, and we cannot use your Apple ID for anything other than identifying your account here.</p>
+
+        <hr />
+
+        <h2 id="finding-friends-through-your-contacts">4. Finding friends through your contacts</h2>
+        <p>This is optional and only happens when you tap "From contacts" on the Find friends screen. iOS will ask your permission first.</p>
+        <p>Here is exactly what happens:</p>
+        <ol>
+          <li>The app reads <strong>only the email addresses</strong> in your address book. It does not read phone numbers, names, photos or notes. Phone numbers are not touched at all.</li>
+          <li>Each address is tidied up and turned into a <strong>SHA-256 hash</strong> on your phone.</li>
+          <li><strong>Only the hashes are sent to us.</strong> The raw addresses are never written to disk, never stored and never transmitted.</li>
+          <li>Our server compares those hashes against the hashes of our own users' emails and returns the matches. That lookup only reads — it does not save what you sent into any of our tables.</li>
+        </ol>
+        <p>Two honest caveats:</p>
+        <ul>
+          <li><strong>A hash is not the same as anonymity.</strong> An unsalted hash of an email address is a fixed fingerprint. Whoever runs a backend can, in principle, test a guessed address against a hash and confirm a match. We do not do this, and we do not save your submitted hashes in our database — but we cannot rule out that the hosting platform's own request logs briefly record them, so we will not claim they vanish completely.</li>
+          <li><strong>If you used Apple's Hide My Email,</strong> we hold the hash of your relay alias, not your real address — so a friend who has your real email in their contacts will not find you. Pick a username and share that instead, or use the invite link or QR code.</li>
+        </ul>
+        <p><strong>If you are in someone's address book and you do not use __APP__.</strong> When one of our users runs this search, hashes derived from other people's email addresses — possibly including yours — pass through our server for the length of one query. Our lawful basis for this is our legitimate interest in letting people find friends they already know, balanced against the narrowness of what happens: the address is hashed on your contact's device, we never see it in readable form, we never store it, and no record of you is created. You can object to this at any time by writing to <a href="mailto:info@montyinc.net">info@montyinc.net</a> and we will act on it.</p>
+
+        <hr />
+
+        <h2 id="who-can-see-what">5. Who can see what</h2>
+        <p>The rules differ by feature, and it is easy to assume they are the same. They are not.</p>
+        <ul>
+          <li><strong>Public to any signed-in user:</strong> your username, your display name, who you follow and who follows you, your comments, and your comment upvotes. Usernames can also be found by searching, including partial matches.</li>
+          <li><strong>Visible only to you and people who follow you:</strong> your watch history, your episode ratings, your activity feed events, your character votes.</li>
+          <li><strong>Anonymous to everyone:</strong> community episode ratings, "also watched" recommendation counts and the character-vote leaderboard are computed as totals. Nobody sees whose rows produced them.</li>
+          <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on GIPHY's servers and we only store the link.</li>
+          <li><strong>Never shared with anyone:</strong> everything in section 1 that stays on your phone.</li>
+        </ul>
+        <p>There are no avatars or profile photos in the app. There are no direct messages.</p>
+
+        <hr />
+
+        <h2 id="comment-filtering-and-moderation">6. Comment filtering and moderation</h2>
+        <p>Comments are screened <strong>before</strong> they are posted, not only after someone complains.</p>
+        <ul>
+          <li><strong>On-device screening.</strong> Every comment is checked on your phone before it is sent. Submissions containing hate slurs or child-exploitation terms are refused outright, as are spam shapes — link-stuffed text and long runs of repeated characters. The check tolerates the usual ways people disguise a word (leetspeak, spacing, homoglyphs). A refused comment never leaves your device, so we never receive it and never log it.</li>
+          <li><strong>Length limit.</strong> Comments are capped at 2,000 characters.</li>
+          <li><strong>Rate limit.</strong> You can post at most 5 comments per minute. This exists to stop flooding, not to watch you; the counter lives on your device and is thrown away when you sign out.</li>
+          <li><strong>Report and block.</strong> Any comment or user can be reported, and any user can be blocked, from inside the app. Blocking hides that person's content from you and severs the follow in both directions.</li>
+          <li><strong>What we do about reports.</strong> We review reports within 24 hours, remove content that breaks the rules, and remove users who post it. If we act on something you posted, you can appeal by writing to <a href="mailto:info@montyinc.net">info@montyinc.net</a>.</li>
+        </ul>
+        <p>The screening is a fixed rule check on the text of one comment. It does not profile you, it does not score you, and it does not feed anything else. See section 10 on automated decisions.</p>
+
+        <hr />
+
+        <h2 id="other-services-the-app-talks-to">7. Other services the app talks to</h2>
+        <p>__APP__ is not a closed box. To show artwork and air dates it has to fetch them from somewhere. Each of these services sees your device's IP address, as any website you visit would.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>What it receives</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>TVmaze</strong></td>
+                <td>Your search terms, and the ID of each show you follow (refreshed on launch and in the background). No key, no account, no identifier. Show and episode data from TVmaze is used under the CC BY-SA licence.</td>
+                <td>Always, including signed out</td>
+              </tr>
+              <tr>
+                <td><strong>Apple iTunes Search</strong></td>
+                <td>The movie title you type. No key, no account, no identifier.</td>
+                <td>When you search for a movie</td>
+              </tr>
+              <tr>
+                <td><strong>Supabase</strong> (our backend)</td>
+                <td>Everything in section 2.</td>
+                <td>Only when signed in</td>
+              </tr>
+              <tr>
+                <td><strong>Apple (Sign in with Apple)</strong></td>
+                <td>Handled by iOS. Returns your identity token and, once, your name.</td>
+                <td>Only if you sign in</td>
+              </tr>
+              <tr>
+                <td><strong>GIPHY</strong></td>
+                <td>The GIF search text you type, sent with a shared public developer key (or your own, if you added one). Note that because comment GIFs are links to GIPHY, GIPHY also sees a request from <strong>anyone who views a comment containing a GIF</strong> — including you.</td>
+                <td>When the GIF picker is used, or a GIF is displayed</td>
+              </tr>
+              <tr>
+                <td><strong>Expo push service</strong></td>
+                <td>Your device's push token, and the text of each social notification, which includes the other person's name or @username and the show name.</td>
+                <td>Only when you are signed in <strong>and</strong> you have already allowed notifications for episode alerts. The app never asks separately — see section 8.</td>
+              </tr>
+              <tr>
+                <td><strong>TMDB</strong> <em>(off by default)</em></td>
+                <td>Only if you paste your own free TMDB key in Settings: that key, plus show and episode identifiers used to fetch better artwork or match episodes during an import.</td>
+                <td>Only if you enable it</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>We are not paid by any of these services, and none of them is an advertising or analytics provider. Each has its own privacy policy governing what it does with the requests it receives.</p>
+
+        <hr />
+
+        <h2 id="notifications">8. Notifications</h2>
+        <p>There are two completely different kinds, and one thing about them may surprise you.</p>
+        <p><strong>Episode alerts (local).</strong> When you turn on "Episode notifications" in Settings, the app schedules alerts directly on your iPhone from your own library — roughly the next 60 upcoming episodes, rebuilt each time the app opens or refreshes in the background. No server sees these and no data leaves your phone.</p>
+        <p><strong>Social pushes (from our server).</strong> New follower, someone liked your comment, someone replied on an episode you commented on. These go through Apple and the Expo push service and contain the other person's name and the show name.</p>
+        <p><strong>The thing to know:</strong> the app never asks separately for permission to send social pushes. If you have already allowed notifications for episode alerts, and you are signed in, it quietly registers for social pushes on the strength of that same permission. If you do not want them, turn __APP__'s notifications off in iOS Settings, or sign out. We are telling you this because the app's own wording does not make it obvious.</p>
+
+        <hr />
+
+        <h2 id="what-we-do-not-do">9. What we do not do</h2>
+        <p>The following is not marketing language — it reflects what is and is not in the app's code:</p>
+        <ul>
+          <li><strong>No analytics.</strong> No Google Analytics, Firebase, Amplitude, Mixpanel, Segment, PostHog or anything like them.</li>
+          <li><strong>No advertising.</strong> No ad networks, no IDFA, no App Tracking Transparency prompt, because there is nothing to track you with.</li>
+          <li><strong>No crash or performance reporting.</strong> No Sentry, Crashlytics, Bugsnag or Datadog.</li>
+          <li><strong>No tracking across apps or websites.</strong> None of your data is combined with data from other companies for advertising or measurement.</li>
+          <li><strong>No selling or renting your data.</strong> We do not sell personal information and do not share it for cross-context behavioural advertising, in the sense those terms are used under California law or comparable laws elsewhere.</li>
+          <li><strong>No location.</strong> The app never asks for it and contains no location code.</li>
+          <li><strong>No camera and no microphone.</strong> The app uses neither, and asks for neither.</li>
+          <li><strong>No phone numbers.</strong> We never read, hash, send or store a phone number — yours or anyone else's.</li>
+          <li><strong>No purchases.</strong> No in-app purchases, subscriptions or payment processing, so no payment data of any kind.</li>
+          <li><strong>No search history.</strong> Your searches are passed to TVmaze, iTunes, GIPHY or our profile search only to answer that search. They are not stored on your phone or on our server.</li>
+          <li><strong>No writing to your photo library.</strong> The app can read a photo you explicitly pick for a comment. That is all.</li>
+        </ul>
+
+        <hr />
+
+        <h2 id="why-we-are-allowed-to-hold-this">10. Why we are allowed to hold this</h2>
+        <p>If you are in the UK or the EEA, our legal bases are simple:</p>
+        <ul>
+          <li><strong>To provide what you asked for</strong> (contract): your account, profile, follows, feed, comments and mirrored watch history exist because you chose to use the social features.</li>
+          <li><strong>Your consent</strong>: reading your contacts, and sending you notifications. You can withdraw either at any time in iOS Settings.</li>
+          <li><strong>Our legitimate interests in keeping the app safe and usable</strong>: comment screening, rate limiting, reports and blocks, and the friend-matching lookup described in section 4.</li>
+        </ul>
+        <p><strong>Where your data goes.</strong> Our backend is operated by Supabase Inc. as our processor, in the region [SUPABASE REGION]. Push delivery runs through Expo and Apple. If your data leaves the UK or the EEA, the transfer relies on an adequacy decision where one covers the destination, and otherwise on the European Commission's Standard Contractual Clauses together with the UK International Data Transfer Addendum, in each case with our processors.</p>
+        <p><strong>No automated decisions about you.</strong> We do not carry out profiling, and we make no automated decision that produces a legal effect for you or similarly significantly affects you. The comment screening in section 6 is a fixed rule check on a single piece of text; if it blocks something you believe is fine, write to <a href="mailto:info@montyinc.net">info@montyinc.net</a> and a person will look at it.</p>
+
+        <hr />
+
+        <h2 id="security-plainly-stated">11. Security, plainly stated</h2>
+        <p>Traffic to our backend and to the services above goes over HTTPS. Server data is protected by row-level rules that stop one user reading another user's private rows, and the key shipped inside the app is a restricted public key, not an administrative one.</p>
+        <p>Two things we would rather you heard from us:</p>
+        <ul>
+          <li><strong>Comment photos are deliberately public</strong> (section 5).</li>
+          <li><strong>Optional TMDB and GIPHY keys are stored in the app's local database in plain text</strong>, protected by your device's own encryption and passcode rather than the iOS Keychain. They are your own free API keys, not credentials to anything sensitive, but treat them accordingly.</li>
+        </ul>
+        <p>No system is perfectly secure, and we will not pretend otherwise.</p>
+
+        <hr />
+
+        <h2 id="your-choices-and-your-rights">12. Your choices and your rights</h2>
+        <ul>
+          <li><strong>Use the app without an account.</strong> Everything except the social features works signed out.</li>
+          <li><strong>Get a copy of your data (and take it elsewhere).</strong> Export a backup from Settings at any time — that JSON file is your portability copy, and it is machine-readable and yours to move to another service. For the server-side copy, email <a href="mailto:info@montyinc.net">info@montyinc.net</a>.</li>
+          <li><strong>Correct things you can change yourself.</strong> You can edit any watch date, change or clear an episode rating, and delete your own comments.</li>
+          <li><strong>Username and display name — read this one carefully.</strong> You choose your username <strong>once</strong>; after you have set it, the editor disappears and you cannot change it in the app. Your display name is written once from the name Apple gives us at first sign-in, and there is no editor for it at all. To change or clear either, email <a href="mailto:info@montyinc.net">info@montyinc.net</a> and we will do it for you. We are stating this plainly because an earlier version of this page implied you could edit both yourself.</li>
+          <li><strong>Remove things one at a time.</strong> Un-watching an episode deletes the server record <em>and</em> the matching feed entry. Clearing a rating deletes the "rated" entry. Unfollowing a show wipes every server watch record and feed entry for that show. Deleting a comment deletes its uploaded photo too.</li>
+          <li><strong>Turn things off.</strong> Revoke contacts or notification access in iOS Settings whenever you like.</li>
+          <li><strong>Sign out.</strong> This ends the session on your phone only. It does not delete anything from the server.</li>
+          <li><strong>Delete your account</strong> — see section 14.</li>
+          <li><strong>Object, restrict or complain.</strong> Depending on where you live you may have further rights, including complaining to your local data protection authority. Write to <a href="mailto:info@montyinc.net">info@montyinc.net</a> and we will help.</li>
+        </ul>
+        <p><strong>How to ask, and how long we take.</strong> Send any of these requests to <a href="mailto:info@montyinc.net">info@montyinc.net</a>. We answer within <strong>30 days</strong> (one month). If a request is unusually complex we may extend that by up to two further months, and we will tell you why within the first month.</p>
+        <p><strong>How we check it is you.</strong> We do not ask for identity documents. Instead, write from the email address linked to your account, or tell us your @username and we will reply to the account email to confirm. If we cannot reasonably verify that a request is yours, we will say so rather than act on it — that protects your account from someone else.</p>
+        <p>We will not treat you differently for exercising any of these rights.</p>
+
+        <hr />
+
+        <h2 id="if-you-are-in-california">13. If you are in California</h2>
+        <p>This section is for California residents under the CCPA as amended by the CPRA. It describes the same practices as the rest of this page, in the categories that law uses.</p>
+        <p><strong>What we collect, where it comes from, and why:</strong></p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Category of personal information</th>
+                <th>What it is here</th>
+                <th>Source</th>
+                <th>Business purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Identifiers</td>
+                <td>Apple user identifier, account id, username, email address (real or Apple relay), push token</td>
+                <td>You, via Sign in with Apple; your device</td>
+                <td>Running your account, the social features and notifications</td>
+              </tr>
+              <tr>
+                <td>Customer records (Cal. Civ. Code §1798.80)</td>
+                <td>Your email address and display name</td>
+                <td>You, via Sign in with Apple</td>
+                <td>Identifying your account and your public profile</td>
+              </tr>
+              <tr>
+                <td>Internet or network activity</td>
+                <td>Your IP address, seen in transit by our host on each request</td>
+                <td>Your device</td>
+                <td>Delivering the request; security</td>
+              </tr>
+              <tr>
+                <td>Audio, electronic or visual information</td>
+                <td>Photos you attach to comments</td>
+                <td>You</td>
+                <td>Displaying your comment</td>
+              </tr>
+              <tr>
+                <td>Other user content</td>
+                <td>Comment text, GIF links, upvotes, character votes, mirrored watch history and feed activity</td>
+                <td>You</td>
+                <td>The social features</td>
+              </tr>
+              <tr>
+                <td>Contacts-derived data</td>
+                <td>SHA-256 hashes of email addresses from your address book, used for one lookup and not stored</td>
+                <td>Your device, with your permission</td>
+                <td>Finding friends who already use the app</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>We do not collect:</strong> geolocation, biometric information, financial or payment information, commercial or purchase records, professional or education information, or inferences drawn to create a profile. We do not collect or use sensitive personal information, so there is nothing for you to limit.</p>
+        <p><strong>Who we disclose to.</strong> We disclose personal information only to service providers who process it for us under contract, and only for the business purposes above: Supabase (all server-side data), Expo and Apple (push token and notification text), and Apple (sign-in). We do not disclose personal information to anyone for their own purposes.</p>
+        <p><strong>No sale, no sharing.</strong> We have not sold or shared personal information, including the personal information of consumers under 16 years of age, in the preceding 12 months. We have no plans to do so. Because there is nothing to opt out of, we do not operate a "Do Not Sell or Share My Personal Information" link.</p>
+        <p><strong>Your rights.</strong> You have the right to know what we collect and to obtain a copy of it, the right to delete it, the right to correct inaccurate information, the right to opt out of sale or sharing (not applicable, as above), the right to limit the use of sensitive personal information (not applicable, as above), and the right not to be discriminated against for exercising any of them. We honour all of these.</p>
+        <p><strong>How to exercise them.</strong> Email <a href="mailto:info@montyinc.net">info@montyinc.net</a>. We respond within 30 days and verify you the same way as in section 12. An <strong>authorised agent</strong> may act for you if they provide your signed written permission; we will still verify your identity directly and confirm you authorised the request.</p>
+
+        <hr />
+
+        <h2 id="deleting-your-account">14. Deleting your account</h2>
+        <p>In the app: <strong>Settings → Account → Delete account</strong>. You will be asked to confirm twice.</p>
+        <p><strong>What is deleted immediately, and permanently:</strong></p>
+        <ul>
+          <li>Your account and login</li>
+          <li>Your profile — username, display name</li>
+          <li>Your stored email hash</li>
+          <li>Every follow, in both directions</li>
+          <li>Your entire mirrored watch history and every activity feed entry</li>
+          <li>All of your comments, and all comments' upvotes involving you</li>
+          <li>Every photo you uploaded to a comment</li>
+          <li>Your character votes</li>
+          <li>Your push token</li>
+          <li>Your blocks, in both directions</li>
+          <li>Reports you filed, and reports filed about you</li>
+        </ul>
+        <p>There is no soft delete, no grace period and no archived copy on our side.</p>
+        <p><strong>What is not deleted:</strong></p>
+        <ul>
+          <li><strong>Your on-device library stays.</strong> Your shows, episodes, watch dates, ratings and movies remain on your phone, exactly as they were. The app tells you this before you confirm. To remove them too, delete the app.</li>
+          <li><strong>Any backup file you exported</strong> to Files, iCloud Drive, email or elsewhere. That copy is yours to manage.</li>
+          <li><strong>GIFs in comments</strong> were always hosted by GIPHY, not by us. The comment disappears; GIPHY's copy of the GIF was never ours.</li>
+          <li>Whatever our hosting provider retains in its own operational logs, which we do not control.</li>
+        </ul>
+        <p>One consequence we should state openly: because reports about a user are deleted along with their account, deleting an account also erases the moderation history attached to it.</p>
+
+        <hr />
+
+        <h2 id="how-long-we-keep-things">15. How long we keep things</h2>
+        <p>There is no automatic expiry. We do not run any scheduled job that deletes, ages out or purges data. <strong>Whatever you have shared stays until you remove it or delete your account.</strong> The one exception is push tokens: if Apple tells us a device no longer accepts notifications, that token is removed automatically.</p>
+        <p>We would rather say this plainly than invent a retention period we do not actually enforce.</p>
+
+        <hr />
+
+        <h2 id="children">16. Children</h2>
+        <p>__APP__ is rated <strong>12+</strong> and is not directed at children. It contains user-written comments, user-uploaded photos and GIF search, and it can request access to your contacts.</p>
+        <p>We do not ask for your date of birth and we have no age verification. We do not knowingly collect data from children under the age required in their country (13 in the US, up to 16 elsewhere). If you believe a child has created an account, email <a href="mailto:info@montyinc.net">info@montyinc.net</a> and we will delete it.</p>
+
+        <hr />
+
+        <h2 id="apple-app-privacy-labels">17. How this maps to Apple's App Privacy labels</h2>
+        <p>These are the same categories declared in the app's privacy manifest.</p>
+        <p><strong>Data linked to you</strong> (only when signed in, all for App Functionality):</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Apple category</th>
+                <th>What it is here</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Contact Info → Email Address</td>
+                <td>The address Apple gives us at sign-in (real or private relay), plus a hash of it for friend matching</td>
+              </tr>
+              <tr>
+                <td>Contact Info → Name</td>
+                <td>Your display name, if you shared your name with Apple at first sign-in. Shown publicly.</td>
+              </tr>
+              <tr>
+                <td>User Content → Photos or Videos</td>
+                <td>Photos you attach to comments</td>
+              </tr>
+              <tr>
+                <td>User Content → Other User Content</td>
+                <td>Comment text, GIF links, upvotes, character votes, and your mirrored watch history and feed activity</td>
+              </tr>
+              <tr>
+                <td>Identifiers → User ID</td>
+                <td>Your account identifier, your Apple identifier and your public @username</td>
+              </tr>
+              <tr>
+                <td>Identifiers → Device ID</td>
+                <td>Your push token, stored only if you already allowed notifications</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Data not linked to you:</strong></p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Apple category</th>
+                <th>What it is here</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Contacts</td>
+                <td>Hashed email addresses from your address book, used only to look for friends, and not stored in our database</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Used to track you: nothing.</strong> There is no tracking of any kind in this app.</p>
+        <p><strong>Not collected at all:</strong> Location · Phone Number · Health &amp; Fitness · Financial Info · Payment Info · Purchases · Browsing History · Search History · Usage Data (product interaction and advertising data) · Diagnostics · Sensitive Info.</p>
+
+        <hr />
+
+        <h2 id="changes-to-this-policy">18. Changes to this policy</h2>
+        <p>If we change how the app handles your data, we will update this page and change the effective date at the top. For anything significant — a new category of data, a new third party, a real change in who can see what — we will tell you in the app before it takes effect, or as soon as we reasonably can.</p>
+
+        <hr />
+
+        <h2 id="who-we-are">19. Who we are, and how to reach us</h2>
+        <p><strong>Monty Inc</strong> is the data controller for everything described on this page.</p>
+        <p>
+          <strong>Monty Inc</strong><br />
+          [POSTAL ADDRESS]<br />
+          Email: <a href="mailto:info@montyinc.net">info@montyinc.net</a><br />
+          Web: <a href="https://marlon-vb.github.io/TV-Time">https://marlon-vb.github.io/TV-Time</a>
+        </p>
+        <p><strong>EU and UK representative.</strong> If and where Article 27 of the UK/EU GDPR requires us to appoint a representative in the EEA or the UK, we will name them here with their contact details before offering the app in those markets. Until that appointment is published, write to <a href="mailto:info@montyinc.net">info@montyinc.net</a> and your request will be handled by us directly on the same terms and within the same 30 days.</p>
+        <p><strong>Governing law.</strong> [JURISDICTION] — not yet finalised. This does not limit any right you have under the law of the country where you live, including your right to complain to your local data protection authority.</p>
+        <p>Questions, requests, or something here that does not match what you are seeing in the app: we read every message. If you are asking us to access, correct or delete data, please write from the email address linked to your account, or tell us your @username, so we can find the right account.</p>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav>
+      <a href="../privacy/">Privacy Policy</a>
+      <a href="../terms/">Terms of Use</a>
+      <a href="../support/">Support</a>
+      <a href="mailto:info@montyinc.net">info@montyinc.net</a>
+    </nav>
+    <p>
+      __APP__ is an independent app made by one person. It is not affiliated with,
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network or
+      streaming service, and it does not link to or provide any video.
+    </p>
+    <p>
+      TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
+      CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
+      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
+      not endorsed or certified by TMDB.
+    </p>
+    <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
+  </div>
+</footer>
+
+<script>
+  // Theme choice persists; otherwise the OS preference wins.
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try {
+      saved = localStorage.getItem("theme");
+    } catch (e) {}
+    if (saved) root.setAttribute("data-theme", saved);
+
+    var btn = document.getElementById("themeBtn");
+    btn.addEventListener("click", function () {
+      var dark = !matchMedia("(prefers-color-scheme: light)").matches;
+      var current = root.getAttribute("data-theme") || (dark ? "dark" : "light");
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {}
+    });
+
+    document.getElementById("yr").textContent = new Date().getFullYear();
+  })();
+</script>
