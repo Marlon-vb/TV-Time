@@ -21,6 +21,7 @@ function show(overrides: Partial<RemoteShow> & { id: number }): RemoteShow {
     premiered: null,
     genres: [],
     summary: null,
+    rating: null,
     ...overrides,
   };
 }

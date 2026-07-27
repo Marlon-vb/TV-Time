@@ -108,6 +108,8 @@ export interface RemoteShow {
   premiered: string | null;
   genres: string[];
   summary: string | null;
+  /** TVmaze's own user rating, 0–10, when it has one. */
+  rating: number | null;
 }
 
 export interface RemoteEpisode {

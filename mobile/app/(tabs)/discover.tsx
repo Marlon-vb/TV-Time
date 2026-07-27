@@ -79,11 +79,11 @@ async function premieringSoon(): Promise<RemoteShow[]> {
   return shows;
 }
 
-// Bump when the IMDB_TOP canon changes to force clients to re-resolve.
+// Bump when the greats list changes to force clients to re-resolve.
 const TOP_RATED_CACHE_KEY = "top_rated_cache_v1";
-const TOP_RATED_VERSION = 1;
+const TOP_RATED_VERSION = 2;
 
-/** The IMDb top-rated canon. Static list → cache until the version changes. */
+/** Our editorial all-time greats. Static list → cache until the version changes. */
 async function topRated(): Promise<tvmaze.RatedShow[]> {
   try {
     const raw = getSetting(TOP_RATED_CACHE_KEY);
@@ -142,7 +142,7 @@ export default function DiscoverScreen() {
       .catch(() => {
         // offline — the rail simply doesn't render
       });
-    // The IMDb top-rated canon (cached long-term after the first resolve).
+    // The editorial all-time greats (cached long-term after the first resolve).
     topRated()
       .then((shows) => {
         if (alive) setBest(shows);
@@ -317,12 +317,12 @@ export default function DiscoverScreen() {
               )}
               {best.length > 0 && (
                 <Rail
-                  title="TOP RATED OF ALL TIME"
+                  title="ALL-TIME GREATS"
                   items={best.map((r) => ({
                     id: r.show.id,
                     name: r.show.name,
                     posterUrl: r.show.posterUrl,
-                    sub: `★ ${r.imdb.toFixed(1)} IMDb`,
+                    sub: r.score != null ? `★ ${r.score.toFixed(1)}` : null,
                   }))}
                   onOpen={(id) => router.push(`/show/${id}` as never)}
                 />

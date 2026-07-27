@@ -46,6 +46,7 @@ function mapShow(s: any): RemoteShow {
     premiered: s.premiered ?? null,
     genres: Array.isArray(s.genres) ? s.genres : [],
     summary: stripHtml(s.summary),
+    rating: typeof s.rating?.average === "number" ? s.rating.average : null,
   };
 }
 
@@ -197,48 +198,48 @@ export async function getAiringToday(limit = 12): Promise<RemoteShow[]> {
 
 export interface RatedShow {
   show: RemoteShow;
-  imdb: number; // IMDb rating, 0–10
+  /** TVmaze's user rating for the show, 0–10, or null if it has none. */
+  score: number | null;
 }
 
 /**
- * The canonical IMDb top-rated TV series. IMDb has no free API, so the ratings
- * are bundled here (they're stable to ±0.1 over years); each title is resolved
- * to a live TVmaze show at runtime purely for its poster and navigation.
- * Sorted highest-first.
+ * Our own editorial pick of all-time great series — a hand-kept list, not a
+ * reproduction of anyone's ranked chart. Each title resolves to a live TVmaze
+ * show at runtime for its poster, rating and navigation.
  */
-const IMDB_TOP: { title: string; imdb: number }[] = [
-  { title: "Breaking Bad", imdb: 9.5 },
-  { title: "Planet Earth II", imdb: 9.4 },
-  { title: "Band of Brothers", imdb: 9.4 },
-  { title: "Chernobyl", imdb: 9.3 },
-  { title: "The Wire", imdb: 9.3 },
-  { title: "Avatar: The Last Airbender", imdb: 9.3 },
-  { title: "Game of Thrones", imdb: 9.2 },
-  { title: "The Sopranos", imdb: 9.2 },
-  { title: "Sherlock", imdb: 9.1 },
-  { title: "Rick and Morty", imdb: 9.1 },
-  { title: "Better Call Saul", imdb: 9.0 },
-  { title: "The Office", imdb: 9.0 },
-  { title: "True Detective", imdb: 8.9 },
-  { title: "Succession", imdb: 8.9 },
+const ALL_TIME_GREATS: string[] = [
+  "Breaking Bad",
+  "Planet Earth II",
+  "Band of Brothers",
+  "Chernobyl",
+  "The Wire",
+  "Avatar: The Last Airbender",
+  "Game of Thrones",
+  "The Sopranos",
+  "Sherlock",
+  "Rick and Morty",
+  "Better Call Saul",
+  "The Office",
+  "True Detective",
+  "Succession",
 ];
 
 /**
- * Resolve the IMDb top-rated canon to real TVmaze shows (with posters).
+ * Resolve the editorial greats list to real TVmaze shows (with posters).
  * Rate-limit-friendly: small concurrent batches with a pause between waves.
  */
 export async function getTopRated(): Promise<RatedShow[]> {
   const out: RatedShow[] = [];
   const width = 3;
-  for (let i = 0; i < IMDB_TOP.length; i += width) {
+  for (let i = 0; i < ALL_TIME_GREATS.length; i += width) {
     const batch = await Promise.all(
-      IMDB_TOP.slice(i, i + width).map(async (entry) => {
-        const show = await singleSearch(entry.title).catch(() => null);
-        return show && show.posterUrl ? { show, imdb: entry.imdb } : null;
+      ALL_TIME_GREATS.slice(i, i + width).map(async (title) => {
+        const show = await singleSearch(title).catch(() => null);
+        return show && show.posterUrl ? { show, score: show.rating } : null;
       })
     );
     for (const r of batch) if (r) out.push(r);
-    if (i + width < IMDB_TOP.length) {
+    if (i + width < ALL_TIME_GREATS.length) {
       await new Promise((r) => setTimeout(r, 1200));
     }
   }
