@@ -35,3 +35,18 @@ export function shortAgo(iso: string, now: Date = new Date()): string {
   if (days < 7) return `${days}d`;
   return `${Math.floor(days / 7)}w`;
 }
+
+/**
+ * Comment ordering: most upvoted first, newest as the tiebreak.
+ *
+ * Sorted on the client because the vote count comes from an embedded join,
+ * which PostgREST cannot order by. Pure so it's unit-testable.
+ */
+export function byTopThenNewest(
+  a: { upvotes: number; created_at: string },
+  b: { upvotes: number; created_at: string }
+): number {
+  return (
+    b.upvotes - a.upvotes || Date.parse(b.created_at) - Date.parse(a.created_at)
+  );
+}

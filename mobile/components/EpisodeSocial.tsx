@@ -27,6 +27,7 @@ import {
   screenComment,
 } from "@/lib/social/moderation";
 import { shortAgo } from "@/lib/format-social";
+import { alwaysShowComments } from "@/lib/spoilers";
 import type { Comment, EpisodeStats, Profile } from "@/lib/social/types";
 
 /**
@@ -40,6 +41,7 @@ export default function EpisodeSocial({
   showName,
   posterUrl,
   episodeName,
+  watched,
 }: {
   showId: number;
   season: number;
@@ -47,6 +49,8 @@ export default function EpisodeSocial({
   showName: string | null;
   posterUrl: string | null;
   episodeName?: string | null;
+  /** Comments stay behind a spoiler gate until this episode is watched. */
+  watched: boolean;
 }) {
   const { session } = useAuth();
   const router = useRouter();
@@ -54,6 +58,11 @@ export default function EpisodeSocial({
   const [friends, setFriends] = useState<Profile[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  // Revealing is per-episode and deliberately not remembered: the next
+  // unwatched episode should gate again. The Settings switch is the way to
+  // turn the gate off for good.
+  const [revealed, setRevealed] = useState(false);
+  const showComments = watched || revealed || alwaysShowComments();
 
   const load = useCallback(async () => {
     const [s, f, c] = await Promise.all([
@@ -131,47 +140,87 @@ export default function EpisodeSocial({
         )}
       </View>
 
-      {/* Comments */}
+      {/* Comments — gated until watched, because this is where spoilers live */}
       <View style={{ ...card, padding: 14, gap: 12 }}>
         <Text style={label}>DISCUSSION</Text>
-        <CommentComposer
-          onPost={async (body, uri, gifUrl) => {
-            // A GIF is already a hosted URL — use it directly. A photo needs
-            // uploading to our storage first.
-            let imageUrl: string | null = gifUrl;
-            if (!imageUrl && uri) imageUrl = await social.uploadCommentPhoto(uri);
-            await social.addComment(showId, season, episode, body, imageUrl, {
-              showName,
-              posterUrl,
-              episodeName,
-            });
-            await load();
-          }}
-        />
-        {comments.length === 0 ? (
-          <Text style={{ color: colors.faint, fontSize: 12, textAlign: "center", paddingVertical: 8 }}>
-            No comments yet — start the conversation.
-          </Text>
-        ) : (
-          comments.map((c) => (
-            <CommentRow
-              key={c.id}
-              comment={c}
-              isOwn={c.user_id === session.user.id}
-              onOpenUser={(u) => router.push(`/u/${u}` as never)}
-              onChanged={load}
-              onUpvote={async () => {
-                await social.toggleUpvote(c.id, c.upvoted);
-                setComments((prev) =>
-                  prev.map((x) =>
-                    x.id === c.id
-                      ? { ...x, upvoted: !x.upvoted, upvotes: x.upvotes + (x.upvoted ? -1 : 1) }
-                      : x
-                  )
-                );
+        {!showComments ? (
+          <View style={{ alignItems: "center", gap: 10, paddingVertical: 10 }}>
+            <Ionicons name="eye-off-outline" size={24} color={colors.faint} />
+            <Text
+              style={{
+                color: colors.muted,
+                fontSize: 13,
+                textAlign: "center",
+                lineHeight: 19,
               }}
-            />
-          ))
+            >
+              {comments.length === 0
+                ? "No comments yet. They'll appear once you've watched this episode."
+                : `${comments.length} ${
+                    comments.length === 1 ? "comment" : "comments"
+                  }, hidden until you've watched this episode.`}
+            </Text>
+            {comments.length > 0 && (
+              <Pressable
+                onPress={() => setRevealed(true)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Show comments anyway, which may contain spoilers"
+              >
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontSize: 13,
+                    fontWeight: "700",
+                  }}
+                >
+                  Show them anyway
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <>
+          <CommentComposer
+            onPost={async (body, uri, gifUrl) => {
+              // A GIF is already a hosted URL — use it directly. A photo needs
+              // uploading to our storage first.
+              let imageUrl: string | null = gifUrl;
+              if (!imageUrl && uri) imageUrl = await social.uploadCommentPhoto(uri);
+              await social.addComment(showId, season, episode, body, imageUrl, {
+                showName,
+                posterUrl,
+                episodeName,
+              });
+              await load();
+            }}
+          />
+          {comments.length === 0 ? (
+            <Text style={{ color: colors.faint, fontSize: 12, textAlign: "center", paddingVertical: 8 }}>
+              No comments yet — start the conversation.
+            </Text>
+          ) : (
+            comments.map((c) => (
+              <CommentRow
+                key={c.id}
+                comment={c}
+                isOwn={c.user_id === session.user.id}
+                onOpenUser={(u) => router.push(`/u/${u}` as never)}
+                onChanged={load}
+                onUpvote={async () => {
+                  await social.toggleUpvote(c.id, c.upvoted);
+                  setComments((prev) =>
+                    prev.map((x) =>
+                      x.id === c.id
+                        ? { ...x, upvoted: !x.upvoted, upvotes: x.upvotes + (x.upvoted ? -1 : 1) }
+                        : x
+                    )
+                  );
+                }}
+              />
+            ))
+          )}
+          </>
         )}
       </View>
     </View>

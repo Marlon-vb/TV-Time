@@ -31,12 +31,14 @@ import {
 } from "@/lib/notifications";
 import { useAuth } from "@/lib/social/auth";
 import { deleteAccount } from "@/lib/social/api";
+import { alwaysShowComments, setAlwaysShowComments } from "@/lib/spoilers";
 import { PRIVACY_URL, SUPPORT_URL, TERMS_URL } from "@/lib/legal";
 
 export default function SettingsScreen() {
   return (
     <ScrollView contentContainerStyle={{ padding: 14, gap: 12 }}>
       <NotificationsSection />
+      <SpoilerSection />
       <ImportSection />
       <BackupSection />
       <TmdbSection />
@@ -166,6 +168,41 @@ function NotificationsSection() {
         />
       )}
       {message && <Text style={bodyText}>{message}</Text>}
+    </Section>
+  );
+}
+
+/* ----------------------------------------------------------------- spoilers */
+
+function SpoilerSection() {
+  const [on, setOn] = useState(alwaysShowComments());
+
+  const toggle = (v: boolean) => {
+    setAlwaysShowComments(v);
+    setOn(v);
+  };
+
+  return (
+    <Section title="Spoilers">
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Text style={{ ...bodyText, flex: 1, paddingRight: 12 }}>
+          Always show episode comments. Off by default, so a thread stays hidden
+          until you&apos;ve marked that episode watched — you can still reveal
+          any one of them from the episode itself.
+        </Text>
+        <Switch
+          value={on}
+          onValueChange={toggle}
+          trackColor={{ true: colors.accent, false: colors.overlay }}
+          thumbColor={colors.ink}
+        />
+      </View>
     </Section>
   );
 }

@@ -3,6 +3,7 @@ import * as Crypto from "expo-crypto";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
+import { byTopThenNewest } from "@/lib/format-social";
 import { normalizeEmail } from "./hash";
 import type {
   ActivityInput,
@@ -465,7 +466,7 @@ export async function getComments(
     .eq("episode", episode)
     .order("created_at", { ascending: false });
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  return ((data as any[]) ?? [])
+  const rows = ((data as any[]) ?? [])
     .filter((c) => !blocked.has(c.user_id))
     .map((c) => ({
       id: c.id,
@@ -483,6 +484,7 @@ export async function getComments(
       upvoted: (c.comment_votes ?? []).some((v: any) => v.user_id === me),
     }));
   /* eslint-enable @typescript-eslint/no-explicit-any */
+  return rows.sort(byTopThenNewest);
 }
 
 export async function addComment(

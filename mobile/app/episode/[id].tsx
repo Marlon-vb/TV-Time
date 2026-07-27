@@ -467,6 +467,7 @@ function EpisodePage({
             showName={show.name}
             posterUrl={show.poster_url}
             episodeName={episode.name}
+            watched={isWatched}
           />
         )}
 
