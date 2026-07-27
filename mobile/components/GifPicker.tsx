@@ -11,7 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius } from "@/lib/theme";
-import { gifSearchConfigured, searchGifs, type Gif } from "@/lib/giphy";
+import { GifSearchUnavailable, searchGifs, type Gif } from "@/lib/giphy";
 
 /** Full-screen GIF search sheet. Selecting a GIF returns its animated URL. */
 export default function GifPicker({
@@ -25,7 +25,9 @@ export default function GifPicker({
 }) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
-  const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
+  const [status, setStatus] = useState<
+    "loading" | "done" | "error" | "unavailable"
+  >("loading");
   const gen = useRef(0);
 
   useEffect(() => {
@@ -39,8 +41,9 @@ export default function GifPicker({
           if (g !== gen.current) return;
           setGifs(res);
           setStatus("done");
-        } catch {
-          if (g === gen.current) setStatus("error");
+        } catch (err) {
+          if (g !== gen.current) return;
+          setStatus(err instanceof GifSearchUnavailable ? "unavailable" : "error");
         }
       },
       query.trim() ? 350 : 0
@@ -98,7 +101,7 @@ export default function GifPicker({
 
         {status === "loading" ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />
-        ) : status === "error" ? (
+        ) : status === "error" || status === "unavailable" ? (
           <Text
             style={{
               color: colors.muted,
@@ -108,9 +111,9 @@ export default function GifPicker({
               lineHeight: 20,
             }}
           >
-            {gifSearchConfigured()
-              ? "GIF search didn't respond. Check your connection and try again."
-              : "GIF search isn't set up in this build yet."}
+            {status === "unavailable"
+              ? "GIF search isn't set up on the server yet."
+              : "GIF search didn't respond. Check your connection and try again."}
           </Text>
         ) : (
           <FlatList

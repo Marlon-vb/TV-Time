@@ -71,7 +71,6 @@
     "extra": {
       "supabaseUrl": "https://dvrnfqyrljcuosjspyab.supabase.co",
       "supabaseKey": "sb_publishable_ew2E-UCvJjbWdbA7U5_X3g_2emZRWyL",
-      "giphyKey": "",
       "eas": {
         "projectId": "c931a518-a108-4e69-a05f-b637eee28372"
       }

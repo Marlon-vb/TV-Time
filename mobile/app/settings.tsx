@@ -42,7 +42,6 @@ export default function SettingsScreen() {
       <ImportSection />
       <BackupSection />
       <TmdbSection />
-      <GiphySection />
       <SyncSection />
       <LegalSection />
       <AccountSection />
@@ -550,56 +549,6 @@ function AccountSection() {
           Permanently removes your profile and everything you&apos;ve shared.
         </Text>
       </Pressable>
-    </Section>
-  );
-}
-
-/* -------------------------------------------------------------------- giphy */
-
-function GiphySection() {
-  const [key, setKey] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const configured = Boolean(getSetting("giphy_api_key"));
-
-  const save = () => {
-    const trimmed = key.trim();
-    setSetting("giphy_api_key", trimmed);
-    setMessage(
-      trimmed
-        ? "Saved — your GIPHY key will be used for GIF search."
-        : "Cleared — using the key built into the app."
-    );
-    setKey("");
-  };
-
-  return (
-    <Section title="GIF search (optional)">
-      <Text style={bodyText}>
-        GIF search is built into the app — you don&apos;t need to do anything
-        here. This is only if you&apos;d rather use your own free key from
-        developers.giphy.com and have its rate limit to yourself.
-      </Text>
-      <TextInput
-        value={key}
-        onChangeText={setKey}
-        placeholder={configured ? "Configured — paste to replace" : "Paste your GIPHY API key…"}
-        placeholderTextColor={colors.faint}
-        autoCapitalize="none"
-        autoCorrect={false}
-        secureTextEntry
-        style={{
-          backgroundColor: colors.raised,
-          borderWidth: 1,
-          borderColor: colors.line,
-          borderRadius: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-          color: colors.fg,
-          fontSize: 13,
-        }}
-      />
-      <Button label="Save key" primary disabled={key.trim() === ""} onPress={save} />
-      {message && <Text style={bodyText}>{message}</Text>}
     </Section>
   );
 }

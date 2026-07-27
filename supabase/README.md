@@ -78,6 +78,40 @@ nothing, so you can run `notifications.sql` early without breaking anything.
 > servers** (they inject it into the function's environment). You never
 > copy or paste it anywhere, and it's never in the app.
 
+## GIF search (~5 minutes)
+
+Comments can carry a GIF. The app holds **no GIPHY key** — it calls an Edge
+Function that keeps the key server-side and caches results in a shared table,
+so a popular search costs one upstream call for the whole user base instead of
+one per person. That is what makes this viable at scale, and it means nobody
+can pull a key out of the app binary and spend your quota.
+
+1. **Get a key.** [developers.giphy.com](https://developers.giphy.com) → Create
+   an App → choose **API** (not SDK). Copy the API key.
+2. **Create the cache table.** Paste `gifs.sql` into the SQL editor and run it.
+3. **Store the key and deploy:**
+
+```bash
+# from the repo root — <project-ref> is the id in your project's URL
+supabase link --project-ref <project-ref>
+supabase secrets set GIPHY_KEY=<your giphy key>
+supabase functions deploy gifs
+```
+
+JWT verification stays **on** for this one (unlike `notify`), so only signed-in
+users can call it and it can't be used as an open proxy.
+
+> **On GIPHY's rate limits.** The key you get immediately is a *beta* key,
+> historically ~42 requests/hour and ~1,000/day — a development limit. The
+> cache is what makes that survivable: with a 1-hour TTL on trending and 6
+> hours on searches, a thousand users hammering the picker still produce only a
+> handful of upstream calls. Before a public launch, apply for a **production
+> key** in the GIPHY dashboard (free, reviewed by a human — they check you show
+> the "Powered by GIPHY" attribution, which the picker already does).
+>
+> If GIPHY rate-limits or goes down, the function serves the last cached
+> results rather than an error screen.
+
 ## Security notes (important)
 
 - The **anon / public key is meant to be embedded in the app.** It's safe to
