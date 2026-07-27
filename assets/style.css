@@ -321,6 +321,10 @@ section {
    bar, so there is no notch to draw — a hairline bezel reads as a device
    without pretending to be a photograph of one. */
 .phone {
+  /* A phone screenshot must never render at container width — belt and braces
+     so a missing modifier class can't blow one up to full bleed. */
+  max-width: 340px;
+  margin-inline: auto;
   border-radius: clamp(22px, 3.2vw, 34px);
   overflow: hidden;
   background: #0b0c14;
