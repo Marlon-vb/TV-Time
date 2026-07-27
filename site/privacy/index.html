@@ -228,14 +228,15 @@
           <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on GIPHY's servers and we only store the link.</li>
           <li><strong>Never shared with anyone:</strong> everything in section 1 that stays on your phone.</li>
         </ul>
-        <p>There are no avatars or profile photos in the app. There are no direct messages.</p>
+        <p>There are no uploaded profile photos or avatar images — you cannot add one, and there is nowhere to put one. Where the app shows a person, it draws a coloured circle with the first letter of their name in it, generated on the spot from that name. There are no direct messages.</p>
 
         <hr />
 
         <h2 id="comment-filtering-and-moderation">6. Comment filtering and moderation</h2>
         <p>Comments are screened <strong>before</strong> they are posted, not only after someone complains.</p>
         <ul>
-          <li><strong>On-device screening.</strong> Every comment is checked on your phone before it is sent. Submissions containing hate slurs or child-exploitation terms are refused outright, as are spam shapes — link-stuffed text and long runs of repeated characters. The check tolerates the usual ways people disguise a word (leetspeak, spacing, homoglyphs). A refused comment never leaves your device, so we never receive it and never log it.</li>
+          <li><strong>On-device screening.</strong> Every comment is checked on your phone before it is sent, and exactly four things cause it to be refused: the comment is empty, it is longer than 2,000 characters, it matches the blocked-terms list, or it contains more than two distinct links. Nothing else is rejected — ordinary swearing is fine, sexual language in a TV context ("the sex scene", "full frontal") is fine, and a long run of a repeated character is simply trimmed before the check rather than treated as spam. The check tolerates the usual ways people disguise a word (leetspeak, spacing, homoglyphs). A refused comment never leaves your device, so we never receive it and never log it.</li>
+          <li><strong>What is on the blocked-terms list.</strong> Three groups, and nothing more: unambiguous hate slurs, child-exploitation terms, and porn-spam phrases (things like "free porn", "sex cam", "gang bang" or the name of a porn site). We are listing the third group because it is easy to trip it without meaning to, and the refusal message does not say which rule you hit.</li>
           <li><strong>Length limit.</strong> Comments are capped at 2,000 characters.</li>
           <li><strong>Rate limit.</strong> You can post at most 5 comments per minute. This exists to stop flooding, not to watch you; the counter lives on your device and is thrown away when you sign out.</li>
           <li><strong>Report and block.</strong> Any comment or user can be reported, and any user can be blocked, from inside the app. Blocking hides that person's content from you and severs the follow in both directions.</li>
@@ -260,12 +261,12 @@
               <tr>
                 <td><strong>TVmaze</strong></td>
                 <td>Your search terms, and the ID of each show you follow (refreshed on launch and in the background). No key, no account, no identifier. Show and episode data from TVmaze is used under the CC BY-SA licence.</td>
-                <td>Always, including signed out</td>
+                <td>Always, including signed out. Show and episode artwork is also requested from TVmaze's image servers every time that artwork is displayed, not only when you first add the show.</td>
               </tr>
               <tr>
                 <td><strong>Apple iTunes Search</strong></td>
-                <td>The movie title you type. No key, no account, no identifier.</td>
-                <td>When you search for a movie</td>
+                <td>The movie title you type. No key, no account, no identifier. Movie posters are served from Apple's artwork CDN.</td>
+                <td>When you search for a movie, and again from Apple's artwork CDN every time a movie poster is displayed — including signed out, and for movies you added long ago.</td>
               </tr>
               <tr>
                 <td><strong>Supabase</strong> (our backend)</td>
@@ -295,6 +296,7 @@
             </tbody>
           </table>
         </div>
+        <p><strong>Artwork is fetched again every time it is shown.</strong> Posters, backdrops and episode stills are never copied into your library — only their web addresses are. So each time a poster or still appears on screen, your device asks TVmaze's or Apple's image servers for it again (the app keeps a local image cache, which cuts down but does not remove these requests). That happens for shows and movies you added long ago, and it happens whether or not you are signed in.</p>
         <p>We are not paid by any of these services, and none of them is an advertising or analytics provider. Each has its own privacy policy governing what it does with the requests it receives.</p>
 
         <hr />

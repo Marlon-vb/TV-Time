@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
+import AgreementLine from "@/components/AgreementLine";
 import Bouncy from "@/components/Bouncy";
 import { card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -81,6 +82,9 @@ export default function AccountCard() {
           }}
         />
         {busy && <ActivityIndicator color={colors.accent} />}
+        {/* +2 on top of the card's 12pt gap so the links' 14pt hitSlop stops
+            short of the Apple button instead of eating its bottom edge. */}
+        <AgreementLine style={{ marginTop: 2 }} />
       </View>
     );
   }

@@ -20,7 +20,12 @@ import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
-import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
+import {
+  checkCommentRate,
+  confirmBlock,
+  reportWithFeedback,
+  screenComment,
+} from "@/lib/social/moderation";
 import { shortAgo } from "@/lib/format-social";
 import type { Comment, EpisodeStats, Profile } from "@/lib/social/types";
 
@@ -211,15 +216,36 @@ function CommentComposer({
   };
 
   const post = async () => {
-    if (!body.trim() && !uri && !gifUrl) return;
+    const trimmed = body.trim();
+    if (!trimmed && !uri && !gifUrl) return;
+
+    // Screen before the rate check: checkCommentRate spends one of the
+    // allowed slots, and a comment we refuse to send shouldn't cost the user
+    // one. An attachment-only comment has no text to screen.
+    if (trimmed) {
+      const screened = screenComment(body);
+      if (!screened.ok) {
+        Alert.alert("Couldn't post", screened.reason);
+        return;
+      }
+    }
+    const rate = checkCommentRate(Date.now());
+    if (!rate.ok) {
+      Alert.alert("Couldn't post", rate.reason);
+      return;
+    }
+
     setPosting(true);
     try {
       await onPost(body, uri, gifUrl);
       setBody("");
       setUri(null);
       setGifUrl(null);
-    } catch {
-      Alert.alert("Couldn't post", "Please try again.");
+    } catch (err) {
+      // The server rejects things the client can't predict (RLS, the 2000-char
+      // body check); its message is the only accurate thing we can tell them.
+      const e = err as { message?: string };
+      Alert.alert("Couldn't post", e.message ?? "Please try again.");
     } finally {
       setPosting(false);
     }
@@ -305,7 +331,7 @@ function CommentComposer({
         </View>
         <Bouncy
           onPress={post}
-          disabled={posting || (!body.trim() && !uri)}
+          disabled={posting || (!body.trim() && !uri && !gifUrl)}
           scaleTo={0.9}
           accessibilityRole="button"
           accessibilityLabel="Post comment"
@@ -316,7 +342,7 @@ function CommentComposer({
             backgroundColor: colors.accent,
             alignItems: "center",
             justifyContent: "center",
-            opacity: posting || (!body.trim() && !uri) ? 0.5 : 1,
+            opacity: posting || (!body.trim() && !uri && !gifUrl) ? 0.5 : 1,
           }}
         >
           <Ionicons name="arrow-up" size={20} color={colors.ink} />

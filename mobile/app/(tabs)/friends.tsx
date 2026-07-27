@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import AgreementLine from "@/components/AgreementLine";
 import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
@@ -49,6 +50,9 @@ export default function FriendsScreen() {
             title="Sign in to connect"
             body="Head to your Profile tab and sign in with Apple to follow friends, see what they're watching, and comment together."
           />
+          {/* Secondary mention; the primary one is at the sign-in button
+              itself, in AccountCard on the Profile tab. */}
+          <AgreementLine style={{ marginTop: 14 }} />
         </View>
       </View>
     );

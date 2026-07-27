@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Switch,
@@ -30,6 +31,7 @@ import {
 } from "@/lib/notifications";
 import { useAuth } from "@/lib/social/auth";
 import { deleteAccount } from "@/lib/social/api";
+import { PRIVACY_URL, SUPPORT_URL, TERMS_URL } from "@/lib/legal";
 
 export default function SettingsScreen() {
   return (
@@ -40,6 +42,7 @@ export default function SettingsScreen() {
       <TmdbSection />
       <GiphySection />
       <SyncSection />
+      <LegalSection />
       <AccountSection />
     </ScrollView>
   );
@@ -410,6 +413,42 @@ function TmdbSection() {
       />
       {message && <Text style={bodyText}>{message}</Text>}
     </Section>
+  );
+}
+
+/* -------------------------------------------------------------------- legal */
+
+/**
+ * App Store 1.2: the EULA and privacy policy have to be reachable from inside
+ * the app, not only from the store listing. Sits above the delete-account block
+ * so the two review-facing sections stay together at the bottom.
+ */
+function LegalSection() {
+  return (
+    <Section title="Legal">
+      <Text style={bodyText}>
+        The terms you agree to by signing in, plus where to get help. Each one
+        opens in your browser.
+      </Text>
+      <LegalLink label="Privacy Policy" url={PRIVACY_URL} />
+      <LegalLink label="Terms of Use" url={TERMS_URL} />
+      <LegalLink label="Support" url={SUPPORT_URL} />
+    </Section>
+  );
+}
+
+function LegalLink({ label, url }: { label: string; url: string }) {
+  return (
+    <Pressable
+      onPress={() => void Linking.openURL(url)}
+      hitSlop={6}
+      accessibilityRole="link"
+      accessibilityLabel={`${label} — opens in your browser`}
+    >
+      <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "600" }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

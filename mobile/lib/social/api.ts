@@ -3,7 +3,7 @@ import * as Crypto from "expo-crypto";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
-import { normalizeEmail, normalizePhone } from "./hash";
+import { normalizeEmail } from "./hash";
 import type {
   ActivityInput,
   CharacterVoteTally,
@@ -260,51 +260,6 @@ export async function unrecordWatch(
 }
 
 /**
- * Mirror a show-level star rating to the feed ("rated Severance 4.5★" with
- * no episode code). Clearing removes the feed row. Insert-first like
- * publishActivity so a failure can't erase an existing row.
- */
-export async function recordShowRating(
-  show: { id: number; name: string; poster_url: string | null },
-  rating: number | null
-): Promise<void> {
-  const me = await uid();
-  if (!me) return;
-  const deleteShowRated = (excludeId?: string) => {
-    let q = supabase
-      .from("activities")
-      .delete()
-      .eq("user_id", me)
-      .eq("show_id", show.id)
-      .eq("type", "rated")
-      .is("season", null);
-    if (excludeId) q = q.neq("id", excludeId);
-    return q;
-  };
-  if (rating == null) {
-    await deleteShowRated();
-    return;
-  }
-  const { data, error } = await supabase
-    .from("activities")
-    .insert({
-      user_id: me,
-      type: "rated",
-      show_id: show.id,
-      show_name: show.name,
-      poster_url: show.poster_url,
-      season: null,
-      episode: null,
-      episode_name: null,
-      rating,
-    })
-    .select("id")
-    .single();
-  if (error || !data) return;
-  await deleteShowRated(data.id as string);
-}
-
-/**
  * Convenience wrapper: mirror a single watch of a local episode row, feed
  * activity included. The one payload mapping shared by every screen.
  */
@@ -554,7 +509,10 @@ export async function addComment(
     body: trimmed || null,
     image_url: imageUrl ?? null,
   });
-  if (error) return;
+  // The comment row is the write that matters — throw so the composer keeps
+  // the user's text and can say why (an RLS denial, the 2000-char DB check)
+  // instead of clearing the box as if it had posted.
+  if (error) throw error;
   // Surface the comment in friends' feeds — one 'commented' activity per
   // episode (deduped by type, so it never wipes the watched/rated entry).
   if (ctx) {
@@ -736,6 +694,9 @@ export async function alsoWatched(
   showIds: number[]
 ): Promise<{ show_id: number; watchers: number }[]> {
   if (showIds.length === 0) return [];
+  // Guard before the RPC: a signed-out user's library stays on the device.
+  const me = await uid();
+  if (!me) return [];
   try {
     const { data, error } = await supabase.rpc("also_watched", {
       p_show_ids: showIds.slice(0, 100),
@@ -856,13 +817,17 @@ export async function registerForSocial(email?: string | null): Promise<void> {
 // -------------------------------------------------- contacts friend matching
 
 /**
- * Hash the signed-in user's own phone/email so others can match them, then
- * hash the address book and ask the server which hashes belong to real users.
- * Raw contact details never leave the device — only SHA-256 hashes.
+ * Match the address book against real users by email only. We read just the
+ * Emails field, and only SHA-256 hashes of it are sent — raw addresses never
+ * leave the device. Phone numbers are deliberately not read or hashed: only
+ * email_hash is ever stored for a user (see upsertMyContactHashes), so a phone
+ * hash could never match a row. The RPC keeps its phone_hashes argument for
+ * signature compatibility and always receives an empty array.
  */
-export async function findFriendsFromContacts(
-  defaultCountryCode = ""
-): Promise<{ granted: boolean; profiles: Profile[] }> {
+export async function findFriendsFromContacts(): Promise<{
+  granted: boolean;
+  profiles: Profile[];
+}> {
   const me = await uid();
   if (!me) return { granted: true, profiles: [] };
 
@@ -870,16 +835,11 @@ export async function findFriendsFromContacts(
   if (status !== "granted") return { granted: false, profiles: [] };
 
   const { data: contacts } = await Contacts.getContactsAsync({
-    fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+    fields: [Contacts.Fields.Emails],
   });
 
-  const phoneHashes = new Set<string>();
   const emailHashes = new Set<string>();
   for (const c of contacts) {
-    for (const p of c.phoneNumbers ?? []) {
-      const n = normalizePhone(p.number ?? "", defaultCountryCode);
-      if (n) phoneHashes.add(await sha256(n));
-    }
     for (const e of c.emails ?? []) {
       const n = normalizeEmail(e.email ?? "");
       if (n) emailHashes.add(await sha256(n));
@@ -887,7 +847,7 @@ export async function findFriendsFromContacts(
   }
 
   const { data } = await supabase.rpc("find_friends", {
-    phone_hashes: [...phoneHashes],
+    phone_hashes: [],
     email_hashes: [...emailHashes],
   });
   return { granted: true, profiles: (data as Profile[]) ?? [] };

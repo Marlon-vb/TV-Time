@@ -93,7 +93,7 @@
         </ul>
         <p>Your movies and documentaries are never uploaded — they're local only.</p>
         <p>We have no analytics, no advertising, no tracking SDK and no crash-reporting SDK. We don't build a profile of you and we don't sell anything to anyone.</p>
-        <p>One thing worth knowing even if you're signed out: when the Discover tab builds recommendations, it sends the list of show IDs you follow to our backend to look up anonymous "people who watch this also watch…" counts. Nothing is stored, but the request does reach our servers.</p>
+        <p>The one part of recommendations that touches our backend depends on being signed in. <strong>When you're signed in</strong>, the Discover tab sends the list of show IDs you follow (up to 100) to look up anonymous "people who watch this also watch…" counts; the server answers with watcher totals and keeps nothing. <strong>When you're signed out</strong>, the app checks before it asks, and the request is never made — your list of shows stays on the device. Signed out, nothing about your library reaches <em>our</em> backend at all — the app still fetches show data and artwork from TVmaze and Apple (and TMDB, if you added your own key), but our servers see nothing.</p>
 
         <h3 id="how-do-i-mark-an-episode-as-watched">How do I mark an episode as watched?</h3>
         <p>Three ways:</p>
@@ -113,7 +113,8 @@
         <p>If you want to remove the episode from your watched list entirely instead, tap the watch button to un-watch it. That also removes the episode from our servers and pulls the matching activity from your friends' feed.</p>
 
         <h3 id="how-do-i-find-friends">How do I find friends?</h3>
-        <p>Sign in with Apple, pick a username, then on the Friends tab you can:</p>
+        <p>Sign in with Apple and pick a username. <strong>Choose it carefully — you only get one go:</strong> once it's set the editor disappears and there's no way to change it in the app, and your display name (written once from the name Apple gives us at first sign-in) has no editor at all. To change or clear either one, email <a href="mailto:info@montyinc.net">info@montyinc.net</a> and we'll do it for you.</p>
+        <p>Then, on the Friends tab, you can:</p>
         <ul>
           <li><strong>Search by username</strong></li>
           <li><strong>Scan your contacts</strong> — tap the "From contacts" chip. __APP__ reads only the <strong>email addresses</strong> in your address book. It never reads or sends phone numbers. Each address is turned into a one-way SHA-256 hash on your iPhone, and only those hashes are sent to check for matches against other users. Names and raw email addresses never leave your phone, and the hashes we receive aren't stored in our database. (A hash of an email address is a weak pseudonym rather than true anonymity — we'd rather say that plainly.)</li>
@@ -122,7 +123,14 @@
         <p><strong>If you used Apple's "Hide My Email"</strong>, contact matching won't find you: we can only match on the private <code>@privaterelay.appleid.com</code> address Apple gave us, so a friend who has your real email in their contacts won't get a match. Share your username or invite link instead.</p>
 
         <h3 id="why-was-my-comment-rejected-or-why-cant-i-post-another-one-yet">Why was my comment rejected, or why can't I post another one yet?</h3>
-        <p>Comments are screened <strong>before</strong> they're posted, not after. Every submission is checked on the way in against a blocklist of slurs and child-exploitation terms, plus common spam shapes (link dumps, repeated pasting, gibberish). Anything that matches is refused and never appears in the app.</p>
+        <p>Comments are screened <strong>before</strong> they're posted, not after. Every submission is checked on the way in for four things, and that is the whole list:</p>
+        <ul>
+          <li>It can't be empty.</li>
+          <li>It can't be longer than <strong>2,000 characters</strong>.</li>
+          <li>It can't match our blocklist — hate slurs, child-exploitation terms and porn spam. The list is deliberately short and doesn't cover ordinary swearing, or sexual words used about a show.</li>
+          <li>It can't contain more than <strong>two different links</strong>. One or two is a recommendation; a pile of them is spam.</li>
+        </ul>
+        <p>Anything that trips one of those is refused with a short explanation and never appears in the app. There's no duplicate-post check and no gibberish detection — if you paste the same thing twice, or type nonsense, the filter won't stop you (though the rate limit below might).</p>
         <p>There's also a rate limit of <strong>5 comments per minute</strong> per account, which is there to stop flooding. If you hit it, wait a moment and try again.</p>
         <p>Reports are separate and are reviewed by a human: <strong>every report is actioned within 24 hours</strong>, and content that breaks the rules is removed. Repeat or serious offenders lose their account.</p>
         <p>If a perfectly reasonable comment got caught by the filter — it happens, especially with show titles and character names — email <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong> with the text and we'll fix the rule.</p>
@@ -218,10 +226,7 @@
           <li>TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under CC BY-SA.</li>
           <li>Movie and documentary data from Apple's iTunes Search API. Apple does not endorse __APP__.</li>
           <li>GIFs powered by GIPHY.</li>
-          <li>
-            <img src="../assets/tmdb.svg" alt="TMDB" style="width: 92px; margin: 4px 0 8px" />
-            This product uses the TMDB API but is not endorsed or certified by TMDB.
-          </li>
+          <li>This product uses the TMDB API but is not endorsed or certified by TMDB.</li>
           <li>__APP__ is an independent app. It is not affiliated with, endorsed by or connected to TV Time (Whip Media Group), TVmaze, GIPHY, TMDB, Apple, or any network, studio or streaming service whose shows appear in it.</li>
         </ul>
 

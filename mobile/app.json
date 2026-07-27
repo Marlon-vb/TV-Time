@@ -24,7 +24,7 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSContactsUsageDescription": "TV Time can match your contacts to help you find friends who already use the app. Your contacts are hashed on your device and never uploaded in readable form.",
+        "NSContactsUsageDescription": "TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.",
         "NSPhotoLibraryUsageDescription": "TV Time lets you attach a photo to your episode comments."
       }
     },
@@ -49,7 +49,15 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "TV Time matches your contacts to help you find friends who already use the app."
+          "contactsPermission": "TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TV Time lets you attach a photo to your episode comments.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [

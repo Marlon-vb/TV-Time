@@ -53,12 +53,8 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
     <key>NSContactsUsageDescription</key>
-    <string>TV Time matches your contacts to help you find friends who already use the app.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <string>TV Time matches the email addresses in your contacts to help you find friends who already use the app. Addresses are hashed on your device and only those hashes are sent, so nothing readable leaves your phone. Phone numbers are never read.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>TV Time lets you attach a photo to your episode comments.</string>
     <key>NSUserActivityTypes</key>

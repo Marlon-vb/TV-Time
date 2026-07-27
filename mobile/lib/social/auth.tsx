@@ -12,6 +12,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { registerForSocial } from "./api";
 import { reconcileIfStale } from "./mirror";
+import { resetCommentRate } from "./moderation";
 import type { Profile } from "./types";
 
 interface AuthState {
@@ -108,6 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    // The rate window is module state, not per-account: on a shared device the
+    // next person to sign in would otherwise inherit this account's burst.
+    resetCommentRate();
   }, []);
 
   const refreshProfile = useCallback(
