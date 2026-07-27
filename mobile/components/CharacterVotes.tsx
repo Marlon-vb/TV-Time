@@ -10,6 +10,8 @@ import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
 import { getCast, type CastMember } from "@/lib/tvmaze";
 import { adjustTally } from "@/lib/character-votes";
+import SpoilerNotice from "@/components/SpoilerNotice";
+import { alwaysShowSpoilers } from "@/lib/spoilers";
 import type { CharacterVoteTally } from "@/lib/social/types";
 
 /**
@@ -17,17 +19,24 @@ import type { CharacterVoteTally } from "@/lib/social/types";
  * member to vote (tap again to clear); a live leaderboard shows how everyone
  * voted. Cast comes from TVmaze (no key); tallies from the character_votes RPC.
  * Only rendered when signed in and the show has cast on file.
+ *
+ * Naming who was worth voting for gives away who is in the episode, so this
+ * sits behind the same spoiler gate as the comment thread.
  */
 export default function CharacterVotes({
   showId,
   season,
   episode,
+  watched,
 }: {
   showId: number;
   season: number;
   episode: number;
+  /** The vote stays hidden until this episode is watched. */
+  watched: boolean;
 }) {
   const { session } = useAuth();
+  const [revealed, setRevealed] = useState(false);
   const [cast, setCast] = useState<CastMember[] | null>(null);
   const [myVote, setMyVote] = useState<number | null>(null);
   const [tally, setTally] = useState<CharacterVoteTally[]>([]);
@@ -69,6 +78,18 @@ export default function CharacterVotes({
   }
 
   if (!cast || cast.length === 0) return null;
+
+  if (!(watched || revealed || alwaysShowSpoilers())) {
+    return (
+      <View style={{ ...card, padding: 14, gap: 12 }}>
+        <Text style={label}>BEST CHARACTER</Text>
+        <SpoilerNotice
+          message="Voting names who's in this episode, so it's hidden until you've watched it."
+          onReveal={() => setRevealed(true)}
+        />
+      </View>
+    );
+  }
 
   const vote = async (member: CastMember) => {
     const clearing = myVote === member.characterId;

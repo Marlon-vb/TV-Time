@@ -27,7 +27,8 @@ import {
   screenComment,
 } from "@/lib/social/moderation";
 import { shortAgo } from "@/lib/format-social";
-import { alwaysShowComments } from "@/lib/spoilers";
+import SpoilerNotice from "@/components/SpoilerNotice";
+import { alwaysShowSpoilers } from "@/lib/spoilers";
 import type { Comment, EpisodeStats, Profile } from "@/lib/social/types";
 
 /**
@@ -62,7 +63,7 @@ export default function EpisodeSocial({
   // unwatched episode should gate again. The Settings switch is the way to
   // turn the gate off for good.
   const [revealed, setRevealed] = useState(false);
-  const showComments = watched || revealed || alwaysShowComments();
+  const showComments = watched || revealed || alwaysShowSpoilers();
 
   const load = useCallback(async () => {
     const [s, f, c] = await Promise.all([
@@ -144,41 +145,18 @@ export default function EpisodeSocial({
       <View style={{ ...card, padding: 14, gap: 12 }}>
         <Text style={label}>DISCUSSION</Text>
         {!showComments ? (
-          <View style={{ alignItems: "center", gap: 10, paddingVertical: 10 }}>
-            <Ionicons name="eye-off-outline" size={24} color={colors.faint} />
-            <Text
-              style={{
-                color: colors.muted,
-                fontSize: 13,
-                textAlign: "center",
-                lineHeight: 19,
-              }}
-            >
-              {comments.length === 0
+          <SpoilerNotice
+            message={
+              comments.length === 0
                 ? "No comments yet. They'll appear once you've watched this episode."
                 : `${comments.length} ${
                     comments.length === 1 ? "comment" : "comments"
-                  }, hidden until you've watched this episode.`}
-            </Text>
-            {comments.length > 0 && (
-              <Pressable
-                onPress={() => setRevealed(true)}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="Show comments anyway, which may contain spoilers"
-              >
-                <Text
-                  style={{
-                    color: colors.accent,
-                    fontSize: 13,
-                    fontWeight: "700",
-                  }}
-                >
-                  Show them anyway
-                </Text>
-              </Pressable>
-            )}
-          </View>
+                  }, hidden until you've watched this episode.`
+            }
+            onReveal={
+              comments.length > 0 ? () => setRevealed(true) : undefined
+            }
+          />
         ) : (
           <>
           <CommentComposer

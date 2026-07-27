@@ -1,16 +1,35 @@
+import Constants from "expo-constants";
 import { getSetting } from "./db";
 
 /**
- * GIF search via GIPHY. GIPHY publishes a public developer key that ships in
- * the app, so GIF search works with zero setup — no key for the user to
- * manage. Anyone can drop in their own free key (Settings) for higher rate
- * limits if the shared one ever throttles.
+ * GIF search via GIPHY.
+ *
+ * GIPHY keys are client-side by design — they identify the app, not a user —
+ * so the app ships one and nobody has to configure anything. Set it in
+ * app.json under extra.giphyKey; the Settings field only exists as an override
+ * for anyone who wants their own rate limit.
+ *
+ * GIPHY's old public beta key ("dc6zaTOxFJmzC") used to make this work with no
+ * registration at all, but it was retired and now returns 401/403, which is
+ * why search silently failed. There is no keyless GIF API left worth shipping:
+ * Tenor's equivalent public key went the same way when v1 was shut down.
  */
 
-const PUBLIC_KEY = "dc6zaTOxFJmzC"; // GIPHY's long-standing public dev key
+function shippedKey(): string {
+  const extra = Constants.expoConfig?.extra as
+    | { giphyKey?: string }
+    | undefined;
+  return (extra?.giphyKey ?? "").trim();
+}
 
+/** The user's own key wins, then the one shipped with the app. */
 function giphyKey(): string {
-  return getSetting("giphy_api_key")?.trim() || PUBLIC_KEY;
+  return getSetting("giphy_api_key")?.trim() || shippedKey();
+}
+
+/** Whether GIF search can work at all — drives the picker's empty state. */
+export function gifSearchConfigured(): boolean {
+  return giphyKey().length > 0;
 }
 
 export interface Gif {
@@ -32,6 +51,7 @@ function mapGif(g: any): Gif | null {
 
 export async function searchGifs(query: string): Promise<Gif[]> {
   const key = giphyKey();
+  if (!key) throw new Error("No GIPHY key configured");
   const q = query.trim();
   const url = q
     ? `https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(

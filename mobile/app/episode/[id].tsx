@@ -457,6 +457,7 @@ function EpisodePage({
             showId={show.id}
             season={episode.season}
             episode={episode.number}
+            watched={isWatched}
           />
         )}
         {active && (

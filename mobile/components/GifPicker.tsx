@@ -11,7 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius } from "@/lib/theme";
-import { searchGifs, type Gif } from "@/lib/giphy";
+import { gifSearchConfigured, searchGifs, type Gif } from "@/lib/giphy";
 
 /** Full-screen GIF search sheet. Selecting a GIF returns its animated URL. */
 export default function GifPicker({
@@ -108,8 +108,9 @@ export default function GifPicker({
               lineHeight: 20,
             }}
           >
-            GIF search isn&apos;t available right now. You can add your own free
-            GIPHY key in Settings for reliable results.
+            {gifSearchConfigured()
+              ? "GIF search didn't respond. Check your connection and try again."
+              : "GIF search isn't set up in this build yet."}
           </Text>
         ) : (
           <FlatList

@@ -31,7 +31,7 @@ import {
 } from "@/lib/notifications";
 import { useAuth } from "@/lib/social/auth";
 import { deleteAccount } from "@/lib/social/api";
-import { alwaysShowComments, setAlwaysShowComments } from "@/lib/spoilers";
+import { alwaysShowSpoilers, setAlwaysShowSpoilers } from "@/lib/spoilers";
 import { PRIVACY_URL, SUPPORT_URL, TERMS_URL } from "@/lib/legal";
 
 export default function SettingsScreen() {
@@ -175,10 +175,10 @@ function NotificationsSection() {
 /* ----------------------------------------------------------------- spoilers */
 
 function SpoilerSection() {
-  const [on, setOn] = useState(alwaysShowComments());
+  const [on, setOn] = useState(alwaysShowSpoilers());
 
   const toggle = (v: boolean) => {
-    setAlwaysShowComments(v);
+    setAlwaysShowSpoilers(v);
     setOn(v);
   };
 
@@ -192,9 +192,9 @@ function SpoilerSection() {
         }}
       >
         <Text style={{ ...bodyText, flex: 1, paddingRight: 12 }}>
-          Always show episode comments. Off by default, so a thread stays hidden
-          until you&apos;ve marked that episode watched — you can still reveal
-          any one of them from the episode itself.
+          Always show comments and the best-character vote. Off by default, so
+          both stay hidden until you&apos;ve marked that episode watched — you
+          can still reveal either one from the episode itself.
         </Text>
         <Switch
           value={on}
@@ -567,7 +567,7 @@ function GiphySection() {
     setMessage(
       trimmed
         ? "Saved — your GIPHY key will be used for GIF search."
-        : "Cleared — using the built-in shared key."
+        : "Cleared — using the key built into the app."
     );
     setKey("");
   };
@@ -575,9 +575,9 @@ function GiphySection() {
   return (
     <Section title="GIF search (optional)">
       <Text style={bodyText}>
-        Adding GIFs to comments works out of the box with a shared key. If GIFs
-        ever stop loading, paste your own free key from developers.giphy.com
-        here for reliable results.
+        GIF search is built into the app — you don&apos;t need to do anything
+        here. This is only if you&apos;d rather use your own free key from
+        developers.giphy.com and have its rate limit to yourself.
       </Text>
       <TextInput
         value={key}
