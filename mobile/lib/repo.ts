@@ -289,6 +289,14 @@ export function logRewatch(episodeId: number): void {
   );
 }
 
+/** Undo one rewatch (never drops below a single watch). Local-only. */
+export function removeRewatch(episodeId: number): void {
+  getDb().runSync(
+    "UPDATE episodes SET plays = MAX(1, plays - 1) WHERE id = ?",
+    episodeId
+  );
+}
+
 /** Start a fresh rewatch of a whole show: +1 play on every aired episode. */
 export function rewatchShow(showId: number): void {
   getDb().runSync(

@@ -186,6 +186,12 @@ function EpisodePage({
     void social.recordWatchForEpisode(show, episode);
   };
 
+  const undoRewatch = () => {
+    void Haptics.selectionAsync();
+    repo.removeRewatch(episode.id);
+    reload();
+  };
+
   // Tapping the check logs a watch; if already watched, that's a rewatch.
   const onCheckPress = (next: boolean) => {
     if (isWatched) rewatch();
@@ -333,20 +339,34 @@ function EpisodePage({
             </Text>
             {isWatched && episode.watched_at && (
               <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
-                on {fmtDate(episode.watched_at)} · tap ✓ to log a rewatch
+                on {fmtDate(episode.watched_at)}
+                {episode.plays > 1 ? "" : " · tap ✓ to log a rewatch"}
               </Text>
             )}
             {isWatched && (
-              <Pressable
-                onPress={() => toggleWatched(false)}
-                hitSlop={10}
-                accessibilityRole="button"
-                style={{ marginTop: 4 }}
-              >
-                <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>
-                  Mark as unwatched
-                </Text>
-              </Pressable>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 5 }}>
+                {episode.plays > 1 && (
+                  <Pressable
+                    onPress={undoRewatch}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Undo a rewatch"
+                  >
+                    <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "700" }}>
+                      Undo a rewatch
+                    </Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={() => toggleWatched(false)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>
+                    Mark as unwatched
+                  </Text>
+                </Pressable>
+              </View>
             )}
           </View>
           <Bouncy
