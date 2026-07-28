@@ -1,16 +1,17 @@
 import { supabase } from "./supabase";
 
 /**
- * GIF search.
+ * GIF search, backed by Tenor.
  *
- * The app holds no GIPHY key. It calls our own `gifs` Edge Function, which
+ * The app holds no Tenor key. It calls our own `gifs` Edge Function, which
  * keeps the key server-side and caches results in a shared table — so a
  * popular query costs one upstream call for the whole user base rather than
  * one per person, and nobody can extract a key from the binary and spend our
  * quota. See supabase/functions/gifs/index.ts.
  *
- * (GIPHY's old public beta key used to make a keyless client possible; it was
- * retired and now fails auth. Tenor's equivalent went the same way with v1.)
+ * Tenor rather than GIPHY because both are free and neither sells a self-serve
+ * paid tier, so the deciding factor is limits: GIPHY's default key is capped
+ * near 42 requests an hour until a human review, Tenor's is not.
  */
 
 export interface Gif {
@@ -27,7 +28,7 @@ export async function searchGifs(query: string): Promise<Gif[]> {
     error?: string;
   }>("gifs", { body: { q: query.trim() } });
 
-  // 503 is the function telling us GIPHY_KEY was never set, which is a
+  // 503 is the function telling us TENOR_KEY was never set, which is a
   // deployment gap rather than something the user did wrong.
   if (error) {
     const status = (error as { context?: { status?: number } }).context?.status;

@@ -1,21 +1,22 @@
-// GIF search proxy.
+// GIF search proxy (Tenor).
 //
-// The app does not hold a GIPHY key. It calls this function, which holds the
-// key as a server secret and caches every result in public.gif_cache. That
-// matters for two reasons:
+// The app holds no Tenor key. It calls this function, which keeps the key as a
+// server secret and caches every result in public.gif_cache. That matters for
+// two reasons:
 //
 //   1. A key shipped inside an app binary can be extracted, and then somebody
 //      else spends your quota.
 //   2. GIF searches follow a power law — a lot of people search "lol", "wow",
 //      "no way". Caching collapses thousands of users into one upstream call
-//      per query per TTL window, which is the difference between needing a
-//      production key and not.
+//      per query per TTL window.
 //
-// Swapping GIPHY for another provider later is a change here, not an app
-// release, because the response shape is ours.
+// Why Tenor rather than GIPHY: both are free and neither sells a self-serve
+// paid tier, so the choice is about limits. GIPHY hands out a beta key capped
+// around 42 requests an hour and makes you pass a human review to get past it.
+// Tenor is a Google Cloud API — you enable it and you are done.
 //
 // Deploy:  supabase functions deploy gifs
-// Secret:  supabase secrets set GIPHY_KEY=<your key from developers.giphy.com>
+// Secret:  supabase secrets set TENOR_KEY=<key from Google Cloud>
 // Table:   run ../../gifs.sql once
 //
 // JWT verification is left ON (the default), so only signed-in users can call
@@ -29,22 +30,43 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const TRENDING_TTL_MS = 60 * 60 * 1000; // 1 hour
 const SEARCH_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
+/** Our own shape, so a provider change never reaches the app. */
 interface Gif {
   id: string;
-  url: string;
-  preview: string;
+  url: string; // animated GIF to send with the comment
+  preview: string; // small animated GIF for the picker grid
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function mapGif(g: any): Gif | null {
-  const img = g?.images;
-  const url =
-    img?.downsized?.url ?? img?.fixed_height?.url ?? img?.original?.url;
-  const preview = img?.fixed_width_small?.url ?? img?.preview_gif?.url ?? url;
+function mapTenor(g: any): Gif | null {
+  const f = g?.media_formats;
+  const url = f?.gif?.url ?? f?.mediumgif?.url ?? f?.tinygif?.url;
+  const preview = f?.tinygif?.url ?? f?.nanogif?.url ?? url;
   if (!url || !preview) return null;
   return { id: String(g.id), url, preview };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+async function fromTenor(key: string, q: string): Promise<Gif[]> {
+  const params = new URLSearchParams({
+    key,
+    limit: "24",
+    // Tenor's own moderation tier. Their scale is off (G/PG/PG-13/R), low
+    // (G/PG/PG-13), medium (G/PG), high (G only). "medium" keeps the library
+    // useful for reactions while staying well clear of anything that would
+    // trouble an App Store reviewer looking at user-generated content.
+    contentfilter: "medium",
+    media_filter: "gif,tinygif,nanogif",
+  });
+  if (q) params.set("q", q);
+  const endpoint = q ? "search" : "featured";
+  const res = await fetch(
+    `https://tenor.googleapis.com/v2/${endpoint}?${params}`
+  );
+  if (!res.ok) throw new Error(`Tenor HTTP ${res.status}`);
+  const body = (await res.json()) as { results?: unknown[] };
+  return (body.results ?? []).map(mapTenor).filter((g): g is Gif => g !== null);
+}
 
 /** Same text should hit the same cache row regardless of spacing or case. */
 function normalize(q: string): string {
@@ -62,7 +84,7 @@ Deno.serve(async (req) => {
     return json({ error: "method not allowed" }, 405);
   }
 
-  const key = Deno.env.get("GIPHY_KEY");
+  const key = Deno.env.get("TENOR_KEY");
   if (!key) return json({ error: "GIF search is not configured" }, 503);
 
   let q = "";
@@ -70,7 +92,7 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as { q?: string };
     q = normalize(body?.q ?? "");
   } catch {
-    // An empty body means trending, which is the common case.
+    // An empty body means the featured feed, which is the common case.
   }
 
   const db = createClient(
@@ -89,20 +111,9 @@ Deno.serve(async (req) => {
     return json({ gifs: cached.payload, cached: true });
   }
 
-  const url = q
-    ? `https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(
-        q
-      )}&limit=24&rating=pg-13&bundle=messaging_non_clips`
-    : `https://api.giphy.com/v1/gifs/trending?api_key=${key}&limit=24&rating=pg-13`;
-
   let gifs: Gif[];
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`GIPHY HTTP ${res.status}`);
-    const body = (await res.json()) as { data?: unknown[] };
-    gifs = (body.data ?? [])
-      .map(mapGif)
-      .filter((g): g is Gif => g !== null);
+    gifs = await fromTenor(key, q);
   } catch (err) {
     // Rate limited or upstream down: stale results beat an error screen, so
     // serve the old row if we have one.
@@ -111,7 +122,8 @@ Deno.serve(async (req) => {
   }
 
   // Never cache an empty result — a transient upstream hiccup would otherwise
-  // pin "no GIFs found" in place for the whole TTL.
+  // pin "no GIFs found" in place for the whole TTL. An genuine no-match still
+  // returns normally, it just gets asked again next time.
   if (gifs.length > 0) {
     await db
       .from("gif_cache")

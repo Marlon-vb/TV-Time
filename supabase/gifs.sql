@@ -4,7 +4,7 @@
 -- is safe.
 --
 -- Every user's search lands in the same row, so a popular query costs one
--- upstream GIPHY call per TTL window no matter how many people type it. That
+-- upstream Tenor call per TTL window no matter how many people type it. That
 -- is what keeps GIF search viable on a free key at scale.
 
 create table if not exists public.gif_cache (

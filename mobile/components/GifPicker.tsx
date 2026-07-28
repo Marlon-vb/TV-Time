@@ -11,7 +11,7 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius } from "@/lib/theme";
-import { GifSearchUnavailable, searchGifs, type Gif } from "@/lib/giphy";
+import { GifSearchUnavailable, searchGifs, type Gif } from "@/lib/gifs";
 
 /** Full-screen GIF search sheet. Selecting a GIF returns its animated URL. */
 export default function GifPicker({
@@ -162,7 +162,7 @@ export default function GifPicker({
             paddingBottom: 10,
           }}
         >
-          Powered by GIPHY
+          Powered by Tenor
         </Text>
       </View>
     </Modal>
