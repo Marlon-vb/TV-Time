@@ -28,7 +28,7 @@ import type { Profile } from "@/lib/social/types";
 const SHOTS = {
   watchNext: require("@/assets/onboarding/watch-next.webp"),
   upcoming: require("@/assets/onboarding/upcoming.webp"),
-  profile: require("@/assets/onboarding/profile.webp"),
+  friends: require("@/assets/onboarding/friends.webp"),
 } as const;
 
 /**
@@ -303,8 +303,10 @@ function FriendsPage({
 
   return (
     <PageFrame width={width} height={height} gap={22}>
+      {/* The friends feed, not the profile: this page is about following people
+          and talking about episodes, and the screenshot should show that. */}
       <DeviceShot
-        shot={SHOTS.profile}
+        shot={SHOTS.friends}
         height={shotHeight * 0.72}
         width={width}
         index={index}
