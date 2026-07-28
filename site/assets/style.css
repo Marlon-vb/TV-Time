@@ -317,54 +317,18 @@ img {
     linear-gradient(160deg, #10132a 0%, #07080f 58%);
 }
 
-/* Glossy floor: a horizon line plus a sheen the reflection sits on. */
+/* The surface the device stands on — a soft wash the reflection sits in. No
+   horizon hairline: at this height it would run straight across the device,
+   which reads as a rendering fault rather than a floor. */
 .stage::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 42%;
+  height: 26%;
   z-index: -2;
-  background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(120, 140, 255, 0.09), transparent 60%);
-}
-
-.stage-lights {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #eaf3ff, #7fb2ff 42%, #2b5fbf 78%);
-  box-shadow: 0 0 42px 12px rgba(122, 170, 255, 0.35);
-}
-.orb-a {
-  width: 116px;
-  height: 116px;
-  right: 6%;
-  bottom: 14%;
-}
-.orb-b {
-  width: 62px;
-  height: 62px;
-  right: 22%;
-  bottom: 8%;
-  opacity: 0.85;
-}
-.orb-c {
-  width: 168px;
-  height: 168px;
-  right: -4%;
-  bottom: 30%;
-  background: radial-gradient(circle at 36% 30%, #f7fbff, #b9d2f5 44%, #6d86b8 80%);
-  opacity: 0.5;
-  filter: blur(1px);
+  background: linear-gradient(to top, rgba(120, 140, 255, 0.1), transparent 78%);
 }
 
 .stage-inner {
@@ -372,7 +336,7 @@ img {
   grid-template-columns: 1fr 1fr;
   gap: clamp(24px, 4vw, 56px);
   align-items: center;
-  padding-block: clamp(40px, 6vw, 80px) clamp(96px, 13vw, 168px);
+  padding-block: clamp(40px, 6vw, 80px) clamp(56px, 8vw, 104px);
   position: relative;
 }
 
@@ -396,96 +360,104 @@ img {
 /* ------------------------------------------------------------------ scene */
 
 .scene {
+  /* One number drives the device, its reflection and the scene height, so they
+     can't drift apart. The screenshots are 640x1254, i.e. 1.96 tall per wide. */
+  --dev-w: min(286px, 74%);
+  --dev-bezel: 10px;
+  --dev-radius: 42px;
+  --dev-tilt: -12deg;
   position: relative;
-  perspective: 1500px;
+  perspective: 1600px;
   display: grid;
   place-items: center;
-  min-height: min(560px, 70vh);
 }
 
-.dev {
-  border-radius: clamp(26px, 3.4vw, 40px);
-  overflow: hidden;
-  background: #05060b;
-  /* The bezel: a hairline lit from the top-left, as a real edge would be. */
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 46px 80px -34px rgba(0, 0, 0, 0.95),
-    0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 60px -12px rgba(251, 215, 55, 0.16);
+/* The device and its reflection travel together: the reflection hangs off the
+   bottom of this box, so it stays welded to the device at any width instead of
+   being positioned by a magic number that only holds at one size. The tilt
+   lives here too, so the two can't fall out of alignment. */
+.dev-stack {
+  position: relative;
+  width: var(--dev-w);
+  transform: rotateY(var(--dev-tilt)) rotateX(2deg);
   transform-style: preserve-3d;
 }
-.dev img {
+
+/* The device body. The screenshot does NOT get the body's corner radius — the
+   body is padded and the screen inside has its own, smaller radius, which is
+   how a real handset is built and what stops the outer curve from slicing
+   across the content in the screenshot's corners. */
+.dev-front {
+  position: relative;
+  z-index: 2;
+  padding: var(--dev-bezel);
+  border-radius: var(--dev-radius);
+  background: linear-gradient(158deg, #343a63 0%, #171b33 38%, #06070e 100%);
+  box-shadow:
+    /* the lit outer edge, brightest along the top-left where the key is */
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    /* contact shadow, then the ambient one it sits in */
+    0 22px 32px -22px rgba(0, 0, 0, 0.9),
+    0 52px 82px -34px rgba(0, 0, 0, 0.95),
+    0 0 72px -14px rgba(251, 215, 55, 0.15);
+}
+
+.dev-screen {
+  /* Concentric with the body: outer radius minus the bezel it sits inside. */
+  border-radius: calc(var(--dev-radius) - var(--dev-bezel));
+  overflow: hidden;
+  background: #05060b;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.9);
+}
+.dev-screen img {
   width: 100%;
   height: auto;
   display: block;
 }
 
-.dev-front {
-  position: relative;
-  z-index: 2;
-  width: min(272px, 70%);
-  transform: rotateY(-15deg) rotateX(3deg) rotateZ(0.6deg);
-}
-
-/* Turned away and set back, so it reads as depth rather than a duplicate. */
-.dev-back {
+/* A single soft sheen across the glass. One highlight reads as a light source;
+   several read as a graphic. */
+.dev-glare {
   position: absolute;
-  z-index: 1;
-  width: min(236px, 62%);
-  aspect-ratio: 272 / 548;
-  left: 0;
-  top: 6%;
-  transform: rotateY(-15deg) rotateX(3deg) translateZ(-80px) translateX(-30%);
-  background: linear-gradient(150deg, #232a52 0%, #0c0f1e 66%);
-}
-
-/* Camera module — generic, no maker's marks. */
-.lens-block {
-  position: absolute;
-  top: 5.5%;
-  left: 7%;
-  width: 38%;
-  aspect-ratio: 1;
-  border-radius: 24%;
-  background: linear-gradient(150deg, #262c52, #12152a);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8%;
-  padding: 11%;
-}
-.lens-block i {
-  display: block;
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #4d5580, #090b16 70%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
-}
-.lens-block b {
-  align-self: center;
-  justify-self: center;
-  width: 34%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #1a1f3a;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  inset: var(--dev-bezel);
+  border-radius: calc(var(--dev-radius) - var(--dev-bezel));
+  pointer-events: none;
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.05) 22%,
+    transparent 44%
+  );
 }
 
 /* The floor reflection: the same screenshot, mirrored, faded and softened.
-   Masked so it dissolves rather than ending on a hard edge. */
+   Only the near third — a real reflection dies out well before it has shown
+   the whole object. The mask runs `to bottom` because scaleY(-1) flips the
+   masked result, so this is what dissolves the FAR end once flipped. */
 .dev-reflection {
   position: absolute;
   z-index: 0;
-  top: calc(50% + min(272px, 70%) * 1.00);
-  width: min(272px, 70%);
-  border-radius: clamp(26px, 3.4vw, 40px);
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 34%;
   overflow: hidden;
-  transform: rotateY(-15deg) scaleY(-1);
-  opacity: 0.22;
-  filter: blur(2.5px) saturate(0.8);
-  -webkit-mask-image: linear-gradient(to top, transparent 4%, #000 62%);
-  mask-image: linear-gradient(to top, transparent 4%, #000 62%);
+  /* scaleY(-1) about the default centre origin mirrors the box in place. */
+  transform: scaleY(-1);
+  opacity: 0.2;
+  filter: blur(3px) saturate(0.7);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 2%, #000 88%);
+  mask-image: linear-gradient(to bottom, transparent 2%, #000 88%);
   pointer-events: none;
 }
+/* Bottom-aligned, so the clipped box holds the bottom of the screen — the part
+   of the device actually nearest the surface. */
 .dev-reflection img {
+  position: absolute;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: auto;
   display: block;
@@ -857,28 +829,17 @@ footer a {
     grid-template-columns: 1fr;
     padding-bottom: clamp(40px, 8vw, 64px);
   }
-  /* Lead with the product, not the pitch, once the columns stack. */
+  /* Lead with the product, not the pitch, once the columns stack. Flatten the
+     angle too — a strong rotation reads as a mistake when the device nearly
+     fills the width. */
   .scene {
+    --dev-w: min(258px, 66%);
+    --dev-tilt: -6deg;
     order: -1;
     min-height: 0;
     margin-bottom: 14px;
   }
-  /* Flatten the angle on small screens — a strong rotation reads as a mistake
-     when the device nearly fills the width. */
-  .dev-front {
-    width: min(268px, 68%);
-    transform: rotateY(-8deg) rotateX(2deg);
-  }
-  .dev-back {
-    transform: rotateY(-8deg) translateZ(-70px) translateX(-16%);
-    opacity: 0.8;
-  }
   .dev-reflection {
-    display: none;
-  }
-  /* Stacked, the copy sits where the orbs were and they land on top of the
-     headline. The gradient key light carries the mood without them. */
-  .stage-lights {
     display: none;
   }
   .shots {
