@@ -31,6 +31,7 @@ import {
 } from "@/lib/notifications";
 import { useAuth } from "@/lib/social/auth";
 import { deleteAccount } from "@/lib/social/api";
+import { replayOnboarding } from "@/lib/onboarding";
 import { alwaysShowSpoilers, setAlwaysShowSpoilers } from "@/lib/spoilers";
 import { PRIVACY_URL, SUPPORT_URL, TERMS_URL } from "@/lib/legal";
 
@@ -43,6 +44,7 @@ export default function SettingsScreen() {
       <BackupSection />
       <TmdbSection />
       <SyncSection />
+      <IntroSection />
       <LegalSection />
       <AccountSection />
     </ScrollView>
@@ -469,6 +471,20 @@ function LegalSection() {
       <LegalLink label="Privacy Policy" url={PRIVACY_URL} />
       <LegalLink label="Terms of Use" url={TERMS_URL} />
       <LegalLink label="Support" url={SUPPORT_URL} />
+    </Section>
+  );
+}
+
+/* -------------------------------------------------------------------- intro */
+
+function IntroSection() {
+  return (
+    <Section title="Intro">
+      <Text style={bodyText}>
+        The three-screen tour from your first launch, including finding friends
+        from your contacts. Replaying it returns you to the Watch Next tab.
+      </Text>
+      <Button label="Show the intro again" onPress={replayOnboarding} />
     </Section>
   );
 }

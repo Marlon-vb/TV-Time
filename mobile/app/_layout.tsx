@@ -10,8 +10,10 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import { colors, fonts } from "@/lib/theme";
 import { getDb } from "@/lib/db";
+import { hasOnboarded, markOnboarded, subscribeOnboarding } from "@/lib/onboarding";
 import { registerBackgroundSync, syncAndReschedule } from "@/lib/sync";
 import { AuthProvider } from "@/lib/social/auth";
+import Onboarding from "@/components/Onboarding";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -27,6 +29,10 @@ export default function RootLayout() {
   // straight from the notification callback crashes on cold start when the
   // Stack hasn't mounted yet (fonts still loading).
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  // Null until the DB has been opened below — reading the flag any earlier
+  // would create the database on the render pass, before getDb() has run its
+  // migrations.
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
     SpaceGrotesk_700Bold,
@@ -38,6 +44,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     getDb(); // create tables on first launch
+    setOnboarded(hasOnboarded());
+    const unsubscribeOnboarding = subscribeOnboarding(() => setOnboarded(false));
 
     // Refresh air dates + notification schedule shortly after launch.
     const timer = setTimeout(() => {
@@ -63,13 +71,16 @@ export default function RootLayout() {
     return () => {
       clearTimeout(timer);
       sub.remove();
+      unsubscribeOnboarding();
     };
   }, []);
 
   // Navigate once the Stack below has actually rendered (child effects run
-  // before this one, so the navigator is ready by the time this fires).
+  // before this one, so the navigator is ready by the time this fires). While
+  // the intro is up the Stack isn't mounted at all, so the tap parks in
+  // pendingUrl until it comes down.
   useEffect(() => {
-    if (!fontsLoaded || !pendingUrl) return;
+    if (!fontsLoaded || !pendingUrl || onboarded !== true) return;
     setPendingUrl(null);
     try {
       router.push(pendingUrl as never);
@@ -82,13 +93,26 @@ export default function RootLayout() {
         } catch {}
       }, 600);
     }
-  }, [fontsLoaded, pendingUrl, router]);
+  }, [fontsLoaded, onboarded, pendingUrl, router]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || onboarded === null) return null;
 
   return (
     <AuthProvider>
       <StatusBar style="light" />
+      {!onboarded ? (
+        // Rendered instead of the navigator rather than pushed onto it: there
+        // is no route to go "back" to on first launch, and swapping the tree
+        // avoids racing the Stack's mount on a cold start. Inside AuthProvider
+        // so the intro's optional sign-in is the real one. It handles its own
+        // safe-area insets so its backdrop can run under the status bar.
+        <Onboarding
+          onDone={() => {
+            markOnboarded();
+            setOnboarded(true);
+          }}
+        />
+      ) : (
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.ink },
@@ -133,6 +157,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="history" options={{ title: "Watch history" }} />
       </Stack>
+      )}
     </AuthProvider>
   );
 }
