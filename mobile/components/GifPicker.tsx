@@ -11,7 +11,12 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, radius } from "@/lib/theme";
-import { GifSearchUnavailable, searchGifs, type Gif } from "@/lib/gifs";
+import {
+  GifSearchUnavailable,
+  searchGifs,
+  type Gif,
+  type GifSource,
+} from "@/lib/gifs";
 
 /** Full-screen GIF search sheet. Selecting a GIF returns its animated URL. */
 export default function GifPicker({
@@ -25,6 +30,7 @@ export default function GifPicker({
 }) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<Gif[]>([]);
+  const [source, setSource] = useState<GifSource>(null);
   const [status, setStatus] = useState<
     "loading" | "done" | "error" | "unavailable"
   >("loading");
@@ -39,7 +45,8 @@ export default function GifPicker({
         try {
           const res = await searchGifs(query);
           if (g !== gen.current) return;
-          setGifs(res);
+          setGifs(res.gifs);
+          setSource(res.source);
           setStatus("done");
         } catch (err) {
           if (g !== gen.current) return;
@@ -162,7 +169,7 @@ export default function GifPicker({
             paddingBottom: 10,
           }}
         >
-          Powered by Tenor
+          {source ? `Powered by ${source}` : " "}
         </Text>
       </View>
     </Modal>

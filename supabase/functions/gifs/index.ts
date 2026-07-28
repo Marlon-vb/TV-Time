@@ -1,6 +1,6 @@
-// GIF search proxy (Tenor).
+// GIF search proxy.
 //
-// The app holds no Tenor key. It calls this function, which keeps the key as a
+// The app holds no provider key. It calls this function, which keeps it as a
 // server secret and caches every result in public.gif_cache. That matters for
 // two reasons:
 //
@@ -10,13 +10,20 @@
 //      "no way". Caching collapses thousands of users into one upstream call
 //      per query per TTL window.
 //
-// Why Tenor rather than GIPHY: both are free and neither sells a self-serve
-// paid tier, so the choice is about limits. GIPHY hands out a beta key capped
-// around 42 requests an hour and makes you pass a human review to get past it.
-// Tenor is a Google Cloud API — you enable it and you are done.
+// PROVIDERS. Set either key, or both. GIPHY is the one you can actually get in
+// two minutes at developers.giphy.com. Tenor is nominally the better free tier
+// — no ~42/hour beta cap — but it is not offered in every Google Cloud project,
+// so treat it as an upgrade to switch on if it ever appears rather than a
+// prerequisite. When both are set Tenor goes first and GIPHY covers its
+// failures, so one provider having a bad day is not an outage.
+//
+// Whichever answers is reported back as `source` so the picker can show that
+// provider's attribution — both require it, and showing the wrong one is worse
+// than showing none.
 //
 // Deploy:  supabase functions deploy gifs
-// Secret:  supabase secrets set TENOR_KEY=<key from Google Cloud>
+// Secrets: supabase secrets set GIPHY_KEY=<key from developers.giphy.com>
+//          supabase secrets set TENOR_KEY=<key>   # optional, preferred if set
 // Table:   run ../../gifs.sql once
 //
 // JWT verification is left ON (the default), so only signed-in users can call
@@ -38,6 +45,15 @@ interface Gif {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+function mapGiphy(g: any): Gif | null {
+  const img = g?.images;
+  const url =
+    img?.downsized?.url ?? img?.fixed_height?.url ?? img?.original?.url;
+  const preview = img?.fixed_width_small?.url ?? img?.preview_gif?.url ?? url;
+  if (!url || !preview) return null;
+  return { id: String(g.id), url, preview };
+}
+
 function mapTenor(g: any): Gif | null {
   const f = g?.media_formats;
   const url = f?.gif?.url ?? f?.mediumgif?.url ?? f?.tinygif?.url;
@@ -68,6 +84,18 @@ async function fromTenor(key: string, q: string): Promise<Gif[]> {
   return (body.results ?? []).map(mapTenor).filter((g): g is Gif => g !== null);
 }
 
+async function fromGiphy(key: string, q: string): Promise<Gif[]> {
+  const url = q
+    ? `https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(
+        q
+      )}&limit=24&rating=pg-13&bundle=messaging_non_clips`
+    : `https://api.giphy.com/v1/gifs/trending?api_key=${key}&limit=24&rating=pg-13`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GIPHY HTTP ${res.status}`);
+  const body = (await res.json()) as { data?: unknown[] };
+  return (body.data ?? []).map(mapGiphy).filter((g): g is Gif => g !== null);
+}
+
 /** Same text should hit the same cache row regardless of spacing or case. */
 function normalize(q: string): string {
   return q.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 100);
@@ -84,8 +112,11 @@ Deno.serve(async (req) => {
     return json({ error: "method not allowed" }, 405);
   }
 
-  const key = Deno.env.get("TENOR_KEY");
-  if (!key) return json({ error: "GIF search is not configured" }, 503);
+  const tenorKey = Deno.env.get("TENOR_KEY");
+  const giphyKey = Deno.env.get("GIPHY_KEY");
+  if (!tenorKey && !giphyKey) {
+    return json({ error: "GIF search is not configured" }, 503);
+  }
 
   let q = "";
   try {
@@ -103,32 +134,58 @@ Deno.serve(async (req) => {
   const ttl = q ? SEARCH_TTL_MS : TRENDING_TTL_MS;
   const { data: cached } = await db
     .from("gif_cache")
-    .select("payload, fetched_at")
+    .select("payload, source, fetched_at")
     .eq("query", q)
     .maybeSingle();
 
   if (cached && Date.now() - Date.parse(cached.fetched_at) < ttl) {
-    return json({ gifs: cached.payload, cached: true });
+    return json({ gifs: cached.payload, source: cached.source, cached: true });
   }
 
-  let gifs: Gif[];
-  try {
-    gifs = await fromTenor(key, q);
-  } catch (err) {
-    // Rate limited or upstream down: stale results beat an error screen, so
-    // serve the old row if we have one.
-    if (cached) return json({ gifs: cached.payload, cached: true, stale: true });
-    return json({ error: String(err) }, 502);
+  // Tenor first when configured; GIPHY covers both "no Tenor key" and "Tenor
+  // just failed".
+  const providers: { name: string; run: () => Promise<Gif[]> }[] = [];
+  if (tenorKey) providers.push({ name: "tenor", run: () => fromTenor(tenorKey, q) });
+  if (giphyKey) providers.push({ name: "giphy", run: () => fromGiphy(giphyKey, q) });
+
+  let gifs: Gif[] | null = null;
+  let source = "";
+  const failures: string[] = [];
+  for (const provider of providers) {
+    try {
+      gifs = await provider.run();
+      source = provider.name;
+      break;
+    } catch (err) {
+      failures.push(`${provider.name}: ${err}`);
+    }
+  }
+
+  if (gifs === null) {
+    // Every provider errored. Stale results beat an error screen, so serve the
+    // old row if we have one.
+    if (cached) {
+      return json({
+        gifs: cached.payload,
+        source: cached.source,
+        cached: true,
+        stale: true,
+      });
+    }
+    return json({ error: failures.join("; ") }, 502);
   }
 
   // Never cache an empty result — a transient upstream hiccup would otherwise
-  // pin "no GIFs found" in place for the whole TTL. An genuine no-match still
+  // pin "no GIFs found" in place for the whole TTL. A genuine no-match still
   // returns normally, it just gets asked again next time.
   if (gifs.length > 0) {
-    await db
-      .from("gif_cache")
-      .upsert({ query: q, payload: gifs, fetched_at: new Date().toISOString() });
+    await db.from("gif_cache").upsert({
+      query: q,
+      payload: gifs,
+      source,
+      fetched_at: new Date().toISOString(),
+    });
   }
 
-  return json({ gifs, cached: false });
+  return json({ gifs, source, cached: false });
 });

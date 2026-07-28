@@ -4,14 +4,18 @@
 -- is safe.
 --
 -- Every user's search lands in the same row, so a popular query costs one
--- upstream Tenor call per TTL window no matter how many people type it. That
+-- upstream provider call per TTL window no matter how many people type it. That
 -- is what keeps GIF search viable on a free key at scale.
 
 create table if not exists public.gif_cache (
   query text primary key,           -- normalized; '' is the trending feed
   payload jsonb not null,           -- [{ id, url, preview }, ...]
+  source text,                      -- 'tenor' | 'giphy' — drives attribution
   fetched_at timestamptz not null default now()
 );
+
+-- Added after the first version of this table; safe to run either way.
+alter table public.gif_cache add column if not exists source text;
 
 -- Only the Edge Function touches this, and it uses the service-role key, which
 -- bypasses RLS. Enabling RLS with no policies therefore locks the table to

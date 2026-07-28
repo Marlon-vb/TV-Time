@@ -80,40 +80,48 @@ nothing, so you can run `notifications.sql` early without breaking anything.
 
 ## GIF search (~5 minutes)
 
-Comments can carry a GIF, searched from **Tenor**. The app holds **no key** —
-it calls an Edge Function that keeps the key server-side and caches results in
-a shared table, so a popular search costs one upstream call for the whole user
-base instead of one per person. That is what makes this viable at scale, and it
-means nobody can pull a key out of the app binary and spend your quota.
+Comments can carry a GIF. The app holds **no key** — it calls an Edge Function
+that keeps the key server-side and caches results in a shared table, so a
+popular search costs one upstream call for the whole user base instead of one
+per person. That is what makes this viable at scale, and it means nobody can
+pull a key out of the app binary and spend your quota.
 
-1. **Get a key.** [Google Cloud console](https://console.cloud.google.com) →
-   create (or pick) a project → **APIs & Services** → **Enable APIs** → search
-   for **Tenor API** → Enable → **Credentials** → Create credentials → API key.
+The function accepts **GIPHY, Tenor, or both**. Use GIPHY — it is the one you
+can actually get in two minutes.
+
+1. **Get a key.** [developers.giphy.com](https://developers.giphy.com) → Create
+   an App → choose **API** (not SDK). Copy the API key.
 2. **Create the cache table.** Paste `gifs.sql` into the SQL editor and run it.
 3. **Store the key and deploy:**
 
 ```bash
 # from the repo root — <project-ref> is the id in your project's URL
 supabase link --project-ref <project-ref>
-supabase secrets set TENOR_KEY=<your tenor key>
+supabase secrets set GIPHY_KEY=<your giphy key>
 supabase functions deploy gifs
 ```
 
 JWT verification stays **on** for this one (unlike `notify`), so only signed-in
 users can call it and it can't be used as an open proxy.
 
-> **Why Tenor and not GIPHY.** Both are free, and neither sells a self-serve
-> paid tier, so the deciding factor is limits. The GIPHY key you get on signup
-> is a *beta* key capped near 42 requests an hour, and lifting it means a human
-> review. Tenor is an ordinary Google Cloud API: enable it and you are done.
+Whichever provider answers is recorded with the cached results, and the picker
+shows that provider's attribution — both require it.
+
+> **On rate limits.** GIPHY's signup key is a *beta* key, historically ~42
+> requests/hour and ~1,000/day. The cache is what makes that survivable: with a
+> 1-hour TTL on trending and 6 hours on searches, a thousand users hammering
+> the picker still produce only a handful of upstream calls. Before a public
+> launch, apply for a **production key** in the GIPHY dashboard (free, human
+> review — they check the attribution is shown, which it is).
 >
-> The cache means neither would have been stressed anyway — with a 1-hour TTL
-> on the featured feed and 6 hours on searches, a thousand users hammering the
-> picker still produce only a handful of upstream calls. And if Tenor
-> rate-limits or goes down, the function serves the last cached results rather
-> than an error screen.
->
-> Tenor requires visible attribution; the picker shows "Powered by Tenor".
+> If the provider rate-limits or goes down, the function serves the last cached
+> results rather than an error screen.
+
+> **Tenor.** Nominally the better free tier — no beta-key cliff — but it is a
+> Google Cloud API and is **not offered in every project**; it may simply not
+> appear in your API Library. If it ever does, enable it, set `TENOR_KEY`, and
+> redeploy: Tenor is tried first and GIPHY becomes the fallback. No app release
+> and no code change needed.
 
 ## Security notes (important)
 

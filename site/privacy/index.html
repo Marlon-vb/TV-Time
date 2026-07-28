@@ -187,7 +187,7 @@
           <li><strong>Contact hashes</strong>, when you use "Find friends from contacts" (section 4).</li>
           <li><strong>A list of up to 100 show IDs you follow</strong>, used to work out "other people who watch this also watch…" recommendations. The server answers with anonymous watcher counts and keeps nothing. This lookup only runs when you are signed in; signed out, the app checks first and never sends it.</li>
         </ul>
-        <p><strong>GIF searches.</strong> When you use the GIF picker, the text you type goes to our server, which asks Tenor for the results and passes them back. Our server keeps that text and the results in a shared cache table, so the same search does not have to be fetched again — six hours for a search, one hour for the default feed you see before you type anything. <strong>A cache row is keyed by the search text alone.</strong> No user id, no device id and no IP address is stored alongside it, so we do not build a record of who searched for what. Once the window is up, the next person who types that text refreshes the row.</p>
+        <p><strong>GIF searches.</strong> When you use the GIF picker, the text you type goes to our server, which asks GIPHY for the results and passes them back. Our server keeps that text and the results in a shared cache table, so the same search does not have to be fetched again — six hours for a search, one hour for the default feed you see before you type anything. <strong>A cache row is keyed by the search text alone.</strong> No user id, no device id and no IP address is stored alongside it, so we do not build a record of who searched for what. Once the window is up, the next person who types that text refreshes the row.</p>
         <p><strong>IP addresses.</strong> Any request to our backend, like any request on the internet, reveals your device's IP address to the server handling it. We do not log it into a database or use it to profile you, but we cannot claim our hosting provider keeps no record of it.</p>
 
         <hr />
@@ -224,7 +224,7 @@
           <li><strong>Public to any signed-in user:</strong> your username, your display name, who you follow and who follows you, your comments, and your comment upvotes. Usernames can also be found by searching, including partial matches.</li>
           <li><strong>Visible only to you and people who follow you:</strong> your watch history, your episode ratings, your activity feed events, your character votes.</li>
           <li><strong>Anonymous to everyone:</strong> community episode ratings, "also watched" recommendation counts and the character-vote leaderboard are computed as totals. Nobody sees whose rows produced them.</li>
-          <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on Tenor's servers and we only store the link.</li>
+          <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on GIPHY's servers and we only store the link.</li>
           <li><strong>Never shared with anyone:</strong> everything in section 1 that stays on your phone.</li>
         </ul>
         <p>There are no uploaded profile photos or avatar images — you cannot add one, and there is nowhere to put one. Where the app shows a person, it draws a coloured circle with the first letter of their name in it, generated on the spot from that name. There are no direct messages.</p>
@@ -246,7 +246,7 @@
         <hr />
 
         <h2 id="other-services-the-app-talks-to">7. Other services the app talks to</h2>
-        <p>TV App is not a closed box. To show artwork and air dates it has to fetch them from somewhere. Each of these services sees your device's IP address, as any website you visit would. GIF search is the one exception: it goes through our server, so Tenor sees us and not you — see the Tenor row below.</p>
+        <p>TV App is not a closed box. To show artwork and air dates it has to fetch them from somewhere. Each of these services sees your device's IP address, as any website you visit would. GIF search is the one exception: it goes through our server, so GIPHY sees us and not you — see the GIPHY row below.</p>
         <div class="table-scroll">
           <table>
             <thead>
@@ -278,8 +278,8 @@
                 <td>Only if you sign in</td>
               </tr>
               <tr>
-                <td><strong>Tenor</strong> (a Google service)</td>
-                <td>The GIF search text you type, but not sent from your phone: it goes to our server first, and our server asks Tenor. For the search, Tenor sees our request rather than your device or your IP address. Google's terms and privacy policy apply to that request. Note that because comment GIFs are links to Tenor's CDN, Tenor does see a request from <strong>anyone who views a comment containing a GIF</strong> — including you.</td>
+                <td><strong>GIPHY</strong></td>
+                <td>The GIF search text you type, but not sent from your phone: it goes to our server first, and our server asks GIPHY. For the search, GIPHY sees our request rather than your device or your IP address. GIPHY's terms and privacy policy apply to that request. Note that because comment GIFs are links to GIPHY's CDN, GIPHY does see a request from <strong>anyone who views a comment containing a GIF</strong> — including you.</td>
                 <td>When the GIF picker is used, or a GIF is displayed</td>
               </tr>
               <tr>
@@ -449,7 +449,7 @@
         <ul>
           <li><strong>Your on-device library stays.</strong> Your shows, episodes, watch dates, ratings and movies remain on your phone, exactly as they were. The app tells you this before you confirm. To remove them too, delete the app.</li>
           <li><strong>Any backup file you exported</strong> to Files, iCloud Drive, email or elsewhere. That copy is yours to manage.</li>
-          <li><strong>GIFs in comments</strong> were always hosted by Tenor, not by us. The comment disappears; Tenor's copy of the GIF was never ours. Cached GIF search results are not part of your account either — they are keyed by the search text, not by you (section 2).</li>
+          <li><strong>GIFs in comments</strong> were always hosted by GIPHY, not by us. The comment disappears; GIPHY's copy of the GIF was never ours. Cached GIF search results are not part of your account either — they are keyed by the search text, not by you (section 2).</li>
           <li>Whatever our hosting provider retains in its own operational logs, which we do not control.</li>
         </ul>
         <p>One consequence we should state openly: because reports about a user are deleted along with their account, deleting an account also erases the moderation history attached to it.</p>
@@ -564,13 +564,13 @@
     </nav>
     <p>
       TV App is an independent app made by one person. It is not affiliated with,
-      endorsed by or certified by TVmaze, Apple, Tenor, Google, TMDB, or any network
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network
       or streaming service, and it does not link to or provide any video.
     </p>
     <p>
       TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
       CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
-      search powered by Tenor. Optional artwork enrichment uses the TMDB API but is
+      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
       not endorsed or certified by TMDB.
     </p>
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
