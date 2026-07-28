@@ -511,10 +511,12 @@ img {
   padding-top: clamp(16px, 3vw, 34px);
 }
 
+/* Four across, so the set stays one row — three columns would strand the
+   fourth screenshot alone on a second row. */
 .shots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(20px, 3.4vw, 44px);
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(18px, 2.6vw, 30px);
   align-items: start;
 }
 
