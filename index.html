@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0b0c14" />
 <link rel="icon" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
-<link rel="stylesheet" href="assets/style.css?v=3" />
+<link rel="stylesheet" href="assets/style.css?v=4" />
 
 <meta property="og:type" content="website" />
 <meta property="og:title" content="TV App — track what you watch" />
@@ -60,8 +60,17 @@
 </div>
 
 <main id="main">
-  <div class="wrap">
-    <div class="hero">
+  <!-- The hero is a lit stage: an angled device carrying a real screenshot, a
+       second one turned away behind it, glowing orbs and a reflective floor.
+       Always dark regardless of theme — it is a product shot, not page chrome. -->
+  <section class="stage">
+    <div class="stage-lights" aria-hidden="true">
+      <span class="orb orb-a"></span>
+      <span class="orb orb-b"></span>
+      <span class="orb orb-c"></span>
+    </div>
+
+    <div class="wrap stage-inner">
       <div class="hero-copy">
         <p class="eyebrow reveal">iPhone · free · in beta</p>
         <h1 class="reveal">Everything you watch, on your own phone.</h1>
@@ -77,8 +86,14 @@
         </div>
       </div>
 
-      <div class="hero-shot reveal">
-        <div class="phone phone-lg">
+      <div class="scene reveal">
+        <!-- Turned away, so it reads as a second handset without needing a
+             back-of-phone photograph. No maker's marks. -->
+        <div class="dev dev-back" aria-hidden="true">
+          <span class="lens-block"><i></i><i></i><i></i><b></b></span>
+        </div>
+
+        <div class="dev dev-front">
           <img
             src="assets/shots/watch-next.webp"
             width="640"
@@ -86,9 +101,13 @@
             alt="The Watch Next screen: the next unwatched episode of each show, grouped into Up Next and Haven't watched in a while, each with a tick to mark it watched."
           />
         </div>
+
+        <div class="dev-reflection" aria-hidden="true">
+          <img src="assets/shots/watch-next.webp" width="640" height="1254" alt="" />
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- --------------------------------------------------------- the gallery -->
   <section class="gallery" id="see">

@@ -251,34 +251,14 @@ img {
   height: 16px;
 }
 
-/* -------------------------------------------------------------------- hero */
-
-.hero {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(32px, 6vw, 72px);
-  align-items: center;
-  padding-block: clamp(28px, 5vw, 56px) clamp(36px, 5vw, 60px);
-}
-
-.hero h1 {
-  font-size: clamp(38px, 6.4vw, 66px);
-  margin-block: 18px 0;
-}
-
-.hero .lede {
-  color: var(--muted);
-  font-size: clamp(17px, 2vw, 19.5px);
-  max-width: 44ch;
-  margin-block: 20px 0;
-}
+/* --------------------------------------------------------------- call to action */
 
 .cta-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px 18px;
-  margin-top: 32px;
+  margin-top: 30px;
 }
 
 .btn {
@@ -299,9 +279,11 @@ img {
 .btn:hover {
   filter: brightness(1.06);
 }
+/* Without this the inline icon renders at its natural size and swamps the page. */
 .btn svg {
   width: 17px;
   height: 17px;
+  flex: none;
 }
 
 .cta-note {
@@ -309,10 +291,204 @@ img {
   font-size: 14px;
 }
 
-/* ---------------------------------------------------------------- sections */
+/* ------------------------------------------------------------------- stage */
 
-section {
-  padding-block: clamp(48px, 8vw, 96px);
+/* The hero is a lit product shot, so it stays dark in both themes and sets its
+   own colours rather than reading from the tokens. */
+.stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #07080f;
+  color: #f4f5fa;
+}
+
+/* Key light, warm, from behind the device — the app's accent doing the work
+   the reference photo's purple gel does. */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 55% at 72% 34%, rgba(251, 215, 55, 0.22), transparent 68%),
+    radial-gradient(45% 40% at 88% 62%, rgba(245, 166, 35, 0.16), transparent 70%),
+    radial-gradient(70% 60% at 12% 8%, rgba(58, 68, 132, 0.5), transparent 72%),
+    linear-gradient(160deg, #10132a 0%, #07080f 58%);
+}
+
+/* Glossy floor: a horizon line plus a sheen the reflection sits on. */
+.stage::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  z-index: -2;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120, 140, 255, 0.09), transparent 60%);
+}
+
+.stage-lights {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #eaf3ff, #7fb2ff 42%, #2b5fbf 78%);
+  box-shadow: 0 0 42px 12px rgba(122, 170, 255, 0.35);
+}
+.orb-a {
+  width: 116px;
+  height: 116px;
+  right: 6%;
+  bottom: 14%;
+}
+.orb-b {
+  width: 62px;
+  height: 62px;
+  right: 22%;
+  bottom: 8%;
+  opacity: 0.85;
+}
+.orb-c {
+  width: 168px;
+  height: 168px;
+  right: -4%;
+  bottom: 30%;
+  background: radial-gradient(circle at 36% 30%, #f7fbff, #b9d2f5 44%, #6d86b8 80%);
+  opacity: 0.5;
+  filter: blur(1px);
+}
+
+.stage-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  padding-block: clamp(40px, 6vw, 80px) clamp(96px, 13vw, 168px);
+  position: relative;
+}
+
+.hero-copy h1 {
+  font-size: clamp(38px, 6.2vw, 64px);
+  margin-block: 18px 0;
+}
+.hero-copy .lede {
+  color: #a7adc6;
+  font-size: clamp(17px, 2vw, 19.5px);
+  max-width: 40ch;
+  margin-block: 18px 0;
+}
+.stage .eyebrow {
+  color: #8b93b4;
+}
+.stage .cta-note {
+  color: #8b93b4;
+}
+
+/* ------------------------------------------------------------------ scene */
+
+.scene {
+  position: relative;
+  perspective: 1500px;
+  display: grid;
+  place-items: center;
+  min-height: min(560px, 70vh);
+}
+
+.dev {
+  border-radius: clamp(26px, 3.4vw, 40px);
+  overflow: hidden;
+  background: #05060b;
+  /* The bezel: a hairline lit from the top-left, as a real edge would be. */
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 46px 80px -34px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 60px -12px rgba(251, 215, 55, 0.16);
+  transform-style: preserve-3d;
+}
+.dev img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dev-front {
+  position: relative;
+  z-index: 2;
+  width: min(272px, 70%);
+  transform: rotateY(-15deg) rotateX(3deg) rotateZ(0.6deg);
+}
+
+/* Turned away and set back, so it reads as depth rather than a duplicate. */
+.dev-back {
+  position: absolute;
+  z-index: 1;
+  width: min(236px, 62%);
+  aspect-ratio: 272 / 548;
+  left: 0;
+  top: 6%;
+  transform: rotateY(-15deg) rotateX(3deg) translateZ(-80px) translateX(-30%);
+  background: linear-gradient(150deg, #232a52 0%, #0c0f1e 66%);
+}
+
+/* Camera module — generic, no maker's marks. */
+.lens-block {
+  position: absolute;
+  top: 5.5%;
+  left: 7%;
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 24%;
+  background: linear-gradient(150deg, #262c52, #12152a);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8%;
+  padding: 11%;
+}
+.lens-block i {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #4d5580, #090b16 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+.lens-block b {
+  align-self: center;
+  justify-self: center;
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #1a1f3a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+/* The floor reflection: the same screenshot, mirrored, faded and softened.
+   Masked so it dissolves rather than ending on a hard edge. */
+.dev-reflection {
+  position: absolute;
+  z-index: 0;
+  top: calc(50% + min(272px, 70%) * 1.00);
+  width: min(272px, 70%);
+  border-radius: clamp(26px, 3.4vw, 40px);
+  overflow: hidden;
+  transform: rotateY(-15deg) scaleY(-1);
+  opacity: 0.22;
+  filter: blur(2.5px) saturate(0.8);
+  -webkit-mask-image: linear-gradient(to top, transparent 4%, #000 62%);
+  mask-image: linear-gradient(to top, transparent 4%, #000 62%);
+  pointer-events: none;
+}
+.dev-reflection img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* ----------------------------------------------------------- device frames */
@@ -677,14 +853,33 @@ footer a {
 /* ------------------------------------------------------------ responsive */
 
 @media (max-width: 880px) {
-  .hero {
+  .stage-inner {
     grid-template-columns: 1fr;
-    padding-bottom: clamp(36px, 8vw, 60px);
+    padding-bottom: clamp(40px, 8vw, 64px);
   }
   /* Lead with the product, not the pitch, once the columns stack. */
-  .hero-shot {
+  .scene {
     order: -1;
-    margin-bottom: 10px;
+    min-height: 0;
+    margin-bottom: 14px;
+  }
+  /* Flatten the angle on small screens — a strong rotation reads as a mistake
+     when the device nearly fills the width. */
+  .dev-front {
+    width: min(268px, 68%);
+    transform: rotateY(-8deg) rotateX(2deg);
+  }
+  .dev-back {
+    transform: rotateY(-8deg) translateZ(-70px) translateX(-16%);
+    opacity: 0.8;
+  }
+  .dev-reflection {
+    display: none;
+  }
+  /* Stacked, the copy sits where the orbs were and they land on top of the
+     headline. The gradient key light carries the mood without them. */
+  .stage-lights {
+    display: none;
   }
   .shots {
     grid-template-columns: repeat(2, 1fr);
