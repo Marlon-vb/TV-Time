@@ -138,6 +138,25 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<!-- GIF search text. The picker sends the query to our own proxy, which
+		     caches the text and its results for up to six hours so a popular
+		     search is not re-fetched per user. The cache row is keyed by the
+		     text alone — no user id, device id or IP — so it is not linked to
+		     the person who typed it. Declared anyway: the server does retain
+		     the text, and a manifest that says otherwise would contradict the
+		     privacy policy. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeSearchHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 	</array>
 	<key>NSPrivacyTracking</key>
 	<false/>
