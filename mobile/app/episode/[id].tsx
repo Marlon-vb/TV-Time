@@ -27,6 +27,8 @@ import StarRating, { ratingLabel } from "@/components/StarRating";
 import EpisodeSocial from "@/components/EpisodeSocial";
 import CharacterVotes from "@/components/CharacterVotes";
 import * as social from "@/lib/social/api";
+import * as mirror from "@/lib/social/mirror";
+import { offerCatchUp } from "@/lib/catch-up";
 import type { EpisodeRow, ShowRow } from "@/lib/types";
 
 /**
@@ -165,8 +167,18 @@ function EpisodePage({
   const toggleWatched = (nextWatched: boolean) => {
     repo.markEpisode(episode.id, nextWatched);
     reload();
-    if (nextWatched) void social.recordWatchForEpisode(show, episode);
-    else void social.unrecordWatch(show.id, episode.season, episode.number);
+    if (nextWatched) {
+      void social.recordWatchForEpisode(show, episode);
+      offerCatchUp(show.id, episode.id, () => {
+        repo.markUpTo(show.id, episode.id);
+        reload();
+        // A bulk fill-in reconciles the show rather than publishing an
+        // activity per episode — nobody wants six feed entries.
+        mirror.reconcileShow(show.id);
+      });
+    } else {
+      void social.unrecordWatch(show.id, episode.season, episode.number);
+    }
   };
 
   const rate = (next: number | null) => {

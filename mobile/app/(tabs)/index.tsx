@@ -139,6 +139,9 @@ export default function WatchNextScreen() {
             reload();
             // Mirror to the social layer (no-op when signed out).
             void social.recordWatchForEpisode(item.show, item.episode);
+            // No catch-up prompt here, deliberately: watchNext() selects the
+            // MIN unwatched aired episode per show, so by construction there
+            // is never an aired gap in front of this one to offer.
           }}
         />
       )}

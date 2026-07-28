@@ -360,16 +360,50 @@ export function markUpTo(showId: number, episodeId: number): void {
     showId
   );
   if (!target) return;
+  const now = nowIso();
   db.runSync(
+    // Aired only, for the same reason markSeason and markShow filter: an
+    // episode stamped watched before it airs never surfaces in Watch Next
+    // again. A gap earlier in a season that hasn't finished airing is the
+    // realistic case.
     `UPDATE episodes SET watched_at = ?, plays = MAX(plays, 1)
      WHERE show_id = ? AND watched_at IS NULL
+       AND airstamp IS NOT NULL AND airstamp <= ?
        AND (season < ? OR (season = ? AND number <= ?))`,
-    nowIso(),
+    now,
     showId,
+    now,
     target.season,
     target.season,
     target.number
   );
+}
+
+/**
+ * Aired-but-unwatched episodes sitting before `episodeId` in the same show —
+ * the backlog you skipped over. Zero for the normal case of watching in order,
+ * which is what keeps the catch-up prompt from firing on every single tap.
+ */
+export function countUnwatchedBefore(showId: number, episodeId: number): number {
+  const db = getDb();
+  const target = db.getFirstSync<{ season: number; number: number }>(
+    "SELECT season, number FROM episodes WHERE id = ? AND show_id = ?",
+    episodeId,
+    showId
+  );
+  if (!target) return 0;
+  const row = db.getFirstSync<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM episodes
+     WHERE show_id = ? AND watched_at IS NULL
+       AND airstamp IS NOT NULL AND airstamp <= ?
+       AND (season < ? OR (season = ? AND number < ?))`,
+    showId,
+    nowIso(),
+    target.season,
+    target.season,
+    target.number
+  );
+  return row?.n ?? 0;
 }
 
 export function markEpisodeBySeasonNumber(

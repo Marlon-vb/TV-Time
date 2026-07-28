@@ -34,6 +34,7 @@ import { rescheduleAll } from "@/lib/notifications";
 import { showShareMessage } from "@/lib/share";
 import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
+import { offerCatchUp } from "@/lib/catch-up";
 import { useFocusData } from "@/lib/useFocusData";
 import type { EpisodeRow, RemoteShow, ShowRow } from "@/lib/types";
 
@@ -151,6 +152,9 @@ export default function ShowScreen() {
     if (!ep) return;
     if (isWatched) {
       void social.recordWatchForEpisode(show, ep);
+      // bulkChange reconciles the whole show instead of publishing an activity
+      // per filled-in episode — nobody wants six feed entries.
+      offerCatchUp(showId, epId, () => bulkChange(() => repo.markUpTo(showId, epId)));
     } else {
       void social.unrecordWatch(show.id, ep.season, ep.number);
     }
