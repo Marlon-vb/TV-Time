@@ -112,6 +112,11 @@ Deno.serve(async (req) => {
     return json({ error: "method not allowed" }, 405);
   }
 
+  // DO NOT set TENOR_KEY without updating the published legal pages first.
+  // site/privacy, site/terms and site/support all name GIPHY specifically —
+  // who hosts the GIF, whose terms apply, where to report one. Setting this
+  // secret silently makes Tenor the provider and every one of those pages
+  // false, which is a filing problem, not a config change.
   const tenorKey = Deno.env.get("TENOR_KEY");
   const giphyKey = Deno.env.get("GIPHY_KEY");
   if (!tenorKey && !giphyKey) {

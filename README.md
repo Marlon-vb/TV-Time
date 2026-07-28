@@ -52,7 +52,7 @@ App Store listing: name `TV App`, subtitle `Social Show & Movie Tracker`.
 ## Data sources
 
 TV data from [TVmaze](https://www.tvmaze.com) (CC BY-SA). Movies and
-documentaries from the Apple iTunes Search API. GIF search powered by Tenor.
+documentaries from the Apple iTunes Search API. GIF search powered by GIPHY.
 Optional artwork enrichment uses the TMDB API but is not endorsed or certified
 by TMDB. Not affiliated with any network or streaming service.
 

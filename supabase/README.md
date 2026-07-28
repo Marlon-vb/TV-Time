@@ -119,9 +119,14 @@ shows that provider's attribution — both require it.
 
 > **Tenor.** Nominally the better free tier — no beta-key cliff — but it is a
 > Google Cloud API and is **not offered in every project**; it may simply not
-> appear in your API Library. If it ever does, enable it, set `TENOR_KEY`, and
-> redeploy: Tenor is tried first and GIPHY becomes the fallback. No app release
-> and no code change needed.
+> appear in your API Library. The function supports it if it ever does: set
+> `TENOR_KEY` and redeploy, and Tenor is tried first with GIPHY as the fallback.
+> No app release needed.
+>
+> **But update the legal pages in the same change.** `site/privacy`,
+> `site/terms` and `site/support` name GIPHY specifically — who hosts the GIF,
+> whose terms apply, where to report one. Setting that secret on its own makes
+> all three false, and they are the pages filed with Apple.
 
 ## Security notes (important)
 
