@@ -520,12 +520,13 @@ img {
   padding-top: clamp(16px, 3vw, 34px);
 }
 
-/* Four across, so the set stays one row — three columns would strand the
-   fourth screenshot alone on a second row. */
+/* Three across for five screenshots: 3 + 2 reads as a grid, where 4 + 1 reads
+   as a mistake. It also keeps each phone large enough to be worth showing —
+   five in a row would put them under 180px. */
 .shots {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(18px, 2.6vw, 30px);
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(22px, 3.2vw, 42px);
   align-items: start;
 }
 
