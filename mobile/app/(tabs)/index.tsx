@@ -1,16 +1,18 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Pressable,
   RefreshControl,
   SectionList,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
+import RecentlyWatched, { RECENT_STRIP_HEIGHT } from "@/components/RecentlyWatched";
 import ScreenHeader from "@/components/ScreenHeader";
 import { EmptyState, card } from "@/components/ui";
 import { accentGradient, colors, fonts, TAB_BAR_CLEARANCE } from "@/lib/theme";
@@ -23,18 +25,45 @@ import { useFocusData } from "@/lib/useFocusData";
 import * as social from "@/lib/social/api";
 import type { WatchNextItem } from "@/lib/types";
 
+/** Enough to scroll through without turning the strip into a second screen. */
+const RECENT_LIMIT = 12;
+
 export default function WatchNextScreen() {
   const router = useRouter();
+  const { height: windowHeight } = useWindowDimensions();
   const loader = useCallback(() => {
     const items = repo.watchNext();
     // Keep the home-screen widget in sync with what we show here.
     syncUpNextWidget(items);
-    return { items, sections: groupWatchNext(items, new Date()) };
+    return {
+      items,
+      sections: groupWatchNext(items, new Date()),
+      recent: repo.watchHistory(RECENT_LIMIT, 0),
+    };
   }, []);
   const { data, reload } = useFocusData(loader);
   const [refreshing, setRefreshing] = useState(false);
-  const items = data?.items ?? [];
   const sections = data?.sections ?? [];
+  const recent = data?.recent ?? [];
+
+  // Parking the scroll position past the strip, once, after the content is
+  // laid out. It can't be done with ScrollView's initial `contentOffset`:
+  // useFocusData has no data on the first render, so at that point the content
+  // is too short to hold the offset and iOS clamps it straight back to zero.
+  const listRef = useRef<SectionList<WatchNextItem>>(null);
+  const parkedOnce = useRef(false);
+  const [parked, setParked] = useState(false);
+
+  const onContentSizeChange = (_w: number, h: number) => {
+    if (parkedOnce.current || recent.length === 0) return;
+    // Still mid-layout — scrolling now would clamp and burn the one shot.
+    if (h < RECENT_STRIP_HEIGHT * 2) return;
+    parkedOnce.current = true;
+    listRef.current
+      ?.getScrollResponder()
+      ?.scrollTo({ y: RECENT_STRIP_HEIGHT, animated: false });
+    setParked(true);
+  };
   // Only count the shows you're actively watching (the "Up Next" bucket) —
   // idle and not-yet-started shows don't count as episodes to catch up on.
   const upNext = sections.find((s) => s.key === "up_next");
@@ -65,12 +94,18 @@ export default function WatchNextScreen() {
 
   return (
     <SectionList
+      ref={listRef}
       sections={sections}
       keyExtractor={(item) => String(item.episode.id)}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,
+        // Guarantee there's a screenful below the strip. Without this a small
+        // library makes the content shorter than the viewport, the parked
+        // offset can't hold, and the strip sits in plain sight.
+        minHeight: recent.length ? windowHeight + RECENT_STRIP_HEIGHT : undefined,
       }}
+      onContentSizeChange={onContentSizeChange}
       stickySectionHeadersEnabled={false}
       refreshControl={
         <RefreshControl
@@ -80,18 +115,32 @@ export default function WatchNextScreen() {
         />
       }
       ListHeaderComponent={
-        // Cancel the list's 16pt gutter so the masthead sits at its own 18pt
-        // on every tab.
-        <View style={{ marginHorizontal: -16 }}>
-          <ScreenHeader
-            title="Watch Next"
-            subtitle={
-              totalBehind > 0
-                ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
-                : null
-            }
-          />
-        </View>
+        <>
+          {recent.length > 0 && (
+            // Hidden until parked, not to animate it in but to swallow the
+            // frame between "content is tall enough" and "we have scrolled" —
+            // otherwise the strip flashes at the top on launch.
+            <View style={{ opacity: parked ? 1 : 0 }}>
+              <RecentlyWatched
+                entries={recent}
+                onOpenEpisode={(id) => router.push(`/episode/${id}` as never)}
+                onOpenDiary={() => router.push("/history" as never)}
+              />
+            </View>
+          )}
+          {/* Cancel the list's 16pt gutter so the masthead sits at its own
+              18pt on every tab. */}
+          <View style={{ marginHorizontal: -16 }}>
+            <ScreenHeader
+              title="Watch Next"
+              subtitle={
+                totalBehind > 0
+                  ? `${totalBehind} episode${totalBehind === 1 ? "" : "s"} to catch up on`
+                  : null
+              }
+            />
+          </View>
+        </>
       }
       ListEmptyComponent={
         <View style={{ marginTop: 12 }}>
