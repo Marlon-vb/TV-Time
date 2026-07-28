@@ -499,7 +499,7 @@ function DeviceShot({
     <Animated.View
       style={{
         height,
-        aspectRatio: 320 / 627,
+        aspectRatio: 320 / 629,
         borderRadius: 30,
         padding: 7,
         backgroundColor: "#181c33",

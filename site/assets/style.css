@@ -361,7 +361,7 @@ img {
 
 .scene {
   /* One number drives the device, its reflection and the scene height, so they
-     can't drift apart. The screenshots are 640x1254, i.e. 1.96 tall per wide. */
+     can't drift apart. The screenshots are 640x1258, i.e. 1.97 tall per wide. */
   --dev-w: min(286px, 74%);
   --dev-bezel: 10px;
   --dev-radius: 42px;
