@@ -291,29 +291,6 @@ img {
   font-size: 14px;
 }
 
-.dev-hint {
-  color: #8b93b4;
-  font-size: 13px;
-  margin: 18px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.dev-hint span {
-  color: var(--accent);
-  animation: nudge 2.6s ease-in-out infinite;
-}
-@keyframes nudge {
-  0%, 68%, 100% { transform: translateX(0); }
-  78% { transform: translateX(4px); }
-  88% { transform: translateX(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dev-hint span {
-    animation: none;
-  }
-}
-
 /* ------------------------------------------------------------------- stage */
 
 /* The hero is a lit product shot, so it stays dark in both themes and sets its
@@ -440,76 +417,6 @@ img {
   display: block;
 }
 
-/* The screens are stacked and cross-faded. The first one stays in flow so it
-   still sizes the screen box; the rest lie on top of it. Its own opacity drops
-   when another is showing, so being in flow costs nothing visually. */
-.dev-shot {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.34s ease;
-}
-.dev-shot:first-child {
-  position: relative;
-}
-.dev-shot.is-on {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .dev-shot {
-    transition: none;
-  }
-}
-
-/* Hotspots over the screenshot's own tab bar. Six equal columns land within
-   0.2% of the icons measured off the image, so this needs no per-icon offsets
-   and stays right if the device is resized. */
-.dev-tabs {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 9.5%;
-  display: flex;
-  z-index: 3;
-}
-.dev-tab,
-.dev-tab-gap {
-  flex: 1;
-  min-width: 0;
-}
-.dev-tab {
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 8px;
-  -webkit-tap-highlight-color: transparent;
-}
-.dev-tab:hover {
-  background: rgba(255, 255, 255, 0.09);
-}
-.dev-tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-/* Visible only to screen readers — the button's label is the icon underneath
-   it, which is part of the screenshot and so has no text of its own. */
-.vh {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* Without JS the tab bar is just part of the picture, so don't advertise it. */
-html:not(.js) .dev-tabs {
-  display: none;
-}
-
 /* A single soft sheen across the glass. One highlight reads as a light source;
    several read as a graphic. */
 .dev-glare {
@@ -558,25 +465,34 @@ html:not(.js) .dev-tabs {
 
 /* ----------------------------------------------------------- device frames */
 
-/* A real screenshot in a frame. The shots are cropped above the iOS status
-   bar, so there is no notch to draw — a hairline bezel reads as a device
-   without pretending to be a photograph of one. */
+/* A real screenshot in a frame, built the way the hero device is: the body is
+   padded and the screen inside carries its own, smaller radius. A single
+   rounded box with the screenshot flush to its edge lets the corner curve cut
+   across the content, and leaves the app looking like it runs edge to edge on
+   a phone that has no bezel. */
 .phone {
   /* A phone screenshot must never render at container width — belt and braces
      so a missing modifier class can't blow one up to full bleed. */
   max-width: 340px;
   margin-inline: auto;
-  border-radius: clamp(22px, 3.2vw, 34px);
-  overflow: hidden;
-  background: #0b0c14;
-  border: 1px solid var(--line-2);
-  box-shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.75),
+  padding: clamp(6px, 1vw, 9px);
+  border-radius: clamp(24px, 3.4vw, 38px);
+  background: linear-gradient(158deg, #2b3054 0%, #14172b 42%, #06070e 100%);
+  box-shadow:
+    /* the lit outer edge, brightest along the top-left */
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 30px 60px -28px rgba(0, 0, 0, 0.75),
     0 2px 8px -2px rgba(0, 0, 0, 0.4);
   line-height: 0;
 }
+/* Concentric with the body: the outer radius minus the bezel it sits inside. */
 .phone img {
   width: 100%;
   height: auto;
+  border-radius: clamp(18px, 2.4vw, 29px);
+  background: #0b0c14;
 }
 
 .hero-shot {
