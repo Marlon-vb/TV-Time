@@ -588,14 +588,19 @@ img {
 
 /* ----------------------------------------------------------------- privacy */
 
+/* The only section with its own background and rules, so it is the only one
+   where missing vertical padding shows: the type sat straight on the hairlines. */
 .band {
   background: var(--surface);
   border-block: 1px solid var(--line);
+  padding-block: clamp(52px, 8vw, 96px);
 }
 
 .claim {
   font-size: clamp(26px, 4vw, 44px);
-  max-width: 20ch;
+  /* Wide enough for "No analytics. No ads." to hold together — at 20ch it broke
+     after the first "No", which reads as a mistake. */
+  max-width: 28ch;
 }
 .claim em {
   font-style: normal;
