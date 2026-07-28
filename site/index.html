@@ -78,24 +78,75 @@
           </a>
           <span class="cta-note">TestFlight · iOS 16+</span>
         </div>
+        <!-- Removed on the first tab press: once you know, it's noise. Only
+             shown when JS is running, since it's a lie otherwise. -->
+        <p class="dev-hint" id="devHint" hidden>
+          <span aria-hidden="true">↔</span> The phone is live — press its tabs
+        </p>
       </div>
 
       <div class="scene reveal">
        <div class="dev-stack">
         <div class="dev-front">
           <div class="dev-screen">
-            <img
-              src="assets/shots/watch-next.webp?v=2"
-              width="640"
-              height="1258"
-              alt="The Watch Next screen: the next unwatched episode of each show, grouped into Up Next and Haven't watched in a while, each with a tick to mark it watched."
-            />
+          <div class="dev-shot is-on" id="screen-0" role="tabpanel"
+               aria-labelledby="tab-0">
+            <img src="assets/shots/watch-next.webp?v=3" width="640" height="1258" alt="The Watch Next screen: the next unwatched episode of each show, grouped into Up Next and Haven't watched in a while, each with a tick to mark it watched." />
+          </div>
+          <div class="dev-shot" id="screen-1" role="tabpanel"
+               aria-labelledby="tab-1" aria-hidden="true">
+            <img data-src="assets/shots/upcoming.webp?v=3" width="640" height="1258" alt="The Upcoming screen in calendar mode: a month grid with a dot on every day an episode airs, and the selected day's episodes listed below." />
+          </div>
+          <div class="dev-shot" id="screen-2" role="tabpanel"
+               aria-labelledby="tab-2" aria-hidden="true">
+            <img data-src="assets/shots/library.webp?v=3" width="640" height="1258" alt="The Library screen: a poster grid of followed shows with progress bars, a search field, and filters for Watching, Up to date and Not started." />
+          </div>
+          <div class="dev-shot" id="screen-4" role="tabpanel"
+               aria-labelledby="tab-4" aria-hidden="true">
+            <img data-src="assets/shots/friends.webp?v=3" width="640" height="1258" alt="The Friends screen: an activity feed of what people you follow have watched, rated and commented on." />
+          </div>
+          <div class="dev-shot" id="screen-5" role="tabpanel"
+               aria-labelledby="tab-5" aria-hidden="true">
+            <img data-src="assets/shots/profile.webp?v=3" width="640" height="1258" alt="The Profile screen: total time spent watching, episode and show counts, a bar chart of episodes per month, and a most-watched list." />
+          </div>
+
+            <!-- The hotspots sit on the screenshot's own tab bar, which is the
+                 app's real navigation. Six equal columns land within 0.2% of
+                 the icon centres measured off the image, so no offsets. -->
+            <div class="dev-tabs" role="tablist" aria-label="Show another screen of the app">
+        <button type="button" class="dev-tab" id="tab-0" role="tab"
+                aria-controls="screen-0" aria-selected="true"
+                tabindex="0">
+          <span class="vh">Watch Next</span>
+        </button>
+        <button type="button" class="dev-tab" id="tab-1" role="tab"
+                aria-controls="screen-1" aria-selected="false"
+                tabindex="-1">
+          <span class="vh">Upcoming</span>
+        </button>
+        <button type="button" class="dev-tab" id="tab-2" role="tab"
+                aria-controls="screen-2" aria-selected="false"
+                tabindex="-1">
+          <span class="vh">Library</span>
+        </button>
+        <span class="dev-tab-gap" aria-hidden="true"></span>
+        <button type="button" class="dev-tab" id="tab-4" role="tab"
+                aria-controls="screen-4" aria-selected="false"
+                tabindex="-1">
+          <span class="vh">Friends</span>
+        </button>
+        <button type="button" class="dev-tab" id="tab-5" role="tab"
+                aria-controls="screen-5" aria-selected="false"
+                tabindex="-1">
+          <span class="vh">Profile</span>
+        </button>
+            </div>
           </div>
           <span class="dev-glare" aria-hidden="true"></span>
         </div>
 
         <div class="dev-reflection" aria-hidden="true">
-          <img src="assets/shots/watch-next.webp?v=2" width="640" height="1258" alt="" />
+          <img id="devReflect" src="assets/shots/watch-next.webp?v=3" width="640" height="1258" alt="" />
         </div>
        </div>
       </div>
@@ -109,7 +160,7 @@
         <figure class="shot reveal">
           <div class="phone">
             <img
-              src="assets/shots/library.webp?v=2"
+              src="assets/shots/library.webp?v=3"
               width="640"
               height="1258"
               loading="lazy"
@@ -125,7 +176,7 @@
         <figure class="shot reveal">
           <div class="phone">
             <img
-              src="assets/shots/upcoming.webp?v=2"
+              src="assets/shots/upcoming.webp?v=3"
               width="640"
               height="1258"
               loading="lazy"
@@ -141,7 +192,7 @@
         <figure class="shot reveal">
           <div class="phone">
             <img
-              src="assets/shots/friends.webp?v=2"
+              src="assets/shots/friends.webp?v=3"
               width="640"
               height="1258"
               loading="lazy"
@@ -157,7 +208,7 @@
         <figure class="shot reveal">
           <div class="phone">
             <img
-              src="assets/shots/profile.webp?v=2"
+              src="assets/shots/profile.webp?v=3"
               width="640"
               height="1258"
               loading="lazy"
@@ -248,6 +299,81 @@
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
   </div>
 </footer>
+
+<script>
+  // The hero device: pressing a tab on the screenshot's own tab bar swaps the
+  // screen behind it. Its own IIFE — the block below returns early under
+  // reduced motion, and this must keep working there.
+  (function () {
+    var tabs = [].slice.call(document.querySelectorAll(".dev-tab"));
+    if (!tabs.length) return;
+    var reflect = document.getElementById("devReflect");
+    var hint = document.getElementById("devHint");
+    if (hint) hint.hidden = false;
+
+    function panelOf(tab) {
+      return document.getElementById(tab.getAttribute("aria-controls"));
+    }
+
+    // Screens other than the first carry data-src, so the hero's first paint
+    // fetches one image rather than five. Promoted on demand, and again for
+    // all of them once the page has finished loading.
+    function load(panel) {
+      var img = panel.querySelector("img");
+      if (img && img.dataset.src) {
+        img.src = img.dataset.src;
+        delete img.dataset.src;
+      }
+      return img;
+    }
+
+    function show(tab, focus) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        var panel = panelOf(t);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+        if (!panel) return;
+        panel.classList.toggle("is-on", on);
+        if (on) panel.removeAttribute("aria-hidden");
+        else panel.setAttribute("aria-hidden", "true");
+      });
+      var img = load(panelOf(tab));
+      if (reflect && img) reflect.src = img.currentSrc || img.src;
+      if (focus) tab.focus();
+      if (hint) {
+        hint.remove();
+        hint = null;
+      }
+    }
+
+    tabs.forEach(function (tab, i) {
+      // Pre-warm on intent, so a click that follows a hover is already decoded.
+      tab.addEventListener("mouseenter", function () {
+        load(panelOf(tab));
+      });
+      tab.addEventListener("click", function () {
+        show(tab, false);
+      });
+      tab.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (d) {
+          e.preventDefault();
+          show(tabs[(i + d + tabs.length) % tabs.length], true);
+        } else if (e.key === "Home" || e.key === "End") {
+          e.preventDefault();
+          show(e.key === "Home" ? tabs[0] : tabs[tabs.length - 1], true);
+        }
+      });
+    });
+
+    addEventListener("load", function () {
+      tabs.forEach(function (t) {
+        load(panelOf(t));
+      });
+    });
+  })();
+</script>
 
 <script>
   (function () {
