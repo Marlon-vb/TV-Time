@@ -96,7 +96,7 @@
         <ul>
           <li><strong>Your TV library</strong> — the shows you follow, every episode, whether you watched it, when you watched it, how many times, your star rating for that episode, and whether you archived the show. Ratings are per episode.</li>
           <li><strong>Your movies and documentaries watchlist</strong> — title, year, artwork and metadata, when you added it, when you watched it and your rating. Movies are local-only. They are never mirrored to our server and never appear in the feed or in comments.</li>
-          <li><strong>Your settings</strong> — whether episode notifications are on, and any optional TMDB or GIPHY key you chose to paste in. Those keys are stored in the app's local database as plain text (not the iOS Keychain), and are only ever sent to TMDB or GIPHY themselves.</li>
+          <li><strong>Your settings</strong> — whether episode notifications are on, and the optional TMDB key you chose to paste in. That key is stored in the app's local database as plain text (not the iOS Keychain), and is only ever sent to TMDB itself.</li>
           <li><strong>Your home-screen widget snapshot</strong> — a tiny piece of text (show name, episode code, "aired N days ago", backlog count) shared with the widget through a private iOS app group. It stays on the device.</li>
           <li><strong>Your episode alerts</strong> — "new episode is out" notifications are scheduled by iOS on your phone, from your local library. No server is involved in them at all.</li>
           <li><strong>Your sign-in session</strong> — if you sign in, the login tokens are stored on the device so you stay signed in.</li>
@@ -187,6 +187,7 @@
           <li><strong>Contact hashes</strong>, when you use "Find friends from contacts" (section 4).</li>
           <li><strong>A list of up to 100 show IDs you follow</strong>, used to work out "other people who watch this also watch…" recommendations. The server answers with anonymous watcher counts and keeps nothing. This lookup only runs when you are signed in; signed out, the app checks first and never sends it.</li>
         </ul>
+        <p><strong>GIF searches.</strong> When you use the GIF picker, the text you type goes to our server, which asks Tenor for the results and passes them back. Our server keeps that text and the results in a shared cache table, so the same search does not have to be fetched again — six hours for a search, one hour for the default feed you see before you type anything. <strong>A cache row is keyed by the search text alone.</strong> No user id, no device id and no IP address is stored alongside it, so we do not build a record of who searched for what. Once the window is up, the next person who types that text refreshes the row.</p>
         <p><strong>IP addresses.</strong> Any request to our backend, like any request on the internet, reveals your device's IP address to the server handling it. We do not log it into a database or use it to profile you, but we cannot claim our hosting provider keeps no record of it.</p>
 
         <hr />
@@ -223,7 +224,7 @@
           <li><strong>Public to any signed-in user:</strong> your username, your display name, who you follow and who follows you, your comments, and your comment upvotes. Usernames can also be found by searching, including partial matches.</li>
           <li><strong>Visible only to you and people who follow you:</strong> your watch history, your episode ratings, your activity feed events, your character votes.</li>
           <li><strong>Anonymous to everyone:</strong> community episode ratings, "also watched" recommendation counts and the character-vote leaderboard are computed as totals. Nobody sees whose rows produced them.</li>
-          <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on GIPHY's servers and we only store the link.</li>
+          <li><strong>Public to the entire internet:</strong> <strong>photos you attach to comments.</strong> They are stored in a public bucket, so anyone who has the link can open the image without an account, and the link itself contains your account identifier. Please do not attach anything you would not put on a public web page. GIFs you attach are not hosted by us at all — they stay on Tenor's servers and we only store the link.</li>
           <li><strong>Never shared with anyone:</strong> everything in section 1 that stays on your phone.</li>
         </ul>
         <p>There are no uploaded profile photos or avatar images — you cannot add one, and there is nowhere to put one. Where the app shows a person, it draws a coloured circle with the first letter of their name in it, generated on the spot from that name. There are no direct messages.</p>
@@ -245,7 +246,7 @@
         <hr />
 
         <h2 id="other-services-the-app-talks-to">7. Other services the app talks to</h2>
-        <p>TV App is not a closed box. To show artwork and air dates it has to fetch them from somewhere. Each of these services sees your device's IP address, as any website you visit would.</p>
+        <p>TV App is not a closed box. To show artwork and air dates it has to fetch them from somewhere. Each of these services sees your device's IP address, as any website you visit would. GIF search is the one exception: it goes through our server, so Tenor sees us and not you — see the Tenor row below.</p>
         <div class="table-scroll">
           <table>
             <thead>
@@ -277,8 +278,8 @@
                 <td>Only if you sign in</td>
               </tr>
               <tr>
-                <td><strong>GIPHY</strong></td>
-                <td>The GIF search text you type, sent with a shared public developer key (or your own, if you added one). Note that because comment GIFs are links to GIPHY, GIPHY also sees a request from <strong>anyone who views a comment containing a GIF</strong> — including you.</td>
+                <td><strong>Tenor</strong> (a Google service)</td>
+                <td>The GIF search text you type, but not sent from your phone: it goes to our server first, and our server asks Tenor. For the search, Tenor sees our request rather than your device or your IP address. Google's terms and privacy policy apply to that request. Note that because comment GIFs are links to Tenor's CDN, Tenor does see a request from <strong>anyone who views a comment containing a GIF</strong> — including you.</td>
                 <td>When the GIF picker is used, or a GIF is displayed</td>
               </tr>
               <tr>
@@ -319,7 +320,7 @@
           <li><strong>No camera and no microphone.</strong> The app uses neither, and asks for neither.</li>
           <li><strong>No phone numbers.</strong> We never read, hash, send or store a phone number — yours or anyone else's.</li>
           <li><strong>No purchases.</strong> No in-app purchases, subscriptions or payment processing, so no payment data of any kind.</li>
-          <li><strong>No search history.</strong> Your searches are passed to TVmaze, iTunes, GIPHY or our profile search only to answer that search. They are not stored on your phone or on our server.</li>
+          <li><strong>No search history.</strong> Your searches are passed to TVmaze, iTunes, our profile search or the GIF proxy only to answer that search. Show, movie and profile searches are not stored on your phone or on our server. GIF search text is cached on our server by the text alone, with nothing attached that says who typed it — see section 2.</li>
           <li><strong>No writing to your photo library.</strong> The app can read a photo you explicitly pick for a comment. That is all.</li>
         </ul>
 
@@ -342,7 +343,7 @@
         <p>Two things we would rather you heard from us:</p>
         <ul>
           <li><strong>Comment photos are deliberately public</strong> (section 5).</li>
-          <li><strong>Optional TMDB and GIPHY keys are stored in the app's local database in plain text</strong>, protected by your device's own encryption and passcode rather than the iOS Keychain. They are your own free API keys, not credentials to anything sensitive, but treat them accordingly.</li>
+          <li><strong>The optional TMDB key is stored in the app's local database in plain text</strong>, protected by your device's own encryption and passcode rather than the iOS Keychain. It is your own free API key, not a credential to anything sensitive, but treat it accordingly.</li>
         </ul>
         <p>No system is perfectly secure, and we will not pretend otherwise.</p>
 
@@ -448,7 +449,7 @@
         <ul>
           <li><strong>Your on-device library stays.</strong> Your shows, episodes, watch dates, ratings and movies remain on your phone, exactly as they were. The app tells you this before you confirm. To remove them too, delete the app.</li>
           <li><strong>Any backup file you exported</strong> to Files, iCloud Drive, email or elsewhere. That copy is yours to manage.</li>
-          <li><strong>GIFs in comments</strong> were always hosted by GIPHY, not by us. The comment disappears; GIPHY's copy of the GIF was never ours.</li>
+          <li><strong>GIFs in comments</strong> were always hosted by Tenor, not by us. The comment disappears; Tenor's copy of the GIF was never ours. Cached GIF search results are not part of your account either — they are keyed by the search text, not by you (section 2).</li>
           <li>Whatever our hosting provider retains in its own operational logs, which we do not control.</li>
         </ul>
         <p>One consequence we should state openly: because reports about a user are deleted along with their account, deleting an account also erases the moderation history attached to it.</p>
@@ -559,13 +560,13 @@
     </nav>
     <p>
       TV App is an independent app made by one person. It is not affiliated with,
-      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network or
-      streaming service, and it does not link to or provide any video.
+      endorsed by or certified by TVmaze, Apple, Tenor, Google, TMDB, or any network
+      or streaming service, and it does not link to or provide any video.
     </p>
     <p>
       TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
       CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
-      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
+      search powered by Tenor. Optional artwork enrichment uses the TMDB API but is
       not endorsed or certified by TMDB.
     </p>
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
