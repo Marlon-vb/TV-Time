@@ -98,6 +98,13 @@ git push
      see Step 5). Manual keeps you off the build-minute treadmill while testing.
    - **Action**: **Archive** → set the archive to build for **iOS** and prepare
      for **TestFlight (Internal Testing)**.
+   - **Environment → Xcode**: pick a **released** version, never a beta or
+     release candidate. A build compiled against a beta SDK reaches TestFlight
+     fine but App Store Connect will not let you attach it to a submission —
+     it is silently unselectable in *Add Build*, with no error explaining why.
+     A build's SDK is on its TestFlight page as **Build SDK**; a trailing
+     lowercase letter (`23F81a`) marks a beta seed, a released SDK has none
+     (`23A339`).
 6. **Signing**: let Xcode Cloud manage signing automatically (it creates the
    distribution cert + provisioning profiles for the app **and** the widget
    extension). Just confirm the team when asked.
