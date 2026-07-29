@@ -49,30 +49,32 @@ export default function WatchNextScreen() {
   // point the content is too short to hold the offset and iOS clamps it
   // straight back to zero.
   //
-  // The offset is measured rather than assumed — the list is as tall as
-  // however many episodes are in it, so there is no constant to park at.
+  // What's measured is where the masthead sits, not how tall the list above it
+  // is. Parking at the masthead's own offset means any spacing change between
+  // the two is absorbed for free, instead of silently moving the park target.
   const listRef = useRef<SectionList<WatchNextItem>>(null);
   const parkedOnce = useRef(false);
   const contentHeight = useRef(0);
   // State, not a ref: the minimum content height below depends on it, so a
   // silent ref update would leave that guard computed against zero.
-  const [stripHeight, setStripHeight] = useState(0);
+  const [mastheadY, setMastheadY] = useState(0);
   const [parked, setParked] = useState(false);
 
   // Called from both measurements; whichever lands second does the work.
   const tryPark = useCallback(() => {
-    if (parkedOnce.current || stripHeight === 0) return;
+    if (parkedOnce.current || mastheadY === 0) return;
     // Still mid-layout — scrolling now would clamp and burn the one shot.
-    if (contentHeight.current < stripHeight + 40) return;
+    if (contentHeight.current < mastheadY + 40) return;
     parkedOnce.current = true;
     listRef.current
       ?.getScrollResponder()
-      ?.scrollTo({ y: stripHeight, animated: false });
+      ?.scrollTo({ y: mastheadY, animated: false });
     setParked(true);
-  }, [stripHeight]);
+  }, [mastheadY]);
 
-  // onLayout only sets the height; parking waits for the re-render so it uses
-  // the measured value rather than the one captured before it was known.
+  // onLayout only records the position; parking waits for the re-render so it
+  // uses the measured value rather than the one captured before it was known.
+  // A mastheadY of 0 means nothing is above it, so there is nothing to park.
   useEffect(() => {
     tryPark();
   }, [tryPark]);
@@ -115,7 +117,7 @@ export default function WatchNextScreen() {
         // Guarantee there's a screenful below the list. Without this a small
         // library makes the content shorter than the viewport, the parked
         // offset can't hold, and the watched episodes sit in plain sight.
-        minHeight: recent.length ? windowHeight + stripHeight : undefined,
+        minHeight: recent.length ? windowHeight + mastheadY : undefined,
       }}
       onContentSizeChange={(_w, h) => {
         contentHeight.current = h;
@@ -136,8 +138,15 @@ export default function WatchNextScreen() {
             // frame between "content is tall enough" and "we have scrolled" —
             // otherwise these flash at the top on launch.
             <View
-              style={{ opacity: parked ? 1 : 0 }}
-              onLayout={(e) => setStripHeight(e.nativeEvent.layout.height)}
+              style={{
+                opacity: parked ? 1 : 0,
+                // Pull the masthead up: its own paddingTop clears the status
+                // bar, which is right at rest but leaves a hole once you have
+                // scrolled past it. Negative margin here rather than less
+                // padding there, so the masthead is untouched on every other
+                // tab — and the park target follows it automatically.
+                marginBottom: -34,
+              }}
             >
               <RecentlyWatched
                 entries={recent}
@@ -161,7 +170,10 @@ export default function WatchNextScreen() {
           )}
           {/* Cancel the list's 16pt gutter so the masthead sits at its own
               18pt on every tab. */}
-          <View style={{ marginHorizontal: -16 }}>
+          <View
+            style={{ marginHorizontal: -16 }}
+            onLayout={(e) => setMastheadY(e.nativeEvent.layout.y)}
+          >
             <ScreenHeader
               title="Watch Next"
               subtitle={

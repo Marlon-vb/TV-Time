@@ -11,9 +11,13 @@ import { colors, fonts } from "@/lib/theme";
 export default function ScreenHeader({
   title,
   subtitle,
+  settings = false,
 }: {
   title: string;
   subtitle?: string | null;
+  /** Settings lives on Profile. Repeating the gear on all six tabs made it
+   *  furniture rather than a destination, so every other header omits it. */
+  settings?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -46,25 +50,27 @@ export default function ScreenHeader({
           </Text>
         ) : null}
       </View>
-      <Pressable
-        onPress={() => router.push("/settings")}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Settings"
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 19,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.line,
-          marginBottom: 4,
-        }}
-      >
-        <Ionicons name="settings-sharp" size={17} color={colors.muted} />
-      </Pressable>
+      {settings ? (
+        <Pressable
+          onPress={() => router.push("/settings")}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 19,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.line,
+            marginBottom: 4,
+          }}
+        >
+          <Ionicons name="settings-sharp" size={17} color={colors.muted} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

@@ -32,7 +32,7 @@ export default function ProfileScreen() {
   if (data.showsFollowed === 0) {
     return (
       <View>
-        <ScreenHeader title="Profile" />
+        <ScreenHeader title="Profile" settings />
         <View style={{ padding: 16, gap: 12 }}>
           <AccountCard />
           <EmptyState
@@ -58,7 +58,7 @@ export default function ProfileScreen() {
       }}
     >
       <View style={{ marginHorizontal: -16 }}>
-        <ScreenHeader title="Profile" />
+        <ScreenHeader title="Profile" settings />
       </View>
 
       <AccountCard />
