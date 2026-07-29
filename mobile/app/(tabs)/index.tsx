@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -12,7 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Bouncy from "@/components/Bouncy";
 import CheckButton from "@/components/CheckButton";
 import Poster from "@/components/Poster";
-import RecentlyWatched, { RECENT_STRIP_HEIGHT } from "@/components/RecentlyWatched";
+import RecentlyWatched, { RECENT_LIMIT } from "@/components/RecentlyWatched";
 import ScreenHeader from "@/components/ScreenHeader";
 import { EmptyState, card } from "@/components/ui";
 import { accentGradient, colors, fonts, TAB_BAR_CLEARANCE } from "@/lib/theme";
@@ -24,9 +24,6 @@ import { syncUpNextWidget } from "@/lib/widget";
 import { useFocusData } from "@/lib/useFocusData";
 import * as social from "@/lib/social/api";
 import type { WatchNextItem } from "@/lib/types";
-
-/** Enough to scroll through without turning the strip into a second screen. */
-const RECENT_LIMIT = 12;
 
 export default function WatchNextScreen() {
   const router = useRouter();
@@ -46,24 +43,39 @@ export default function WatchNextScreen() {
   const sections = data?.sections ?? [];
   const recent = data?.recent ?? [];
 
-  // Parking the scroll position past the strip, once, after the content is
-  // laid out. It can't be done with ScrollView's initial `contentOffset`:
-  // useFocusData has no data on the first render, so at that point the content
-  // is too short to hold the offset and iOS clamps it straight back to zero.
+  // Parking the scroll position past the recently-watched list, once, after
+  // everything is laid out. It can't be done with ScrollView's initial
+  // `contentOffset`: useFocusData has no data on the first render, so at that
+  // point the content is too short to hold the offset and iOS clamps it
+  // straight back to zero.
+  //
+  // The offset is measured rather than assumed — the list is as tall as
+  // however many episodes are in it, so there is no constant to park at.
   const listRef = useRef<SectionList<WatchNextItem>>(null);
   const parkedOnce = useRef(false);
+  const contentHeight = useRef(0);
+  // State, not a ref: the minimum content height below depends on it, so a
+  // silent ref update would leave that guard computed against zero.
+  const [stripHeight, setStripHeight] = useState(0);
   const [parked, setParked] = useState(false);
 
-  const onContentSizeChange = (_w: number, h: number) => {
-    if (parkedOnce.current || recent.length === 0) return;
+  // Called from both measurements; whichever lands second does the work.
+  const tryPark = useCallback(() => {
+    if (parkedOnce.current || stripHeight === 0) return;
     // Still mid-layout — scrolling now would clamp and burn the one shot.
-    if (h < RECENT_STRIP_HEIGHT * 2) return;
+    if (contentHeight.current < stripHeight + 40) return;
     parkedOnce.current = true;
     listRef.current
       ?.getScrollResponder()
-      ?.scrollTo({ y: RECENT_STRIP_HEIGHT, animated: false });
+      ?.scrollTo({ y: stripHeight, animated: false });
     setParked(true);
-  };
+  }, [stripHeight]);
+
+  // onLayout only sets the height; parking waits for the re-render so it uses
+  // the measured value rather than the one captured before it was known.
+  useEffect(() => {
+    tryPark();
+  }, [tryPark]);
   // Only count the shows you're actively watching (the "Up Next" bucket) —
   // idle and not-yet-started shows don't count as episodes to catch up on.
   const upNext = sections.find((s) => s.key === "up_next");
@@ -100,12 +112,15 @@ export default function WatchNextScreen() {
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,
-        // Guarantee there's a screenful below the strip. Without this a small
+        // Guarantee there's a screenful below the list. Without this a small
         // library makes the content shorter than the viewport, the parked
-        // offset can't hold, and the strip sits in plain sight.
-        minHeight: recent.length ? windowHeight + RECENT_STRIP_HEIGHT : undefined,
+        // offset can't hold, and the watched episodes sit in plain sight.
+        minHeight: recent.length ? windowHeight + stripHeight : undefined,
       }}
-      onContentSizeChange={onContentSizeChange}
+      onContentSizeChange={(_w, h) => {
+        contentHeight.current = h;
+        tryPark();
+      }}
       stickySectionHeadersEnabled={false}
       refreshControl={
         <RefreshControl
@@ -119,12 +134,28 @@ export default function WatchNextScreen() {
           {recent.length > 0 && (
             // Hidden until parked, not to animate it in but to swallow the
             // frame between "content is tall enough" and "we have scrolled" —
-            // otherwise the strip flashes at the top on launch.
-            <View style={{ opacity: parked ? 1 : 0 }}>
+            // otherwise these flash at the top on launch.
+            <View
+              style={{ opacity: parked ? 1 : 0 }}
+              onLayout={(e) => setStripHeight(e.nativeEvent.layout.height)}
+            >
               <RecentlyWatched
                 entries={recent}
                 onOpenEpisode={(id) => router.push(`/episode/${id}` as never)}
+                onOpenShow={(id) => router.push(`/show/${id}` as never)}
                 onOpenDiary={() => router.push("/history" as never)}
+                onUnwatch={(entry) => {
+                  // Straight back into Watch Next, or into "haven't watched in
+                  // a while" if that's where the show now belongs — both fall
+                  // out of watchNext() on the reload.
+                  repo.markEpisode(entry.episode_id, false);
+                  reload();
+                  void social.unrecordWatch(
+                    entry.show_id,
+                    entry.season,
+                    entry.number
+                  );
+                }}
               />
             </View>
           )}
