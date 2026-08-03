@@ -22,6 +22,7 @@ import * as movies from "@/lib/movies";
 import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
+import { rankByTitle } from "@/lib/search-rank";
 import type { RemoteMovie, RemoteShow } from "@/lib/types";
 
 // A search hit — a TV show (TVmaze) or a movie/documentary (iTunes).
@@ -114,6 +115,8 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
+  // Which source dropped out, when the other one still answered.
+  const [partial, setPartial] = useState<"shows" | "movies" | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
   );
@@ -167,13 +170,14 @@ export default function DiscoverScreen() {
     const q = query.trim();
     if (!q) {
       setResults([]);
+      setPartial(null);
       setStatus("idle");
       return;
     }
     const gen = ++generation.current;
     const timer = setTimeout(async () => {
       setStatus("loading");
-      // Search both sources at once; TV shows first, then movies/docs.
+      // Search both sources at once — TVmaze for TV, iTunes for film.
       const [showsRes, moviesRes] = await Promise.allSettled([
         tvmaze.searchShows(q),
         itunes.searchMovies(q),
@@ -183,6 +187,15 @@ export default function DiscoverScreen() {
         setStatus("error");
         return;
       }
+      // One source failing used to be invisible: you got TV results and no
+      // sign that film was missing from them. Say so instead.
+      setPartial(
+        showsRes.status === "rejected"
+          ? "shows"
+          : moviesRes.status === "rejected"
+            ? "movies"
+            : null
+      );
       const showItems: SearchItem[] =
         showsRes.status === "fulfilled"
           ? showsRes.value.map((s) => ({
@@ -199,7 +212,14 @@ export default function DiscoverScreen() {
               added: movies.isMovieAdded(m.id),
             }))
           : [];
-      setResults([...showItems, ...movieItems]);
+      // Ranked together rather than concatenated. TVmaze fuzzy-matches, so
+      // appending film after TV buried every film result below a screenful of
+      // loosely-related series.
+      setResults(
+        rankByTitle([...showItems, ...movieItems], q, (r) =>
+          r.kind === "show" ? r.show.name : r.movie.title
+        )
+      );
       setStatus("done");
     }, 350);
     return () => clearTimeout(timer);
@@ -347,6 +367,20 @@ export default function DiscoverScreen() {
           {status === "error" && (
             <Text style={{ color: colors.danger, fontSize: 13 }}>
               Search failed — check your connection and try again.
+            </Text>
+          )}
+          {status === "done" && partial && (
+            <Text
+              style={{
+                color: colors.muted,
+                fontSize: 12,
+                lineHeight: 17,
+                marginBottom: 10,
+              }}
+            >
+              {partial === "movies"
+                ? "Movies and documentaries aren’t loading right now — these are TV results only."
+                : "TV shows aren’t loading right now — these are movie results only."}
             </Text>
           )}
           {status === "done" && results.length === 0 && (
