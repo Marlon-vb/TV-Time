@@ -68,9 +68,25 @@ describe("mapMovieResult", () => {
     });
   });
 
+  it("accepts an id that arrives as a numeric string", () => {
+    // A field-type change at Apple's end used to empty the whole film column
+    // silently, because every row failed the same check at once.
+    expect(mapMovieResult({ trackId: "456", trackName: "Dune" })).toMatchObject({
+      id: 456,
+      title: "Dune",
+    });
+  });
+
+  it("falls back to the collection id and name", () => {
+    expect(
+      mapMovieResult({ collectionId: 77, collectionName: "Alien Anthology" })
+    ).toMatchObject({ id: 77, title: "Alien Anthology" });
+  });
+
   it("rejects rows without an id or name", () => {
     expect(mapMovieResult({ trackName: "No id" })).toBeNull();
     expect(mapMovieResult({ trackId: 1 })).toBeNull();
+    expect(mapMovieResult({ trackId: "not-a-number", trackName: "X" })).toBeNull();
     expect(mapMovieResult(null)).toBeNull();
   });
 });
