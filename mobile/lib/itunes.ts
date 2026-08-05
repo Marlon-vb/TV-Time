@@ -17,22 +17,8 @@ async function itFetch(pathname: string): Promise<unknown | null> {
       headers: { Accept: "application/json" },
       signal: abort.signal,
     });
-    if (!res.ok) {
-      // Logged, not just thrown: this is a third-party, key-free endpoint we
-      // do not control, and "no movies came back" is otherwise indis-
-      // tinguishable from "no movies matched". 403 here means Apple is
-      // throttling or blocking; a 5xx means it is down.
-      console.log(`[itunes] HTTP ${res.status} for ${pathname}`);
-      throw new Error(`iTunes HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`iTunes HTTP ${res.status}`);
     return await res.json();
-  } catch (err) {
-    // A rejected fetch (offline, DNS, TLS, timeout) never reaches the line
-    // above, and the caller swallows it into an empty column.
-    if (!(err instanceof Error) || !err.message.startsWith("iTunes HTTP")) {
-      console.log(`[itunes] request failed for ${pathname}: ${String(err)}`);
-    }
-    throw err;
   } finally {
     clearTimeout(kill);
   }
@@ -92,12 +78,27 @@ export function mapMovieResult(r: any): RemoteMovie | null {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-/** Search movies by title. Deduped by iTunes track id, poster-only. */
+/**
+ * Search movies by title. Deduped by iTunes track id, poster-only.
+ *
+ * Every call logs one line, including the successful ones. Films are missing
+ * from search and the cause is not visible from the outside: the request
+ * failing, Apple returning nothing, and us discarding everything Apple
+ * returned all look identical on screen. Logging only the bad cases is not
+ * enough either — then silence means both "worked fine" and "never ran", and
+ * those need different fixes.
+ */
 export async function searchMovies(query: string): Promise<RemoteMovie[]> {
-  const data = (await itFetch(
-    `/search?media=movie&entity=movie&limit=25&term=${encodeURIComponent(query)}`
-  )) as { results?: unknown[] } | null;
-  const raw = data?.results ?? [];
+  let raw: unknown[];
+  try {
+    const data = (await itFetch(
+      `/search?media=movie&entity=movie&limit=25&term=${encodeURIComponent(query)}`
+    )) as { results?: unknown[] } | null;
+    raw = data?.results ?? [];
+  } catch (err) {
+    console.log(`[itunes] "${query}" request failed: ${String(err)}`);
+    throw err;
+  }
   const seen = new Set<number>();
   const out: RemoteMovie[] = [];
   for (const r of raw) {
@@ -107,10 +108,6 @@ export async function searchMovies(query: string): Promise<RemoteMovie[]> {
       out.push(m);
     }
   }
-  // Separates "Apple has nothing for this query" from "Apple answered and we
-  // threw all of it away", which look identical from the search screen.
-  if (out.length === 0) {
-    console.log(`[itunes] "${query}": ${raw.length} raw result(s), 0 usable`);
-  }
+  console.log(`[itunes] "${query}": ${raw.length} raw, ${out.length} usable`);
   return out;
 }
