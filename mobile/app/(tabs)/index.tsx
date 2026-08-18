@@ -7,6 +7,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Bouncy from "@/components/Bouncy";
@@ -28,6 +29,7 @@ import type { WatchNextItem } from "@/lib/types";
 export default function WatchNextScreen() {
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const loader = useCallback(() => {
     const items = repo.watchNext();
     // Keep the home-screen widget in sync with what we show here.
@@ -35,7 +37,10 @@ export default function WatchNextScreen() {
     return {
       items,
       sections: groupWatchNext(items, new Date()),
-      recent: repo.watchHistory(RECENT_LIMIT, 0),
+      // Newest-first from the query, reversed for display: scrolling up walks
+      // backwards in time, and the episode you just ticked ends up adjacent to
+      // Watch Next rather than a screen away from it.
+      recent: repo.watchHistory(RECENT_LIMIT, 0).reverse(),
     };
   }, []);
   const { data, reload } = useFocusData(loader);
@@ -140,6 +145,11 @@ export default function WatchNextScreen() {
             <View
               style={{
                 opacity: parked ? 1 : 0,
+                // The masthead clears the status bar with its own paddingTop,
+                // but this sits above the masthead, so at scroll offset 0 the
+                // first card had nothing between it and the notch — you hit
+                // the end of the scroll with the row still half-covered.
+                paddingTop: insets.top + 14,
                 // Pull the masthead up: its own paddingTop clears the status
                 // bar, which is right at rest but leaves a hole once you have
                 // scrolled past it. Negative margin here rather than less

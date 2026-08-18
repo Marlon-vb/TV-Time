@@ -188,6 +188,8 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
       data={visible}
       keyExtractor={(s) => String(s.id)}
       numColumns={3}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       initialNumToRender={12}
       windowSize={7}
       maxToRenderPerBatch={12}
@@ -468,6 +470,7 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
       data={(searching ? results : mine) as (RemoteMovie | MovieRow)[]}
       keyExtractor={(item) => String(item.id)}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,

@@ -3,11 +3,13 @@ import {
   ActivityIndicator,
   FlatList,
   ScrollView,
+  Keyboard,
+  Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
@@ -225,6 +227,18 @@ export default function DiscoverScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Tapping the Discover tab button resets the search. Without this the tab
+  // keeps whatever was typed last — you come back for the recommendation rails
+  // and get a stale result list instead.
+  const navigation = useNavigation();
+  useEffect(() => {
+    const unsub = navigation.addListener("tabPress" as never, () => {
+      setQuery("");
+      Keyboard.dismiss();
+    });
+    return unsub;
+  }, [navigation]);
+
   const follow = async (show: RemoteShow) => {
     setBusyId(show.id);
     try {
@@ -268,6 +282,7 @@ export default function DiscoverScreen() {
         gap: 10,
       }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       ListHeaderComponent={
         <View>
           <View style={{ marginHorizontal: -16 }}>
@@ -294,6 +309,8 @@ export default function DiscoverScreen() {
               placeholder="Search shows, movies & documentaries…"
               placeholderTextColor={colors.faint}
               autoCorrect={false}
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
               style={{
                 flex: 1,
                 paddingVertical: 13,
@@ -301,6 +318,16 @@ export default function DiscoverScreen() {
                 fontSize: 15,
               }}
             />
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => setQuery("")}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Ionicons name="close-circle" size={17} color={colors.faint} />
+              </Pressable>
+            )}
           </View>
 
           {status === "idle" && (
