@@ -1,26 +1,35 @@
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "@/lib/theme";
 
+export interface HeaderAction {
+  icon: keyof typeof Ionicons.glyphMap;
+  /** Spoken by VoiceOver, so name the destination, not the glyph. */
+  label: string;
+  onPress: () => void;
+}
+
 /**
- * Large in-screen title (tab headers are hidden) with the settings
- * control on the right — the app's editorial masthead.
+ * Large in-screen title (tab headers are hidden) with one optional control on
+ * the right — the app's editorial masthead.
+ *
+ * The control is passed in rather than named by a flag. Each tab that has one
+ * has a different one (Profile opens Settings, Friends opens the add-friends
+ * screen), and a header that grows a boolean per destination ends up knowing
+ * about every screen in the app. Tabs without one pass nothing: repeating a
+ * control on all six made it furniture rather than a destination.
  */
 export default function ScreenHeader({
   title,
   subtitle,
-  settings = false,
+  action,
 }: {
   title: string;
   subtitle?: string | null;
-  /** Settings lives on Profile. Repeating the gear on all six tabs made it
-   *  furniture rather than a destination, so every other header omits it. */
-  settings?: boolean;
+  action?: HeaderAction;
 }) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
   return (
     <View
@@ -50,12 +59,12 @@ export default function ScreenHeader({
           </Text>
         ) : null}
       </View>
-      {settings ? (
+      {action ? (
         <Pressable
-          onPress={() => router.push("/settings")}
+          onPress={action.onPress}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Settings"
+          accessibilityLabel={action.label}
           style={{
             width: 38,
             height: 38,
@@ -68,7 +77,7 @@ export default function ScreenHeader({
             marginBottom: 4,
           }}
         >
-          <Ionicons name="settings-sharp" size={17} color={colors.muted} />
+          <Ionicons name={action.icon} size={17} color={colors.muted} />
         </Pressable>
       ) : null}
     </View>

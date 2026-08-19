@@ -32,7 +32,14 @@ export default function ProfileScreen() {
   if (data.showsFollowed === 0) {
     return (
       <View>
-        <ScreenHeader title="Profile" settings />
+        <ScreenHeader
+          title="Profile"
+          action={{
+            icon: "settings-sharp",
+            label: "Settings",
+            onPress: () => router.push("/settings"),
+          }}
+        />
         <View style={{ padding: 16, gap: 12 }}>
           <AccountCard />
           <EmptyState
@@ -58,7 +65,14 @@ export default function ProfileScreen() {
       }}
     >
       <View style={{ marginHorizontal: -16 }}>
-        <ScreenHeader title="Profile" settings />
+        <ScreenHeader
+          title="Profile"
+          action={{
+            icon: "settings-sharp",
+            label: "Settings",
+            onPress: () => router.push("/settings"),
+          }}
+        />
       </View>
 
       <AccountCard />

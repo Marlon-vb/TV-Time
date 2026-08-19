@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
-  Share,
   Text,
   TextInput,
   View,
@@ -17,20 +15,29 @@ import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
+import UserRow from "@/components/UserRow";
 import { EmptyState, card } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
+import { useFollowing } from "@/lib/social/useFollowing";
 import * as social from "@/lib/social/api";
 import * as repo from "@/lib/repo";
 import { feedActivityText, shortAgo } from "@/lib/format-social";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
-type Tab = "feed" | "find";
+type Tab = "friends" | "feed";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "friends", label: "Friends" },
+  { key: "feed", label: "Activity" },
+];
 
 export default function FriendsScreen() {
   const { session, profile, ready } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("feed");
+  // Friends first, and the default: the tab is named after the people, so
+  // opening it should answer "who do I follow" before "what have they done".
+  const [tab, setTab] = useState<Tab>("friends");
 
   if (!ready) {
     return (
@@ -63,37 +70,176 @@ export default function FriendsScreen() {
       <ScreenHeader
         title="Friends"
         subtitle={profile ? `@${profile.username}` : undefined}
+        action={{
+          icon: "person-add",
+          label: "Add friends",
+          onPress: () => router.push("/find-friends" as never),
+        }}
       />
       <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 8 }}>
-        {(["feed", "find"] as Tab[]).map((t) => (
+        {TABS.map((t) => (
           <Pressable
-            key={t}
-            onPress={() => setTab(t)}
+            key={t.key}
+            onPress={() => setTab(t.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: tab === t.key }}
             style={{
               flex: 1,
               paddingVertical: 9,
               borderRadius: radius.sm,
               alignItems: "center",
-              backgroundColor: tab === t ? colors.accent : colors.surface,
+              backgroundColor: tab === t.key ? colors.accent : colors.surface,
               borderWidth: 1,
-              borderColor: tab === t ? colors.accent : colors.line,
+              borderColor: tab === t.key ? colors.accent : colors.line,
             }}
           >
-            <Text style={{ color: tab === t ? colors.ink : colors.muted, fontWeight: "800", fontSize: 13 }}>
-              {t === "feed" ? "Activity" : "Find friends"}
+            <Text style={{ color: tab === t.key ? colors.ink : colors.muted, fontWeight: "800", fontSize: 13 }}>
+              {t.label}
             </Text>
           </Pressable>
         ))}
       </View>
-      {tab === "feed" ? (
-        <FeedList onOpenUser={(u) => router.push(`/u/${u}` as never)} />
-      ) : (
-        <FindFriends
-          myUsername={profile?.username}
+      {tab === "friends" ? (
+        <FriendsList
           onOpenUser={(u) => router.push(`/u/${u}` as never)}
+          onAdd={() => router.push("/find-friends" as never)}
         />
+      ) : (
+        <FeedList onOpenUser={(u) => router.push(`/u/${u}` as never)} />
       )}
     </View>
+  );
+}
+
+/**
+ * The people you follow. Searchable, because the point of this list is
+ * checking on one specific person, and scanning for them stops working
+ * somewhere well before a hundred rows.
+ */
+function FriendsList({
+  onOpenUser,
+  onAdd,
+}: {
+  onOpenUser: (username: string) => void;
+  onAdd: () => void;
+}) {
+  const { profiles, ids, toggle, reload } = useFollowing();
+  const [query, setQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q || !profiles) return profiles ?? [];
+    return profiles.filter(
+      (p) =>
+        p.username.toLowerCase().includes(q) ||
+        (p.display_name ?? "").toLowerCase().includes(q)
+    );
+  }, [profiles, query]);
+
+  if (profiles === null) {
+    return <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />;
+  }
+
+  return (
+    <FlatList
+      data={visible}
+      keyExtractor={(p) => p.id}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_CLEARANCE }}
+      ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            void reload().finally(() => setRefreshing(false));
+          }}
+          tintColor={colors.accent}
+        />
+      }
+      ListHeaderComponent={
+        // Only worth the space once there is enough here to lose someone in.
+        profiles.length >= 8 ? (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.md,
+              paddingHorizontal: 14,
+              marginBottom: 10,
+            }}
+          >
+            <Ionicons name="search" size={15} color={colors.faint} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search your friends"
+              placeholderTextColor={colors.faint}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ flex: 1, paddingVertical: 11, color: colors.fg, fontSize: 14 }}
+            />
+            {query.length > 0 && (
+              <Pressable
+                onPress={() => setQuery("")}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Ionicons name="close-circle" size={16} color={colors.faint} />
+              </Pressable>
+            )}
+          </View>
+        ) : null
+      }
+      ListEmptyComponent={
+        query.trim() ? (
+          <Text style={{ color: colors.muted, fontSize: 13, marginTop: 8 }}>
+            No friends match “{query.trim()}”.
+          </Text>
+        ) : (
+          <View style={{ marginTop: 8, gap: 12 }}>
+            <EmptyState
+              icon="people-outline"
+              title="No friends yet"
+              body="Follow people to see them here and to get their watches in your Activity feed."
+            />
+            <Bouncy
+              onPress={onAdd}
+              scaleTo={0.96}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 7,
+                paddingVertical: 12,
+                borderRadius: radius.sm,
+                backgroundColor: colors.accent,
+              }}
+            >
+              <Ionicons name="person-add" size={15} color={colors.ink} />
+              <Text style={{ color: colors.ink, fontWeight: "800", fontSize: 13 }}>
+                Add friends
+              </Text>
+            </Bouncy>
+          </View>
+        )
+      }
+      renderItem={({ item }) => (
+        <UserRow
+          profile={item}
+          following={ids ? ids.has(item.id) : null}
+          onToggle={() => toggle(item.id)}
+          onOpen={onOpenUser}
+        />
+      )}
+    />
   );
 }
 
@@ -189,7 +335,7 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
           <EmptyState
             icon="pulse-outline"
             title="No activity yet"
-            body="When you and the people you follow watch and rate episodes, it shows up here. Find friends to get started."
+            body="When you and the people you follow watch and rate episodes, it shows up here. Tap the add-friends button to get started."
           />
         )
       }
@@ -234,274 +380,5 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
         );
       }}
     />
-  );
-}
-
-function FindFriends({
-  myUsername,
-  onOpenUser,
-}: {
-  myUsername?: string;
-  onOpenUser: (username: string) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Profile[]>([]);
-  const [contacts, setContacts] = useState<
-    Profile[] | "scanning" | "denied" | null
-  >(null);
-  const [searching, setSearching] = useState(false);
-  // Who I already follow, fetched ONCE — not one round trip per result row.
-  // The set is the single source of truth for every row and is updated
-  // optimistically on toggle, so remounts/late fetches can't show stale state.
-  const [followingIds, setFollowingIds] = useState<Set<string> | null>(null);
-  const gen = useRef(0);
-
-  useEffect(() => {
-    void social.getFollowing().then((list) =>
-      setFollowingIds((prev) => {
-        const ids = new Set(list.map((p) => p.id));
-        // A toggle may have landed while the fetch was in flight — keep it.
-        if (prev) for (const id of prev) ids.add(id);
-        return ids;
-      })
-    );
-  }, []);
-
-  const toggleFollow = (profileId: string) => {
-    if (!followingIds) return;
-    const isFollowing = followingIds.has(profileId);
-    const next = new Set(followingIds);
-    if (isFollowing) next.delete(profileId);
-    else next.add(profileId);
-    setFollowingIds(next);
-    void (isFollowing ? social.unfollow(profileId) : social.follow(profileId)).then(
-      (ok) => {
-        if (ok) return;
-        // Revert the optimistic flip — a silent no-op reads as a broken app.
-        setFollowingIds((prev) => {
-          const reverted = new Set(prev ?? []);
-          if (isFollowing) reverted.add(profileId);
-          else reverted.delete(profileId);
-          return reverted;
-        });
-        Alert.alert(
-          isFollowing ? "Couldn't unfollow" : "Couldn't follow",
-          "Check your connection and try again."
-        );
-      }
-    );
-  };
-
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      return;
-    }
-    const g = ++gen.current;
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      const r = await social.searchProfiles(q);
-      if (g === gen.current) {
-        setResults(r);
-        setSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const invite = async () => {
-    await Share.share({
-      message: myUsername
-        ? `Follow me on TV App — I'm @${myUsername}. Got the app? Tap tvtime://u/${myUsername} — otherwise search @${myUsername} once you're in.`
-        : "Join me on TV App!",
-    });
-  };
-
-  const scanContacts = async () => {
-    setContacts("scanning");
-    try {
-      const { granted, profiles } = await social.findFriendsFromContacts();
-      setContacts(granted ? profiles : "denied");
-    } catch {
-      setContacts(null);
-      Alert.alert("Couldn't scan contacts", "Please try again.");
-    }
-  };
-
-  return (
-    <FlatList
-      data={results}
-      keyExtractor={(p) => p.id}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_CLEARANCE }}
-      ListHeaderComponent={
-        <View style={{ gap: 12, marginBottom: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.line,
-              borderRadius: radius.md,
-              paddingHorizontal: 14,
-            }}
-          >
-            <Ionicons name="at" size={16} color={colors.faint} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search by username"
-              placeholderTextColor={colors.faint}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={{ flex: 1, paddingVertical: 12, color: colors.fg, fontSize: 15 }}
-            />
-            {searching && <ActivityIndicator color={colors.accent} />}
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <ActionChip icon="share-outline" label="Invite link" onPress={invite} />
-            <ActionChip icon="people-outline" label="From contacts" onPress={scanContacts} />
-          </View>
-
-          {contacts === "scanning" && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <ActivityIndicator color={colors.accent} size="small" />
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
-                Scanning your contacts…
-              </Text>
-            </View>
-          )}
-          {contacts === "denied" && (
-            <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 18 }}>
-              Contacts access is off. Allow it in Settings → TV App to find
-              friends from your address book.
-            </Text>
-          )}
-          {Array.isArray(contacts) && (
-            <View style={{ gap: 8 }}>
-              <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
-                {contacts.length > 0
-                  ? "In your contacts"
-                  : "No contacts are on TV App yet — invite someone!"}
-              </Text>
-              {contacts.map((p) => (
-                <UserRow
-                  key={p.id}
-                  profile={p}
-                  following={followingIds ? followingIds.has(p.id) : null}
-                  onToggle={() => toggleFollow(p.id)}
-                  onOpen={onOpenUser}
-                />
-              ))}
-            </View>
-          )}
-
-          {query.trim().length >= 2 && results.length > 0 && (
-            <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium, marginTop: 4 }}>
-              Results
-            </Text>
-          )}
-        </View>
-      }
-      renderItem={({ item }) => (
-        <UserRow
-          profile={item}
-          following={followingIds ? followingIds.has(item.id) : null}
-          onToggle={() => toggleFollow(item.id)}
-          onOpen={onOpenUser}
-        />
-      )}
-      ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-    />
-  );
-}
-
-function ActionChip({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Bouncy
-      onPress={onPress}
-      scaleTo={0.95}
-      style={{
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        paddingVertical: 11,
-        borderRadius: radius.sm,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.line,
-      }}
-    >
-      <Ionicons name={icon} size={15} color={colors.accent} />
-      <Text style={{ color: colors.fg, fontSize: 12, fontWeight: "700" }}>{label}</Text>
-    </Bouncy>
-  );
-}
-
-/**
- * Fully controlled: follow state lives in the parent's followingIds set, so
- * row remounts and late-resolving fetches can never show stale state or
- * clobber an optimistic toggle.
- */
-function UserRow({
-  profile,
-  following,
-  onToggle,
-  onOpen,
-}: {
-  profile: Profile;
-  /** null while the following set is still loading. */
-  following: boolean | null;
-  onToggle: () => void;
-  onOpen: (username: string) => void;
-}) {
-  return (
-    <View style={{ ...card, flexDirection: "row", alignItems: "center", gap: 12, padding: 10 }}>
-      <Pressable onPress={() => onOpen(profile.username)}>
-        <Avatar name={profile.display_name || profile.username} url={profile.avatar_url} size={40} />
-      </Pressable>
-      <Pressable style={{ flex: 1 }} onPress={() => onOpen(profile.username)}>
-        <Text style={{ color: colors.fg, fontFamily: fonts.displayMedium, fontSize: 14 }} numberOfLines={1}>
-          {profile.display_name || profile.username}
-        </Text>
-        <Text style={{ color: colors.faint, fontSize: 12 }}>@{profile.username}</Text>
-      </Pressable>
-      <Bouncy
-        onPress={onToggle}
-        disabled={following == null}
-        scaleTo={0.92}
-        accessibilityRole="button"
-        accessibilityLabel={
-          following ? `Unfollow ${profile.username}` : `Follow ${profile.username}`
-        }
-        style={{
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: radius.sm,
-          backgroundColor: following ? colors.overlay : colors.accent,
-          minWidth: 84,
-          alignItems: "center",
-          opacity: following == null ? 0.5 : 1,
-        }}
-      >
-        <Text style={{ color: following ? colors.muted : colors.ink, fontWeight: "800", fontSize: 12 }}>
-          {following == null ? "…" : following ? "Following" : "Follow"}
-        </Text>
-      </Bouncy>
-    </View>
   );
 }
