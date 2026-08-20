@@ -24,6 +24,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setUsername: (username: string) => Promise<{ ok: boolean; error?: string }>;
+  /** A show poster URL, or null to go back to the initial. */
+  setAvatar: (url: string | null) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -148,6 +150,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session, refreshProfile]
   );
 
+  /**
+   * Profile pictures are a show poster you already follow, stored as the URL
+   * TVmaze already serves. Nothing is uploaded and nothing is kept in our
+   * storage, so this costs the same at ten users as at a million — which an
+   * uploaded photo per account would not.
+   */
+  const setAvatar = useCallback(
+    async (url: string | null): Promise<boolean> => {
+      if (!session?.user.id) return false;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("id", session.user.id);
+      if (error) return false;
+      await refreshProfile();
+      return true;
+    },
+    [session, refreshProfile]
+  );
+
   const value = useMemo<AuthState>(
     () => ({
       ready,
@@ -158,8 +180,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       refreshProfile,
       setUsername,
+      setAvatar,
     }),
-    [ready, session, profile, signInWithApple, signOut, refreshProfile, setUsername]
+    [
+      ready,
+      session,
+      profile,
+      signInWithApple,
+      signOut,
+      refreshProfile,
+      setUsername,
+      setAvatar,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

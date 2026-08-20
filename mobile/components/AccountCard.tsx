@@ -6,8 +6,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import * as AppleAuthentication from "expo-apple-authentication";
 import AgreementLine from "@/components/AgreementLine";
+import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
 import { card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -21,6 +24,7 @@ import { useAuth } from "@/lib/social/auth";
 export default function AccountCard() {
   const { ready, configured, session, profile, signInWithApple, signOut } =
     useAuth();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   if (!configured) {
@@ -96,22 +100,38 @@ export default function AccountCard() {
   return (
     <View style={{ ...card, padding: 16, gap: 12 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: colors.overlay,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+        {/* The picture is the control — tapping your own face to change it is
+            where everyone looks first. The pencil badge is there because a
+            plain avatar gives no sign it can be tapped. */}
+        <Bouncy
+          onPress={() => router.push("/choose-avatar" as never)}
+          scaleTo={0.94}
+          accessibilityRole="button"
+          accessibilityLabel="Change your profile picture"
         >
-          <Text style={{ color: colors.accent, fontFamily: fonts.display, fontSize: 18 }}>
-            {(profile?.display_name || profile?.username || "?")
-              .charAt(0)
-              .toUpperCase()}
-          </Text>
-        </View>
+          <Avatar
+            name={profile?.display_name || profile?.username || "?"}
+            url={profile?.avatar_url}
+            size={44}
+          />
+          <View
+            style={{
+              position: "absolute",
+              right: -2,
+              bottom: -2,
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              backgroundColor: colors.accent,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 2,
+              borderColor: colors.surface,
+            }}
+          >
+            <Ionicons name="pencil" size={9} color={colors.ink} />
+          </View>
+        </Bouncy>
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 15 }}>
             {profile?.display_name || "Your profile"}
