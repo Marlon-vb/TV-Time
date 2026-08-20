@@ -104,6 +104,14 @@ function normalize(q: string): string {
   return q.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 100);
 }
 
+/**
+ * Mirrors MIN_QUERY in the app. Short prefixes are the one query class that
+ * scales with users rather than with titles — everyone types "th" on the way
+ * to something — so refusing them here keeps a stale or hostile client from
+ * filling the cache with rows nobody wants answers to.
+ */
+const MIN_QUERY = 3;
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -123,7 +131,7 @@ Deno.serve(async (req) => {
   } catch {
     // fall through to the empty-query guard
   }
-  if (!q) return json({ movies: [] });
+  if (q.length < MIN_QUERY) return json({ movies: [] });
 
   const db = createClient(
     Deno.env.get("SUPABASE_URL")!,

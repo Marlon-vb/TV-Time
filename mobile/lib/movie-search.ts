@@ -18,9 +18,22 @@ import type { RemoteMovie } from "./types";
 /** The function answering 503 — the key was never set. A deployment gap. */
 export class MovieSearchUnavailable extends Error {}
 
+/**
+ * Below this, don't ask.
+ *
+ * Debouncing collapses a burst of keystrokes but not a pause mid-word, so
+ * typing one title can still emit "o", "opp", "oppenheimer" as three distinct
+ * queries — three cache rows and three upstream calls for one search. One- and
+ * two-letter prefixes are also the least useful results and the most numerous:
+ * there are only so many of them, and every user in the world types all of
+ * them. Enforced here rather than per screen so a third caller cannot forget,
+ * and again in the function so a stale client cannot fill the cache with them.
+ */
+export const MIN_QUERY = 3;
+
 export async function searchMovies(query: string): Promise<RemoteMovie[]> {
   const q = query.trim();
-  if (!q) return [];
+  if (q.length < MIN_QUERY) return [];
 
   const { data, error } = await supabase.functions.invoke<{
     movies?: RemoteMovie[];
