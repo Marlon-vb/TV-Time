@@ -88,11 +88,32 @@ export default function ShowScreen() {
           // The promise above extends to the server: clear the mirrored
           // history and this show's feed rows (no-op signed out).
           void social.deleteWatchedForShow(showId);
+          // And the star, which would otherwise outlive the library row it
+          // came from — still on your profile, with nothing left to un-star
+          // it from.
+          void social.setFavorite(showId);
           void rescheduleAll();
           router.back();
         },
       },
     ]);
+  };
+
+  const favorited = data?.show.favorited_at != null;
+
+  // Reads off `data` rather than the rendered `show`, which can be the
+  // unfollowed TVmaze preview and carries no library state.
+  const toggleFavorite = () => {
+    const row = data?.show;
+    if (!row) return;
+    const next = row.favorited_at == null;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    change(() => repo.setFavorite(showId, next));
+    // Mirrored separately, as every repo write is: the local star stands even
+    // signed out, where this is a no-op.
+    void social.setFavorite(
+      next ? { id: showId, name: row.name, posterUrl: row.poster_url } : showId
+    );
   };
 
   // Plain local change (used by archive — no watch state touched).
@@ -243,17 +264,43 @@ export default function ShowScreen() {
               radius={radius.md}
             />
             <View style={{ flex: 1, gap: 6 }}>
-              <Text
-                style={{
-                  color: colors.fg,
-                  fontSize: 25,
-                  fontFamily: fonts.display,
-                  letterSpacing: -0.4,
-                  lineHeight: 29,
-                }}
-              >
-                {show.name}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                <Text
+                  style={{
+                    flex: 1,
+                    color: colors.fg,
+                    fontSize: 25,
+                    fontFamily: fonts.display,
+                    letterSpacing: -0.4,
+                    lineHeight: 29,
+                  }}
+                >
+                  {show.name}
+                </Text>
+                {/* Only for shows you follow: starring one you don't would
+                    put a show on your profile that your library has no row
+                    for, and nothing to un-star it from. */}
+                {followed && (
+                  <Pressable
+                    onPress={toggleFavorite}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: favorited }}
+                    accessibilityLabel={
+                      favorited
+                        ? `Remove ${show.name} from favourites`
+                        : `Add ${show.name} to favourites`
+                    }
+                    style={{ paddingTop: 2 }}
+                  >
+                    <Ionicons
+                      name={favorited ? "star" : "star-outline"}
+                      size={24}
+                      color={favorited ? colors.accent : colors.faint}
+                    />
+                  </Pressable>
+                )}
+              </View>
               <Text style={{ color: colors.muted, fontSize: 12 }}>
                 {[
                   show.premiered?.slice(0, 4),
@@ -430,6 +477,7 @@ function remoteToRow(r: RemoteShow): ShowRow {
     last_synced_at: null,
     rating: null,
     review: null,
+    favorited_at: null,
   };
 }
 

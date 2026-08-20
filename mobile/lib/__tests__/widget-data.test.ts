@@ -32,6 +32,7 @@ function item(
       last_synced_at: null,
     rating: null,
     review: null,
+    favorited_at: null,
     },
     episode: {
       id: id * 100,

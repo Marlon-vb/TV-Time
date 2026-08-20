@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
+import FavoritesRail from "@/components/FavoritesRail";
 import Poster from "@/components/Poster";
 import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
@@ -24,7 +25,7 @@ import * as social from "@/lib/social/api";
 import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
-import type { Profile } from "@/lib/social/types";
+import type { FavoriteShow, Profile } from "@/lib/social/types";
 
 interface ShowSummary {
   showId: number;
@@ -44,6 +45,7 @@ export default function UserProfileScreen() {
   const [following, setFollowing] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [qr, setQr] = useState(false);
+  const [favorites, setFavorites] = useState<FavoriteShow[]>([]);
   const [summary, setSummary] = useState<{
     totalEpisodes: number;
     totalShows: number;
@@ -108,6 +110,9 @@ export default function UserProfileScreen() {
     setProfile(p);
     if (!p) return;
     setCounts(await social.followCounts(p.id));
+    // Not follower-scoped, unlike the watch summary below: favourites are
+    // a showcase, so they read for anyone who reaches the profile.
+    void social.getFavorites(p.id).then(setFavorites);
     if (!isMe) {
       setFollowing(await social.isFollowing(p.id));
       setBlocked((await social.getBlockedIds()).has(p.id));
@@ -260,6 +265,20 @@ export default function UserProfileScreen() {
             )}
           </View>
         </View>
+
+        {/* Above the watch stats: this is the part they chose to show, and
+            the stats below it are only visible to followers anyway. */}
+        {favorites.length > 0 && (
+          <FavoritesRail
+            title={isMe ? "Your favourites" : "Favourites"}
+            items={favorites.map((f) => ({
+              id: f.show_id,
+              name: f.name,
+              posterUrl: f.poster_url,
+            }))}
+            onOpen={(id) => router.push(`/show/${id}` as never)}
+          />
+        )}
 
         {summary ? (
           <>

@@ -22,6 +22,7 @@ function show(overrides: Partial<ShowWithProgress>): ShowWithProgress {
     last_synced_at: null,
     rating: null,
     review: null,
+    favorited_at: null,
     episode_count: 0,
     watched_count: 0,
     aired_unwatched: 0,

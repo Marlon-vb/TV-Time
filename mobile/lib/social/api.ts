@@ -10,6 +10,7 @@ import type {
   CharacterVoteTally,
   Comment,
   EpisodeStats,
+  FavoriteShow,
   FeedItem,
   Profile,
 } from "./types";
@@ -212,6 +213,66 @@ export async function getFeed(before?: {
  * friends-who-watched, community rating). Called from the watch/rate actions
  * only when signed in; silently no-ops otherwise.
  */
+/**
+ * Mirror a star to the profile everyone else reads.
+ *
+ * Signed out this is a no-op and the local star still stands — favourites
+ * work as a private shelf until there is an account to hang them on, rather
+ * than refusing the tap.
+ */
+export async function setFavorite(
+  show: { id: number; name: string; posterUrl: string | null } | number
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  if (typeof show === "number") {
+    await supabase
+      .from("favorite_shows")
+      .delete()
+      .eq("user_id", me)
+      .eq("show_id", show);
+    return;
+  }
+  await supabase.from("favorite_shows").upsert({
+    user_id: me,
+    show_id: show.id,
+    name: show.name,
+    poster_url: show.posterUrl,
+  });
+}
+
+/**
+ * Push a whole set of local stars up at once. Upsert only, never delete:
+ * signing in on a fresh install would otherwise wipe the favourites already
+ * on your profile, which is the same trap the watch-history mirror avoids.
+ */
+export async function upsertFavorites(
+  shows: { id: number; name: string; posterUrl: string | null }[]
+): Promise<void> {
+  const me = await uid();
+  if (!me || shows.length === 0) return;
+  await supabase.from("favorite_shows").upsert(
+    shows.map((s) => ({
+      user_id: me,
+      show_id: s.id,
+      name: s.name,
+      poster_url: s.posterUrl,
+    }))
+  );
+}
+
+/** Someone's starred shows, newest first. Their own id when omitted. */
+export async function getFavorites(userId?: string): Promise<FavoriteShow[]> {
+  const target = userId ?? (await uid());
+  if (!target) return [];
+  const { data } = await supabase
+    .from("favorite_shows")
+    .select("show_id, name, poster_url")
+    .eq("user_id", target)
+    .order("created_at", { ascending: false });
+  return (data as FavoriteShow[]) ?? [];
+}
+
 export async function recordWatch(input: {
   showId: number;
   season: number;

@@ -162,6 +162,29 @@ export function setShowReview(showId: number, review: string | null): void {
   );
 }
 
+/**
+ * Star or unstar a show. Local only, like every other repo write — screens
+ * pair it with social.setFavorite the same way marking an episode is paired
+ * with recordWatchForEpisode, so this layer keeps no opinion about accounts.
+ *
+ * A timestamp rather than a flag: the showcase orders by when you picked each
+ * one, and that needs no second column.
+ */
+export function setFavorite(showId: number, favorite: boolean): void {
+  getDb().runSync(
+    "UPDATE shows SET favorited_at = ? WHERE id = ?",
+    favorite ? new Date().toISOString() : null,
+    showId
+  );
+}
+
+/** Your starred shows, most recently starred first. */
+export function favorites(): ShowRow[] {
+  return getDb().getAllSync<ShowRow>(
+    "SELECT * FROM shows WHERE favorited_at IS NOT NULL ORDER BY favorited_at DESC"
+  );
+}
+
 export function setArchived(showId: number, archived: boolean): void {
   getDb().runSync(
     "UPDATE shows SET archived = ? WHERE id = ?",

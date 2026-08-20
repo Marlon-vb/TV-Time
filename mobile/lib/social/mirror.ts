@@ -35,6 +35,17 @@ async function reconcileOnce(showId?: number): Promise<boolean> {
     // never missing history; targeted deletes go last.
     await api.upsertWatchedRows(upserts);
     await api.deleteWatchedRows(deletes);
+    // Stars picked before signing in have never reached the profile. Only on
+    // a full pass — per-show reconciles run often and this is one query.
+    if (showId == null) {
+      await api.upsertFavorites(
+        repo.favorites().map((s) => ({
+          id: s.id,
+          name: s.name,
+          posterUrl: s.poster_url,
+        }))
+      );
+    }
     return true;
   } catch {
     return false; // offline / signed out — a later reconcile catches up

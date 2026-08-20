@@ -44,6 +44,7 @@ export interface ShowRow {
   last_synced_at: string | null;
   rating: number | null; // your show-level star rating (½–5)
   review: string | null; // private notes — never leaves the device
+  favorited_at: string | null; // starred for your profile; null = not a favourite
 }
 
 export interface EpisodeRow {

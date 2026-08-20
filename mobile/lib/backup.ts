@@ -26,6 +26,7 @@ export interface BackupShow {
   archived: 0 | 1;
   rating: number | null;
   review: string | null;
+  favorited_at: string | null;
   episodes: BackupEpisode[];
 }
 
@@ -60,7 +61,10 @@ export function buildBackup(now: Date = new Date()): BackupFile {
     archived: 0 | 1;
     rating: number | null;
     review: string | null;
-  }>("SELECT id, name, archived, rating, review FROM shows ORDER BY name");
+    favorited_at: string | null;
+  }>(
+    "SELECT id, name, archived, rating, review, favorited_at FROM shows ORDER BY name"
+  );
   return {
     app: "tv-time",
     version: 1,
@@ -167,11 +171,13 @@ export async function restoreBackup(
         db.runSync(
           `UPDATE shows SET archived = ?,
              rating = COALESCE(rating, ?),
-             review = COALESCE(review, ?)
+             review = COALESCE(review, ?),
+             favorited_at = COALESCE(favorited_at, ?)
            WHERE id = ?`,
           show.archived ?? 0,
           show.rating ?? null,
           show.review ?? null,
+          show.favorited_at ?? null,
           show.id
         );
       });

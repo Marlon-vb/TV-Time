@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS shows (
   summary TEXT,
   followed_at TEXT NOT NULL,
   archived INTEGER NOT NULL DEFAULT 0,
-  last_synced_at TEXT
+  last_synced_at TEXT,
+  favorited_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS episodes (
@@ -153,6 +154,18 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
       handle.execSync("ALTER TABLE episodes ADD COLUMN community_rating REAL");
     }
     handle.execSync("PRAGMA user_version = 7");
+  }
+  // v8: favourites. A timestamp rather than a flag, so the showcase can be
+  // ordered by when you picked each one without a second column.
+  if (version < 8) {
+    const hasShowColumn = (col: string) =>
+      handle
+        .getAllSync<{ name: string }>("PRAGMA table_info(shows)")
+        .some((c) => c.name === col);
+    if (!hasShowColumn("favorited_at")) {
+      handle.execSync("ALTER TABLE shows ADD COLUMN favorited_at TEXT");
+    }
+    handle.execSync("PRAGMA user_version = 8");
   }
 }
 

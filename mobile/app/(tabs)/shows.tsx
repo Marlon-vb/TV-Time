@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
+import FavoritesRail from "@/components/FavoritesRail";
 import ScreenHeader from "@/components/ScreenHeader";
 import { CATEGORY_LABELS, EmptyState, ProgressBar, card } from "@/components/ui";
 import {
@@ -160,6 +161,12 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
     setRefreshing(false);
   };
 
+  // Derived from the shows already loaded rather than a second query: the
+  // grid holds every followed show, and favourites are a subset of it.
+  const favorites = shows
+    .filter((s) => s.favorited_at != null)
+    .sort((a, b) => (b.favorited_at ?? "").localeCompare(a.favorited_at ?? ""));
+
   const counts = new Map<string, number>();
   for (const s of shows)
     counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
@@ -209,6 +216,22 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
         <View style={{ marginHorizontal: -12 }}>
           <ScreenHeader title="Library" subtitle={`${shows.length} shows`} />
           <LibraryToggle mode={mode} onMode={onMode} />
+          {/* Above the filters, not inside them: this shelf is a fixed answer
+              to "what do you love", so a category tab or a search should not
+              silently change it out from under you. Hidden until there is one,
+              rather than teaching an empty rail. */}
+          {favorites.length > 0 && (
+            <View style={{ paddingHorizontal: 16, marginTop: 14 }}>
+              <FavoritesRail
+                items={favorites.map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                  posterUrl: s.poster_url,
+                }))}
+                onOpen={(id) => router.push(`/show/${id}` as never)}
+              />
+            </View>
+          )}
           <View
             style={{
               flexDirection: "row",

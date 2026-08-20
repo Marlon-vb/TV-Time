@@ -72,3 +72,10 @@ export interface CharacterVoteTally {
   character_name: string;
   votes: number;
 }
+
+/** A show someone has starred, as shown on their profile. */
+export interface FavoriteShow {
+  show_id: number;
+  name: string;
+  poster_url: string | null;
+}

@@ -34,6 +34,17 @@ need to set up; it's free to start and stays free until you have real scale.
 3. Copy the **anon / public** API key (a long token labeled `anon` `public`).
 4. Send me both — I'll wire them into the app.
 
+## Favourite shows (~1 minute)
+
+Lets people star shows and show them off on their profile. One extra table,
+because favourites are shared and the rest of the library is local-only.
+
+1. In the project → **SQL Editor** → **New query**.
+2. Open [`favorites.sql`](./favorites.sql), paste the whole file, **Run**.
+
+Skipping this doesn't break the app: starring still works and still shows in
+your own Library, it just won't reach anyone else's profile.
+
 ## Push notifications (optional, ~5 minutes)
 
 Sends a real iPhone push when someone follows you, likes your comment, or
