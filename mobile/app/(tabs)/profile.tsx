@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,9 +18,14 @@ import { minutesHuman, monthLabel } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import { useFocusData } from "@/lib/useFocusData";
+import { useTabTop } from "@/lib/useTabTop";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  // Declared before the empty-state early return below, which renders no
+  // ScrollView — the ref is simply null there and the tap does nothing.
+  useTabTop(() => scrollRef.current?.scrollTo({ y: 0, animated: true }));
   const loader = useCallback(
     () => ({ ...repo.stats(), movies: movies.movieStats() }),
     []
@@ -58,6 +63,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: TAB_BAR_CLEARANCE,

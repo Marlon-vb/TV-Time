@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -18,6 +18,7 @@ import { epCode, fmtDate, fmtTime, relativeDay } from "@/lib/format";
 import { localDateIso, monthGrid, shiftMonth } from "@/lib/calendar";
 import * as repo from "@/lib/repo";
 import { useFocusData } from "@/lib/useFocusData";
+import { useTabTop } from "@/lib/useTabTop";
 import type { UpcomingItem } from "@/lib/types";
 
 interface DaySection {
@@ -28,6 +29,8 @@ interface DaySection {
 
 export default function UpcomingScreen() {
   const router = useRouter();
+  const listRef = useRef<SectionList<UpcomingItem>>(null);
+  const calendarRef = useRef<ScrollView>(null);
   const loader = useCallback((): DaySection[] => {
     const items = repo.upcoming();
     const sections: DaySection[] = [];
@@ -85,9 +88,18 @@ export default function UpcomingScreen() {
     </View>
   );
 
+  // Whichever view is mounted answers; the other ref is null.
+  useTabTop(() => {
+    calendarRef.current?.scrollTo({ y: 0, animated: true });
+    // Through the scroll responder rather than scrollToLocation, which needs
+    // a section to aim at and throws when there is nothing airing.
+    listRef.current?.getScrollResponder()?.scrollTo({ y: 0, animated: true });
+  });
+
   if (view === "calendar") {
     return (
       <ScrollView
+        ref={calendarRef}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: TAB_BAR_CLEARANCE,
@@ -111,6 +123,7 @@ export default function UpcomingScreen() {
 
   return (
     <SectionList
+      ref={listRef}
       sections={sections}
       keyExtractor={(item) => String(item.episode.id)}
       contentContainerStyle={{

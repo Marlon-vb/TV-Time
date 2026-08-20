@@ -23,7 +23,8 @@ import { useFollowing } from "@/lib/social/useFollowing";
 import * as social from "@/lib/social/api";
 import * as repo from "@/lib/repo";
 import { feedActivityText, shortAgo } from "@/lib/format-social";
-import { groupActivityText, groupFeed } from "@/lib/social/feed-group";
+import { groupActivityText, groupFeed, type FeedGroup } from "@/lib/social/feed-group";
+import { useTabTop } from "@/lib/useTabTop";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
 type Tab = "friends" | "feed";
@@ -127,6 +128,12 @@ function FriendsList({
   const { profiles, ids, toggle, reload } = useFollowing();
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  // Only the selected sub-tab is mounted, so exactly one of these two lists
+  // is listening at a time and they cannot fight over the same press.
+  const listRef = useRef<FlatList<Profile>>(null);
+  useTabTop(() =>
+    listRef.current?.scrollToOffset({ offset: 0, animated: true })
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -144,6 +151,7 @@ function FriendsList({
 
   return (
     <FlatList
+      ref={listRef}
       data={visible}
       keyExtractor={(p) => p.id}
       keyboardShouldPersistTaps="handled"
@@ -303,6 +311,11 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
   // loading more must not re-walk it.
   const groups = useMemo(() => groupFeed(items), [items]);
 
+  const listRef = useRef<FlatList<FeedGroup>>(null);
+  useTabTop(() =>
+    listRef.current?.scrollToOffset({ offset: 0, animated: true })
+  );
+
   if (loading) {
     return <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />;
   }
@@ -311,6 +324,7 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
     <FlatList
       // Grouped over the whole accumulated list, not per page, so a burst
       // that straddles a pagination boundary still collapses into one row.
+      ref={listRef}
       data={groups}
       keyExtractor={(g) => g.key}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_CLEARANCE, gap: 8 }}

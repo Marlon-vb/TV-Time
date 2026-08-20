@@ -25,6 +25,7 @@ import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
 import { rankByTitle } from "@/lib/search-rank";
+import { useTabTop } from "@/lib/useTabTop";
 import type { RemoteMovie, RemoteShow } from "@/lib/types";
 
 // A search hit — a TV show (TVmaze) or a movie/documentary (iTunes).
@@ -239,6 +240,12 @@ export default function DiscoverScreen() {
     return unsub;
   }, [navigation]);
 
+  // Runs after the reset above, so the rails are back before we scroll to them.
+  const listRef = useRef<FlatList<SearchItem>>(null);
+  useTabTop(() =>
+    listRef.current?.scrollToOffset({ offset: 0, animated: true })
+  );
+
   const follow = async (show: RemoteShow) => {
     setBusyId(show.id);
     try {
@@ -272,6 +279,7 @@ export default function DiscoverScreen() {
 
   return (
     <FlatList
+      ref={listRef}
       data={results}
       keyExtractor={(item) =>
         item.kind === "show" ? `show-${item.show.id}` : `movie-${item.movie.id}`

@@ -32,6 +32,7 @@ import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import * as itunes from "@/lib/itunes";
 import { useFocusData } from "@/lib/useFocusData";
+import { useTabTop } from "@/lib/useTabTop";
 import {
   filterShows,
   SHOW_SORTS,
@@ -131,6 +132,10 @@ function LibraryToggle({
 
 function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) => void }) {
   const router = useRouter();
+  const listRef = useRef<FlatList<ShowWithProgress>>(null);
+  useTabTop(() =>
+    listRef.current?.scrollToOffset({ offset: 0, animated: true })
+  );
   const { width } = useWindowDimensions();
   // Fixed 3-up card width so a long title can never stretch a card and break
   // the grid. Accounts for the list's 12pt side padding, the row's 4pt side
@@ -192,6 +197,7 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
 
   return (
     <FlatList
+      ref={listRef}
       data={visible}
       keyExtractor={(s) => String(s.id)}
       numColumns={3}
@@ -443,6 +449,10 @@ function ShowCard({
 
 function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) => void }) {
   const router = useRouter();
+  const movieListRef = useRef<FlatList<RemoteMovie | MovieRow>>(null);
+  useTabTop(() =>
+    movieListRef.current?.scrollToOffset({ offset: 0, animated: true })
+  );
   const loader = useCallback(() => movies.listMovies(), []);
   const { data, reload } = useFocusData(loader);
   const mine = data ?? [];
@@ -490,6 +500,7 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
 
   return (
     <FlatList
+      ref={movieListRef}
       data={(searching ? results : mine) as (RemoteMovie | MovieRow)[]}
       keyExtractor={(item) => String(item.id)}
       keyboardShouldPersistTaps="handled"

@@ -23,6 +23,7 @@ import { rescheduleAll } from "@/lib/notifications";
 import { groupWatchNext } from "@/lib/watchNextSections";
 import { syncUpNextWidget } from "@/lib/widget";
 import { useFocusData } from "@/lib/useFocusData";
+import { useTabTop } from "@/lib/useTabTop";
 import * as social from "@/lib/social/api";
 import type { WatchNextItem } from "@/lib/types";
 
@@ -76,6 +77,14 @@ export default function WatchNextScreen() {
       ?.scrollTo({ y: mastheadY, animated: false });
     setParked(true);
   }, [mastheadY]);
+
+  // Back to where the screen rests, not to offset zero: zero is the top of the
+  // recently-watched list, which this tab deliberately keeps out of view.
+  useTabTop(() => {
+    listRef.current
+      ?.getScrollResponder()
+      ?.scrollTo({ y: mastheadY, animated: true });
+  });
 
   // onLayout only records the position; parking waits for the re-render so it
   // uses the measured value rather than the one captured before it was known.
