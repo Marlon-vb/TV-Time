@@ -29,6 +29,8 @@ import CharacterVotes from "@/components/CharacterVotes";
 import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
 import { offerCatchUp } from "@/lib/catch-up";
+import ShareCardSheet from "@/components/ShareCardSheet";
+import { freshCard, type CardData } from "@/lib/share-card";
 import type { EpisodeRow, ShowRow } from "@/lib/types";
 
 /**
@@ -151,6 +153,7 @@ function EpisodePage({
 }) {
   const router = useRouter();
   const heroHeight = Math.round(width * 0.9);
+  const [shareCard, setShareCard] = useState<CardData | null>(null);
 
   // Live copy of this episode's row so watched/rating changes reflect at once
   // (and it refreshes when the screen regains focus).
@@ -210,6 +213,10 @@ function EpisodePage({
     else toggleWatched(next);
   };
 
+  // Only once it is watched: "just watched" is the claim the card makes, and
+  // offering it beforehand would be inviting someone to post a lie.
+  const fresh = isWatched ? freshCard(show, episode) : null;
+
   const share = async () => {
     await Share.share({
       message: episodeShareMessage({
@@ -224,6 +231,8 @@ function EpisodePage({
   };
 
   return (
+    <>
+      <ShareCardSheet card={shareCard} onClose={() => setShareCard(null)} />
     <ScrollView
       style={{ width }}
       contentContainerStyle={{ paddingBottom: 48 }}
@@ -382,22 +391,32 @@ function EpisodePage({
             )}
           </View>
           <Bouncy
-            onPress={() => void share()}
+            onPress={() => (fresh ? setShareCard(fresh) : void share())}
             scaleTo={0.9}
             accessibilityRole="button"
-            accessibilityLabel="Share this episode"
+            accessibilityLabel={
+              fresh ? "Share that you watched this" : "Share this episode"
+            }
             style={{
               width: 42,
               height: 42,
               borderRadius: 21,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: colors.raised,
+              // Promoted, not interrupting. A just-aired episode you have
+              // watched is the one worth posting, so the control lights up
+              // and offers the card instead of plain text — but a modal
+              // every week would be nagging, so it still waits to be tapped.
+              backgroundColor: fresh ? colors.accent : colors.raised,
               borderWidth: 1,
-              borderColor: colors.line,
+              borderColor: fresh ? colors.accent : colors.line,
             }}
           >
-            <Ionicons name="share-outline" size={18} color={colors.fg} />
+            <Ionicons
+              name="share-outline"
+              size={18}
+              color={fresh ? colors.ink : colors.fg}
+            />
           </Bouncy>
         </View>
 
@@ -499,6 +518,7 @@ function EpisodePage({
         </View>
       </View>
     </ScrollView>
+    </>
   );
 }
 

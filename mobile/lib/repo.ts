@@ -178,6 +178,94 @@ export function setFavorite(showId: number, favorite: boolean): void {
   );
 }
 
+/**
+ * Hours between the first and last episode of a show being marked watched.
+ *
+ * Separates having watched a show from having just told the app you watched
+ * it. Populating a library dumps a whole series in seconds; even a punishing
+ * binge takes longer than that. Null when fewer than two episodes carry a
+ * timestamp, which is not enough to tell either way.
+ */
+export function watchSpanHours(showId: number): number | null {
+  const row = getDb().getFirstSync<{
+    first: string | null;
+    last: string | null;
+    n: number;
+  }>(
+    `SELECT MIN(watched_at) AS first, MAX(watched_at) AS last, COUNT(*) AS n
+     FROM episodes WHERE show_id = ? AND watched_at IS NOT NULL`,
+    showId
+  );
+  if (!row?.first || !row.last || row.n < 2) return null;
+  const span = Date.parse(row.last) - Date.parse(row.first);
+  return Number.isNaN(span) ? null : span / 3_600_000;
+}
+
+export interface YearStats {
+  episodes: number;
+  minutes: number;
+  shows: number;
+  topGenre: string | null;
+  posters: string[];
+}
+
+/**
+ * One calendar year of watching, for the year-in-review card.
+ *
+ * Scoped rather than reusing the all-time stats: a card headed "My 2026 in TV"
+ * has to be about 2026, and someone who imported a decade of history would
+ * otherwise post a number that is mostly not this year.
+ */
+export function yearStats(year: number): YearStats {
+  const db = getDb();
+  const from = `${year}-01-01`;
+  const to = `${year + 1}-01-01`;
+  const totals = db.getFirstSync<{
+    episodes: number;
+    minutes: number;
+    shows: number;
+  }>(
+    `SELECT COUNT(*) AS episodes,
+            COALESCE(SUM(COALESCE(e.runtime, s.runtime, 40)), 0) AS minutes,
+            COUNT(DISTINCT e.show_id) AS shows
+     FROM episodes e JOIN shows s ON s.id = e.show_id
+     WHERE e.watched_at >= ? AND e.watched_at < ?`,
+    from,
+    to
+  );
+  const perShow = db.getAllSync<{
+    genres: string;
+    poster_url: string | null;
+    minutes: number;
+  }>(
+    `SELECT s.genres, s.poster_url,
+            SUM(COALESCE(e.runtime, s.runtime, 40)) AS minutes
+     FROM episodes e JOIN shows s ON s.id = e.show_id
+     WHERE e.watched_at >= ? AND e.watched_at < ?
+     GROUP BY e.show_id ORDER BY minutes DESC`,
+    from,
+    to
+  );
+  const genreMinutes = new Map<string, number>();
+  for (const row of perShow) {
+    for (const genre of JSON.parse(row.genres) as string[]) {
+      genreMinutes.set(genre, (genreMinutes.get(genre) ?? 0) + row.minutes);
+    }
+  }
+  const topGenre =
+    [...genreMinutes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  return {
+    episodes: totals?.episodes ?? 0,
+    minutes: totals?.minutes ?? 0,
+    shows: totals?.shows ?? 0,
+    topGenre,
+    posters: perShow
+      .map((r) => r.poster_url)
+      .filter((u): u is string => Boolean(u))
+      .slice(0, 4),
+  };
+}
+
 /** Your starred shows, most recently starred first. */
 export function favorites(): ShowRow[] {
   return getDb().getAllSync<ShowRow>(

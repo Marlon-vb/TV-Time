@@ -35,6 +35,8 @@ import { showShareMessage } from "@/lib/share";
 import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
 import { offerCatchUp } from "@/lib/catch-up";
+import ShareCardSheet from "@/components/ShareCardSheet";
+import { earnsFinishCard, type CardData } from "@/lib/share-card";
 import { useFocusData } from "@/lib/useFocusData";
 import type { EpisodeRow, RemoteShow, ShowRow } from "@/lib/types";
 
@@ -51,6 +53,7 @@ export default function ShowScreen() {
   }, [showId]);
   const { data, reload } = useFocusData(loader);
 
+  const [shareCard, setShareCard] = useState<CardData | null>(null);
   const [preview, setPreview] = useState<RemoteShow | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -116,6 +119,38 @@ export default function ShowScreen() {
     );
   };
 
+  /**
+   * Offer the finish card, but only for a deliberate tap on the last episode.
+   *
+   * Read from the database rather than from `data`, which still holds the
+   * counts from before this mark — useFocusData has not re-run yet. Never
+   * called from bulkChange: Mark all watched and mark-up-to are library
+   * maintenance, not the moment this card is for.
+   */
+  const maybeOfferFinish = () => {
+    const row = repo.getShowRow(showId);
+    if (!row) return;
+    const eps = repo.getEpisodes(showId);
+    const earned = earnsFinishCard({
+      status: row.status,
+      watchedCount: eps.filter((e) => e.watched_at).length,
+      unwatchedCount: eps.filter((e) => !e.watched_at).length,
+      singleEpisodeMark: true,
+      spanHours: repo.watchSpanHours(showId),
+    });
+    if (!earned) return;
+    setShareCard({
+      kind: "finished",
+      showName: row.name,
+      posterUrl: row.poster_url,
+      episodes: eps.filter((e) => e.watched_at).length,
+      minutes: eps
+        .filter((e) => e.watched_at)
+        .reduce((n, e) => n + (e.runtime ?? row.runtime ?? 40), 0),
+      rating: row.rating,
+    });
+  };
+
   // Plain local change (used by archive — no watch state touched).
   const change = (fn: () => void) => {
     fn();
@@ -173,6 +208,7 @@ export default function ShowScreen() {
     if (!ep) return;
     if (isWatched) {
       void social.recordWatchForEpisode(show, ep);
+      maybeOfferFinish();
       // bulkChange reconciles the whole show instead of publishing an activity
       // per filled-in episode — nobody wants six feed entries.
       offerCatchUp(showId, epId, () => bulkChange(() => repo.markUpTo(showId, epId)));
@@ -183,6 +219,7 @@ export default function ShowScreen() {
 
   return (
     <>
+      <ShareCardSheet card={shareCard} onClose={() => setShareCard(null)} />
       <Stack.Screen options={{ title: "" }} />
       <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}

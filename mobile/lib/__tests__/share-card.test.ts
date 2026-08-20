@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   airedLine,
+  earnsFinishCard,
   cardFileName,
   cardShareMessage,
   freshCard,
@@ -38,6 +39,45 @@ describe("isFinish", () => {
     expect(
       isFinish({ status: "Ended", watchedCount: 0, unwatchedCount: 0 })
     ).toBe(false);
+  });
+});
+
+describe("earnsFinishCard", () => {
+  const finished = {
+    status: "Ended",
+    watchedCount: 62,
+    unwatchedCount: 0,
+    singleEpisodeMark: true,
+    spanHours: 400,
+  };
+
+  it("fires on a deliberate last tap after watching over time", () => {
+    expect(earnsFinishCard(finished)).toBe(true);
+  });
+
+  it("never fires from a bulk mark", () => {
+    // Mark all watched, mark season, mark-up-to and imports are library
+    // maintenance, not a moment.
+    expect(earnsFinishCard({ ...finished, singleEpisodeMark: false })).toBe(
+      false
+    );
+  });
+
+  it("never fires for a library populated in one sitting", () => {
+    // Tapping through a series you watched years ago, to fill in the app.
+    expect(earnsFinishCard({ ...finished, spanHours: 0.05 })).toBe(false);
+  });
+
+  it("still fires for a long binge", () => {
+    expect(earnsFinishCard({ ...finished, spanHours: 9 })).toBe(true);
+  });
+
+  it("lets an unjudgeable history through rather than swallowing a finish", () => {
+    expect(earnsFinishCard({ ...finished, spanHours: null })).toBe(true);
+  });
+
+  it("does not fire for a running show, however it was marked", () => {
+    expect(earnsFinishCard({ ...finished, status: "Running" })).toBe(false);
   });
 });
 

@@ -54,6 +54,42 @@ export function isFinish(input: {
 }
 
 /**
+ * Below this, the show was entered rather than watched.
+ *
+ * Someone filling in a library they already watched years ago taps through a
+ * series in seconds; even an unbroken binge of a short season runs longer than
+ * an hour. The gap between the two is wide enough that one number separates
+ * them without having to guess at intent.
+ */
+export const POPULATING_SPAN_HOURS = 1;
+
+/**
+ * Whether finishing a show is worth a card.
+ *
+ * Two ways it is not. Bulk marks — Mark all watched, mark season, mark-up-to,
+ * an import — are library maintenance, and the moment being celebrated has to
+ * be a deliberate tap on the last episode. And a show whose entire history
+ * landed inside an hour was populated, not finished: the card would fire while
+ * someone was still setting the app up, for a show they finished years ago.
+ *
+ * A null span means fewer than two timestamped episodes, which is a one-episode
+ * show or a repaired history — too little to judge, so let it through rather
+ * than swallow a real finish.
+ */
+export function earnsFinishCard(input: {
+  status: string;
+  watchedCount: number;
+  unwatchedCount: number;
+  /** False for every bulk path; only a single-episode tap can earn this. */
+  singleEpisodeMark: boolean;
+  spanHours: number | null;
+}): boolean {
+  if (!input.singleEpisodeMark) return false;
+  if (!isFinish(input)) return false;
+  return input.spanHours == null || input.spanHours >= POPULATING_SPAN_HOURS;
+}
+
+/**
  * How long a just-aired episode still counts as news. Beyond this the card
  * stops being "I'm watching along" and starts being "I got round to it",
  * which nobody posts.

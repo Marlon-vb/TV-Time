@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,11 +7,13 @@ import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
 import ScreenHeader from "@/components/ScreenHeader";
 import AccountCard from "@/components/AccountCard";
+import ShareCardSheet from "@/components/ShareCardSheet";
 import { EmptyState, card, sectionLabel } from "@/components/ui";
 import {
   accentGradient,
   colors,
   fonts,
+  radius,
   TAB_BAR_CLEARANCE,
 } from "@/lib/theme";
 import { minutesHuman, monthLabel } from "@/lib/format";
@@ -19,9 +21,26 @@ import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import { useFocusData } from "@/lib/useFocusData";
 import { useTabTop } from "@/lib/useTabTop";
+import type { CardData } from "@/lib/share-card";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [shareCard, setShareCard] = useState<CardData | null>(null);
+
+  const shareYear = () => {
+    const year = new Date().getFullYear();
+    const y = repo.yearStats(year);
+    setShareCard({
+      kind: "year",
+      year,
+      episodes: y.episodes,
+      minutes: y.minutes,
+      shows: y.shows,
+      topGenre: y.topGenre,
+      posters: y.posters,
+    });
+  };
+
   const scrollRef = useRef<ScrollView>(null);
   // Declared before the empty-state early return below, which renders no
   // ScrollView — the ref is simply null there and the tap does nothing.
@@ -62,6 +81,8 @@ export default function ProfileScreen() {
   const maxGenre = Math.max(...data.topGenres.map((g) => g.minutes), 1);
 
   return (
+    <>
+    <ShareCardSheet card={shareCard} onClose={() => setShareCard(null)} />
     <ScrollView
       ref={scrollRef}
       contentContainerStyle={{
@@ -111,6 +132,33 @@ export default function ProfileScreen() {
         />
         <StatTile label="Behind" value={data.episodesBehind} accent />
       </View>
+
+      {/* Only once there is a year worth showing — a card reading "3 episodes"
+          is not one anybody posts, and offering it anyway is the app asking
+          for something it has not earned. */}
+      {data.episodesWatched >= 20 && (
+        <Bouncy
+          onPress={shareYear}
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Share your year in TV"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: radius.sm,
+            borderWidth: 1,
+            borderColor: colors.accent,
+          }}
+        >
+          <Ionicons name="sparkles" size={15} color={colors.accent} />
+          <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 13 }}>
+            Share my {new Date().getFullYear()} in TV
+          </Text>
+        </Bouncy>
+      )}
 
       {/* Watch diary */}
       <Bouncy
@@ -300,6 +348,7 @@ export default function ProfileScreen() {
         </View>
       )}
     </ScrollView>
+    </>
   );
 }
 
