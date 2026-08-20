@@ -30,7 +30,7 @@ import {
 import { relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
-import * as itunes from "@/lib/itunes";
+import * as movieSearch from "@/lib/movie-search";
 import { useFocusData } from "@/lib/useFocusData";
 import { useTabTop } from "@/lib/useTabTop";
 import {
@@ -477,7 +477,7 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
     const timer = setTimeout(async () => {
       setStatus("loading");
       try {
-        const found = await itunes.searchMovies(q);
+        const found = await movieSearch.searchMovies(q);
         if (gen !== generation.current) return;
         setResults(found);
         setStatus("done");
@@ -656,7 +656,7 @@ function MovieRowCard({
   );
 }
 
-/** An iTunes search result you can add. */
+/** A movie search result you can add. */
 function SearchResultRow({
   movie,
   added,

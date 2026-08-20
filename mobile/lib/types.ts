@@ -1,6 +1,6 @@
-/** A tracked movie or documentary film (source: Apple iTunes Search API). */
+/** A tracked movie or documentary film (source: TMDB, via our proxy). */
 export interface MovieRow {
-  id: number; // iTunes trackId (primary key)
+  id: number; // TMDB movie id (primary key)
   title: string;
   year: number | null;
   poster_url: string | null;
@@ -13,7 +13,7 @@ export interface MovieRow {
   rating: number | null; // your star rating, ½–5
 }
 
-/** A movie as returned from an iTunes search (not yet tracked). */
+/** A movie as returned from a search (not yet tracked). */
 export interface RemoteMovie {
   id: number;
   title: string;

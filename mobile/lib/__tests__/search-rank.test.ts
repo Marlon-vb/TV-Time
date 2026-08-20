@@ -41,7 +41,7 @@ describe("rankByTitle", () => {
   const id = (s: string) => s;
 
   it("lifts an exact match above fuzzy hits from the other source", () => {
-    // What TVmaze + iTunes actually return for "oppenheimer": a pile of
+    // What TVmaze + TMDB actually return for "oppenheimer": a pile of
     // loosely-matching series, then the film. Ranked, the film comes first.
     const merged = ["Oppenheimer's Cut", "The Day After", "Manhattan", "Oppenheimer"];
     expect(rankByTitle(merged, "oppenheimer", id)[0]).toBe("Oppenheimer");

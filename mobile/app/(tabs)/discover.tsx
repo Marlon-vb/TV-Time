@@ -18,7 +18,8 @@ import ScreenHeader from "@/components/ScreenHeader";
 import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import * as tvmaze from "@/lib/tvmaze";
-import * as itunes from "@/lib/itunes";
+import * as movieSearch from "@/lib/movie-search";
+import { MovieSearchUnavailable } from "@/lib/movie-search";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import { getSetting, setSetting } from "@/lib/db";
@@ -28,7 +29,7 @@ import { rankByTitle } from "@/lib/search-rank";
 import { useTabTop } from "@/lib/useTabTop";
 import type { RemoteMovie, RemoteShow } from "@/lib/types";
 
-// A search hit — a TV show (TVmaze) or a movie/documentary (iTunes).
+// A search hit — a TV show (TVmaze) or a movie/documentary (TMDB).
 type SearchItem =
   | { kind: "show"; show: RemoteShow; followed: boolean }
   | { kind: "movie"; movie: RemoteMovie; added: boolean };
@@ -119,7 +120,9 @@ export default function DiscoverScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
   // Which source dropped out, when the other one still answered.
-  const [partial, setPartial] = useState<"shows" | "movies" | null>(null);
+  const [partial, setPartial] = useState<
+    "shows" | "movies" | "movies-unset" | null
+  >(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
     "idle"
   );
@@ -180,10 +183,10 @@ export default function DiscoverScreen() {
     const gen = ++generation.current;
     const timer = setTimeout(async () => {
       setStatus("loading");
-      // Search both sources at once — TVmaze for TV, iTunes for film.
+      // Search both sources at once — TVmaze for TV, TMDB for film.
       const [showsRes, moviesRes] = await Promise.allSettled([
         tvmaze.searchShows(q),
-        itunes.searchMovies(q),
+        movieSearch.searchMovies(q),
       ]);
       if (gen !== generation.current) return;
       if (showsRes.status === "rejected" && moviesRes.status === "rejected") {
@@ -196,7 +199,12 @@ export default function DiscoverScreen() {
         showsRes.status === "rejected"
           ? "shows"
           : moviesRes.status === "rejected"
-            ? "movies"
+            ? // A missing TMDB key is a deployment gap, not a bad connection,
+              // and telling someone to check their wifi about it wastes their
+              // time. The proxy answers 503 for exactly this.
+              moviesRes.reason instanceof MovieSearchUnavailable
+              ? "movies-unset"
+              : "movies"
             : null
       );
       const showItems: SearchItem[] =
@@ -413,9 +421,11 @@ export default function DiscoverScreen() {
                 marginBottom: 10,
               }}
             >
-              {partial === "movies"
-                ? "Movies and documentaries aren’t loading right now — these are TV results only."
-                : "TV shows aren’t loading right now — these are movie results only."}
+              {partial === "movies-unset"
+                ? "Movie search isn’t set up on this account yet — these are TV results only."
+                : partial === "movies"
+                  ? "Movies and documentaries aren’t loading right now — these are TV results only."
+                  : "TV shows aren’t loading right now — these are movie results only."}
             </Text>
           )}
           {status === "done" && results.length === 0 && (

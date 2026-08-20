@@ -1,7 +1,7 @@
 /**
  * Ranking for the Discover search list.
  *
- * Results arrive from two sources — TVmaze for TV, iTunes for film — and the
+ * Results arrive from two sources — TVmaze for TV, TMDB for film — and the
  * obvious merge, one list after the other, hides the second source. TVmaze
  * fuzzy-matches, so a film title still returns a screenful of loosely related
  * series; the film itself lands below the fold and reads as "movies don't show

@@ -45,6 +45,31 @@ because favourites are shared and the rest of the library is local-only.
 Skipping this doesn't break the app: starring still works and still shows in
 your own Library, it just won't reach anyone else's profile.
 
+## Movie search (~5 minutes)
+
+TV comes from TVmaze, which needs no key. Film has no key-free source worth
+shipping — Apple's iTunes Search API was the one, and it stopped answering — so
+movies and documentaries come from TMDB through an Edge Function that keeps the
+key server-side. The app never holds it.
+
+1. Get a free key: [themoviedb.org](https://www.themoviedb.org) → sign up →
+   **Settings → API** → request a key (personal use, approved instantly).
+   Either the **v3 API key** or the **v4 read access token** works.
+2. Store it as a secret:
+   ```bash
+   supabase secrets set TMDB_KEY=<your key>
+   ```
+3. Deploy the function:
+   ```bash
+   supabase functions deploy movies
+   ```
+4. In **SQL Editor** → **New query**, paste [`movies.sql`](./movies.sql), **Run**.
+   That is the shared cache: one TMDB call per query per week, however many
+   people search it.
+
+Skipping this leaves TV search working and film search reporting that it is
+unavailable, rather than silently returning nothing.
+
 ## Push notifications (optional, ~5 minutes)
 
 Sends a real iPhone push when someone follows you, likes your comment, or

@@ -31,7 +31,7 @@ export interface BackupShow {
 }
 
 export interface BackupMovie {
-  id: number; // iTunes track id
+  id: number; // TMDB movie id
   title: string;
   year: number | null;
   poster_url: string | null;
