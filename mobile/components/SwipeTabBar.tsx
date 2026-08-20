@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MaterialTopTabBarProps } from "@react-navigation/material-top-tabs";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,8 +20,20 @@ export default function SwipeTabBar({
   descriptors,
   navigation,
 }: MaterialTopTabBarProps) {
+  // Measured, not assumed. This bar is positioned from the bottom of the
+  // window, and it used to sit at a hardcoded 28 — a number picked by looking
+  // at one iPhone. An iPhone-only app is still installable on iPad and runs
+  // there in compatibility mode, where the window geometry is not an iPhone's,
+  // and a fixed offset has nothing to keep it on screen.
+  //
+  // The arithmetic reproduces the old 28 exactly on a modern iPhone (34pt home
+  // indicator inset), so the look is unchanged where it was already right, and
+  // falls back to a safe constant where there is no inset to work from.
+  const insets = useSafeAreaInsets();
+  const bottom = insets.bottom > 0 ? Math.max(insets.bottom - 6, 12) : 20;
+
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { bottom }]}>
       <BlurView tint="dark" intensity={40} style={styles.frost} />
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
@@ -66,7 +79,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     right: 20,
-    bottom: 28,
     height: 60,
     flexDirection: "row",
     alignItems: "center",
