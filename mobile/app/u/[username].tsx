@@ -83,7 +83,19 @@ export default function UserProfileScreen() {
         inMyLibrary: false,
       };
     };
-    const top = await Promise.all(rows.slice(0, 8).map(hydrate));
+    // Recency, not volume: what someone is watching now says more about them
+    // than what they have accumulated the most of over the years. The counts
+    // still come from the summary above — only the order changes.
+    const counts = new Map(rows.map((r) => [r.show_id, r.episodes]));
+    const recentIds = await social.recentlyWatchedShows(userId);
+    const recentRows = recentIds
+      .map((id) => ({ show_id: id, episodes: counts.get(id) ?? 0 }))
+      .slice(0, 8);
+    // A profile whose whole history predates the mirror has no recent rows to
+    // order; fall back to the summary rather than showing an empty shelf.
+    const top = await Promise.all(
+      (recentRows.length > 0 ? recentRows : rows.slice(0, 8)).map(hydrate)
+    );
     const inCommon = rows
       .filter((r) => myShowIds.has(r.show_id))
       .slice(0, 8)
@@ -299,7 +311,7 @@ export default function UserProfileScreen() {
             {/* Top shows */}
             <View style={{ ...card, padding: 14, gap: 10 }}>
               <Text style={sectionLabel}>
-                {isMe ? "YOUR MOST WATCHED" : "THEIR MOST WATCHED"}
+                {isMe ? "YOU RECENTLY WATCHED" : "RECENTLY WATCHED"}
               </Text>
               <ShowRail shows={summary.top} onOpen={(id) => router.push(`/show/${id}` as never)} />
             </View>

@@ -139,6 +139,40 @@ export async function profileWatchSummary(
   return (data as { show_id: number; episodes: number }[]) ?? [];
 }
 
+/**
+ * The shows someone watched most recently, newest first.
+ *
+ * Read straight from watched_episodes rather than through a second RPC, so
+ * this needs no database change to ship. Follower-scoped by the same RLS as
+ * everything else here: an empty array for profiles you do not follow.
+ *
+ * Ordered by created_at, which is when the watch reached the server — the
+ * only timestamp the mirrored rows carry. Accurate for anything watched in
+ * the app; a bulk import lands its whole history at once, so ordering within
+ * an imported back catalogue is arbitrary.
+ */
+export async function recentlyWatchedShows(
+  userId: string,
+  limit = 12
+): Promise<number[]> {
+  // Bounded scan, then deduped here: Postgres has no distinct-on through
+  // PostgREST, and a heavy user has tens of thousands of rows. 400 is deep
+  // enough that a binge does not crowd out every other show.
+  const { data, error } = await supabase
+    .from("watched_episodes")
+    .select("show_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(400);
+  if (error || !data) return [];
+  const seen = new Set<number>();
+  for (const row of data as { show_id: number }[]) {
+    seen.add(row.show_id);
+    if (seen.size >= limit) break;
+  }
+  return [...seen];
+}
+
 // ---------------------------------------------------------------- activities
 
 /** Remove my feed activities for one episode (optionally scoped further). */
