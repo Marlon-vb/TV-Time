@@ -1,5 +1,6 @@
 import { getSetting, setSetting } from "@/lib/db";
 import * as repo from "@/lib/repo";
+import * as movies from "@/lib/movies";
 import * as api from "./api";
 import { planReconcile } from "./mirror-plan";
 
@@ -43,6 +44,13 @@ async function reconcileOnce(showId?: number): Promise<boolean> {
           id: s.id,
           name: s.name,
           posterUrl: s.poster_url,
+        }))
+      );
+      await api.upsertFavoriteMovies(
+        movies.favoriteMovies().map((m) => ({
+          id: m.id,
+          title: m.title,
+          posterUrl: m.poster_url,
         }))
       );
     }

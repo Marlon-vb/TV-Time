@@ -497,6 +497,10 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
   };
 
   const watchedCount = mine.filter((m) => m.watched_at).length;
+  // Derived from the list already loaded — favourites are a subset of it.
+  const favoriteFilms = mine
+    .filter((m) => m.favorited_at != null)
+    .sort((a, b) => (b.favorited_at ?? "").localeCompare(a.favorited_at ?? ""));
 
   return (
     <FlatList
@@ -523,6 +527,21 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
             />
             <LibraryToggle mode={mode} onMode={onMode} />
           </View>
+          {/* Above the search field, matching where shows put theirs, and only
+              while browsing: a shelf of favourites under a set of search
+              results is answering a question nobody asked. */}
+          {!searching && favoriteFilms.length > 0 && (
+            <View style={{ marginTop: 14 }}>
+              <FavoritesRail
+                items={favoriteFilms.map((m) => ({
+                  id: m.id,
+                  name: m.title,
+                  posterUrl: m.poster_url,
+                }))}
+                onOpen={(id) => router.push(`/movie/${id}` as never)}
+              />
+            </View>
+          )}
           <View
             style={{
               flexDirection: "row",

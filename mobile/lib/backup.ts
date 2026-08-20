@@ -41,6 +41,7 @@ export interface BackupMovie {
   release_date: string | null;
   watched_at: string | null;
   rating: number | null;
+  favorited_at: string | null;
 }
 
 export interface BackupFile {
@@ -82,7 +83,7 @@ export function buildBackup(now: Date = new Date()): BackupFile {
     })),
     movies: db.getAllSync<BackupMovie>(
       `SELECT id, title, year, poster_url, genre, runtime, overview,
-              release_date, watched_at, rating
+              release_date, watched_at, rating, favorited_at
        FROM movies ORDER BY title`
     ),
   };
@@ -193,11 +194,13 @@ export async function restoreBackup(
     try {
       db.runSync(
         `INSERT INTO movies (id, title, year, poster_url, genre, runtime,
-                             overview, release_date, added_at, watched_at, rating)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             overview, release_date, added_at, watched_at,
+                             rating, favorited_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            watched_at = COALESCE(movies.watched_at, excluded.watched_at),
-           rating = COALESCE(movies.rating, excluded.rating)`,
+           rating = COALESCE(movies.rating, excluded.rating),
+           favorited_at = COALESCE(movies.favorited_at, excluded.favorited_at)`,
         m.id,
         m.title,
         m.year,
@@ -208,7 +211,8 @@ export async function restoreBackup(
         m.release_date,
         backup.exported_at,
         m.watched_at,
-        m.rating
+        m.rating,
+        m.favorited_at ?? null
       );
       restoredMovies++;
     } catch {

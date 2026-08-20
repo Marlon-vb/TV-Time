@@ -42,6 +42,10 @@ because favourites are shared and the rest of the library is local-only.
 1. In the project → **SQL Editor** → **New query**.
 2. Open [`favorites.sql`](./favorites.sql), paste the whole file, **Run**.
 
+Two tables, one for shows and one for films. Re-run the whole file after
+updating — it is idempotent, and the film table was added after the first
+version.
+
 Skipping this doesn't break the app: starring still works and still shows in
 your own Library, it just won't reach anyone else's profile.
 

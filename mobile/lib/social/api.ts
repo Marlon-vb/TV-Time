@@ -10,6 +10,7 @@ import type {
   CharacterVoteTally,
   Comment,
   EpisodeStats,
+  FavoriteMovie,
   FavoriteShow,
   FeedItem,
   Profile,
@@ -291,6 +292,58 @@ export async function upsertFavorites(
       show_id: s.id,
       name: s.name,
       poster_url: s.posterUrl,
+    }))
+  );
+}
+
+/** Mirror a starred film. Signed out this is a no-op, as with shows. */
+export async function setFavoriteMovie(
+  movie: { id: number; title: string; posterUrl: string | null } | number
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  if (typeof movie === "number") {
+    await supabase
+      .from("favorite_movies")
+      .delete()
+      .eq("user_id", me)
+      .eq("movie_id", movie);
+    return;
+  }
+  await supabase.from("favorite_movies").upsert({
+    user_id: me,
+    movie_id: movie.id,
+    title: movie.title,
+    poster_url: movie.posterUrl,
+  });
+}
+
+/** Someone's starred films, newest first. Their own id when omitted. */
+export async function getFavoriteMovies(
+  userId?: string
+): Promise<FavoriteMovie[]> {
+  const target = userId ?? (await uid());
+  if (!target) return [];
+  const { data } = await supabase
+    .from("favorite_movies")
+    .select("movie_id, title, poster_url")
+    .eq("user_id", target)
+    .order("created_at", { ascending: false });
+  return (data as FavoriteMovie[]) ?? [];
+}
+
+/** Push a whole set of local film stars up. Upsert only, same as shows. */
+export async function upsertFavoriteMovies(
+  movies: { id: number; title: string; posterUrl: string | null }[]
+): Promise<void> {
+  const me = await uid();
+  if (!me || movies.length === 0) return;
+  await supabase.from("favorite_movies").upsert(
+    movies.map((m) => ({
+      user_id: me,
+      movie_id: m.id,
+      title: m.title,
+      poster_url: m.posterUrl,
     }))
   );
 }

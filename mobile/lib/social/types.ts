@@ -79,3 +79,11 @@ export interface FavoriteShow {
   name: string;
   poster_url: string | null;
 }
+
+/** A film someone has starred. Kept apart from FavoriteShow because tapping
+ *  one opens /movie and the other /show. */
+export interface FavoriteMovie {
+  movie_id: number;
+  title: string;
+  poster_url: string | null;
+}

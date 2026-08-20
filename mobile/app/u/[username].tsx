@@ -25,7 +25,7 @@ import * as social from "@/lib/social/api";
 import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
-import type { FavoriteShow, Profile } from "@/lib/social/types";
+import type { FavoriteMovie, FavoriteShow, Profile } from "@/lib/social/types";
 
 interface ShowSummary {
   showId: number;
@@ -46,6 +46,7 @@ export default function UserProfileScreen() {
   const [blocked, setBlocked] = useState(false);
   const [qr, setQr] = useState(false);
   const [favorites, setFavorites] = useState<FavoriteShow[]>([]);
+  const [favoriteFilms, setFavoriteFilms] = useState<FavoriteMovie[]>([]);
   const [summary, setSummary] = useState<{
     totalEpisodes: number;
     totalShows: number;
@@ -125,6 +126,7 @@ export default function UserProfileScreen() {
     // Not follower-scoped, unlike the watch summary below: favourites are
     // a showcase, so they read for anyone who reaches the profile.
     void social.getFavorites(p.id).then(setFavorites);
+    void social.getFavoriteMovies(p.id).then(setFavoriteFilms);
     if (!isMe) {
       setFollowing(await social.isFollowing(p.id));
       setBlocked((await social.getBlockedIds()).has(p.id));
@@ -289,6 +291,21 @@ export default function UserProfileScreen() {
               posterUrl: f.poster_url,
             }))}
             onOpen={(id) => router.push(`/show/${id}` as never)}
+          />
+        )}
+
+        {/* Its own shelf rather than merged into the one above: tapping a
+            poster has to reach the right screen, and a mixed row gives no
+            hint which is which. */}
+        {favoriteFilms.length > 0 && (
+          <FavoritesRail
+            title={isMe ? "Your favourite films" : "Favourite films"}
+            items={favoriteFilms.map((f) => ({
+              id: f.movie_id,
+              name: f.title,
+              posterUrl: f.poster_url,
+            }))}
+            onOpen={(id) => router.push(`/movie/${id}` as never)}
           />
         )}
 

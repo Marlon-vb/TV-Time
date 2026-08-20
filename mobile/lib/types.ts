@@ -11,6 +11,7 @@ export interface MovieRow {
   added_at: string; // when you added it to your library
   watched_at: string | null; // null = still on your watchlist
   rating: number | null; // your star rating, ½–5
+  favorited_at: string | null; // starred for your profile; null = not a favourite
 }
 
 /** A movie as returned from a search (not yet tracked). */

@@ -11,6 +11,7 @@ import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, scrimGradient, TAB_BAR_CLEARANCE } from "@/lib/theme";
 import { fmtDate } from "@/lib/format";
 import * as movies from "@/lib/movies";
+import * as social from "@/lib/social/api";
 import { useFocusData } from "@/lib/useFocusData";
 
 export default function MovieScreen() {
@@ -27,6 +28,23 @@ export default function MovieScreen() {
     reload();
   };
 
+  const favorited = movie?.favorited_at != null;
+
+  const toggleFavorite = () => {
+    if (!movie) return;
+    const next = !favorited;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    movies.setMovieFavorite(movieId, next);
+    reload();
+    // Mirrored separately, as every local write is: the star stands signed
+    // out, where this is a no-op.
+    void social.setFavoriteMovie(
+      next
+        ? { id: movieId, title: movie.title, posterUrl: movie.poster_url }
+        : movieId
+    );
+  };
+
   const rate = (value: number | null) => {
     movies.setMovieRating(movieId, value);
     reload();
@@ -40,6 +58,9 @@ export default function MovieScreen() {
         style: "destructive",
         onPress: () => {
           movies.removeMovie(movieId);
+          // And the star, which would otherwise sit on your profile with
+          // nothing left in the library to un-star it from.
+          void social.setFavoriteMovie(movieId);
           router.back();
         },
       },
@@ -86,16 +107,37 @@ export default function MovieScreen() {
           style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: 0 }}
         />
         <View style={{ position: "absolute", left: 18, right: 18, bottom: 16 }}>
-          <Text
-            style={{
-              color: colors.fg,
-              fontFamily: fonts.display,
-              fontSize: 26,
-              letterSpacing: -0.4,
-            }}
-          >
-            {movie.title}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+            <Text
+              style={{
+                flex: 1,
+                color: colors.fg,
+                fontFamily: fonts.display,
+                fontSize: 26,
+                letterSpacing: -0.4,
+              }}
+            >
+              {movie.title}
+            </Text>
+            <Pressable
+              onPress={toggleFavorite}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityState={{ selected: favorited }}
+              accessibilityLabel={
+                favorited
+                  ? `Remove ${movie.title} from favourites`
+                  : `Add ${movie.title} to favourites`
+              }
+              style={{ paddingTop: 2 }}
+            >
+              <Ionicons
+                name={favorited ? "star" : "star-outline"}
+                size={24}
+                color={favorited ? colors.accent : colors.faint}
+              />
+            </Pressable>
+          </View>
           {meta ? (
             <Text style={{ color: colors.muted, fontSize: 12, marginTop: 5 }}>
               {meta}

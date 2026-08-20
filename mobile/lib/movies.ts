@@ -58,6 +58,25 @@ export function addMovie(m: RemoteMovie): void {
   );
 }
 
+/**
+ * Star or unstar a movie. Local only, like every other write here — the movie
+ * screen pairs it with social.setFavoriteMovie, the same split shows use.
+ */
+export function setMovieFavorite(id: number, favorite: boolean): void {
+  getDb().runSync(
+    "UPDATE movies SET favorited_at = ? WHERE id = ?",
+    favorite ? nowIso() : null,
+    id
+  );
+}
+
+/** Your starred movies, most recently starred first. */
+export function favoriteMovies(): MovieRow[] {
+  return getDb().getAllSync<MovieRow>(
+    "SELECT * FROM movies WHERE favorited_at IS NOT NULL ORDER BY favorited_at DESC"
+  );
+}
+
 export function removeMovie(id: number): void {
   getDb().runSync("DELETE FROM movies WHERE id = ?", id);
 }

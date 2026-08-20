@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS movies (
   release_date TEXT,
   added_at TEXT NOT NULL,
   watched_at TEXT,
-  rating REAL
+  rating REAL,
+  favorited_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
@@ -166,6 +167,17 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
       handle.execSync("ALTER TABLE shows ADD COLUMN favorited_at TEXT");
     }
     handle.execSync("PRAGMA user_version = 8");
+  }
+  // v9: favourite movies, matching v8 for shows.
+  if (version < 9) {
+    const hasMovieColumn = (col: string) =>
+      handle
+        .getAllSync<{ name: string }>("PRAGMA table_info(movies)")
+        .some((c) => c.name === col);
+    if (!hasMovieColumn("favorited_at")) {
+      handle.execSync("ALTER TABLE movies ADD COLUMN favorited_at TEXT");
+    }
+    handle.execSync("PRAGMA user_version = 9");
   }
 }
 
