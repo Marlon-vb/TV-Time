@@ -23,6 +23,7 @@ import { useFollowing } from "@/lib/social/useFollowing";
 import * as social from "@/lib/social/api";
 import * as repo from "@/lib/repo";
 import { feedActivityText, shortAgo } from "@/lib/format-social";
+import { groupActivityText, groupFeed } from "@/lib/social/feed-group";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
 type Tab = "friends" | "feed";
@@ -298,14 +299,20 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
     void load();
   }, [load]);
 
+  // Not on every render: the list grows with each page, and refreshing or
+  // loading more must not re-walk it.
+  const groups = useMemo(() => groupFeed(items), [items]);
+
   if (loading) {
     return <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />;
   }
 
   return (
     <FlatList
-      data={items}
-      keyExtractor={(i) => i.id}
+      // Grouped over the whole accumulated list, not per page, so a burst
+      // that straddles a pagination boundary still collapses into one row.
+      data={groups}
+      keyExtractor={(g) => g.key}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_CLEARANCE, gap: 8 }}
       refreshControl={
         <RefreshControl
@@ -339,13 +346,15 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
           />
         )
       }
-      renderItem={({ item }) => {
+      renderItem={({ item: group }) => {
+        const item = group.item;
         const name = item.display_name || item.username;
         // The whole row links somewhere useful: the episode when we have it
         // locally, otherwise the show.
         const openTarget = () => {
           if (item.show_id == null) return;
-          if (item.season != null && item.episode != null) {
+          // A collapsed run is about the show, not any one episode in it.
+          if (group.count === 1 && item.season != null && item.episode != null) {
             const epId = repo.findEpisodeId(item.show_id, item.season, item.episode);
             if (epId != null) {
               router.push(`/episode/${epId}` as never);
@@ -367,7 +376,9 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
                 <Text style={{ fontFamily: fonts.displayMedium }} onPress={() => onOpenUser(item.username)}>
                   {name}
                 </Text>{" "}
-                <Text style={{ color: colors.muted }}>{feedActivityText(item)}</Text>
+                <Text style={{ color: colors.muted }}>
+                  {group.count > 1 ? groupActivityText(group) : feedActivityText(item)}
+                </Text>
               </Text>
               <Text style={{ color: colors.faint, fontSize: 11, marginTop: 2 }}>
                 {shortAgo(item.created_at)}
