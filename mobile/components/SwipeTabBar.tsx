@@ -64,7 +64,16 @@ export default function SwipeTabBar({
             style={styles.item}
           >
             {options.tabBarIcon?.({ focused, color })}
-            <Text style={[styles.label, { color }]} numberOfLines={1}>
+            <Text
+              style={[styles.label, { color }]}
+              numberOfLines={1}
+              // Chrome, not content. At 10pt inside a fixed pill, Dynamic Type
+              // at iPad's larger default sizes pushes the label past the
+              // bottom edge and clips it mid-glyph — which is exactly what
+              // review saw. Bounded rather than disabled, so the setting still
+              // does something for people who need it.
+              maxFontSizeMultiplier={1.2}
+            >
               {label}
             </Text>
           </Pressable>
@@ -79,7 +88,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     right: 20,
-    height: 60,
+    // Minimum, not fixed: a bar that cannot grow clips its own labels the
+    // moment anything makes them taller than the number picked on one device.
+    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 30,
