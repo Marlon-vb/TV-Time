@@ -70,11 +70,21 @@ export function setMovieFavorite(id: number, favorite: boolean): void {
   );
 }
 
-/** Your starred movies, most recently starred first. */
+/** Your starred movies, in the order you put them. Same rule as shows. */
 export function favoriteMovies(): MovieRow[] {
   return getDb().getAllSync<MovieRow>(
-    "SELECT * FROM movies WHERE favorited_at IS NOT NULL ORDER BY favorited_at DESC"
+    `SELECT * FROM movies WHERE favorited_at IS NOT NULL
+     ORDER BY favorite_rank IS NULL, favorite_rank ASC, favorited_at DESC`
   );
+}
+
+/** Write a whole order at once; ids not present are cleared back to unranked. */
+export function setFavoriteMovieOrder(movieIds: number[]): void {
+  const db = getDb();
+  db.runSync("UPDATE movies SET favorite_rank = NULL");
+  movieIds.forEach((id, i) => {
+    db.runSync("UPDATE movies SET favorite_rank = ? WHERE id = ?", i, id);
+  });
 }
 
 export function removeMovie(id: number): void {

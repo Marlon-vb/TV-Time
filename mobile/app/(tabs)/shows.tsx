@@ -235,6 +235,7 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
                   posterUrl: s.poster_url,
                 }))}
                 onOpen={(id) => router.push(`/show/${id}` as never)}
+                onEdit={() => router.push("/edit-favourites" as never)}
               />
             </View>
           )}
@@ -539,6 +540,7 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
                   posterUrl: m.poster_url,
                 }))}
                 onOpen={(id) => router.push(`/movie/${id}` as never)}
+                onEdit={() => router.push("/edit-favourites" as never)}
               />
             </View>
           )}

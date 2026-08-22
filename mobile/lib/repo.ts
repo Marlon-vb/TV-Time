@@ -266,11 +266,27 @@ export function yearStats(year: number): YearStats {
   };
 }
 
-/** Your starred shows, most recently starred first. */
+/**
+ * Your starred shows, in the order you put them.
+ *
+ * Ranked ones first, then anything never reordered, newest star first — so
+ * arranging the top of the shelf does not require arranging all of it, and a
+ * new favourite lands at the end rather than silently in the middle.
+ */
 export function favorites(): ShowRow[] {
   return getDb().getAllSync<ShowRow>(
-    "SELECT * FROM shows WHERE favorited_at IS NOT NULL ORDER BY favorited_at DESC"
+    `SELECT * FROM shows WHERE favorited_at IS NOT NULL
+     ORDER BY favorite_rank IS NULL, favorite_rank ASC, favorited_at DESC`
   );
+}
+
+/** Write a whole order at once; ids not present are cleared back to unranked. */
+export function setFavoriteOrder(showIds: number[]): void {
+  const db = getDb();
+  db.runSync("UPDATE shows SET favorite_rank = NULL");
+  showIds.forEach((id, i) => {
+    db.runSync("UPDATE shows SET favorite_rank = ? WHERE id = ?", i, id);
+  });
 }
 
 export function setArchived(showId: number, archived: boolean): void {

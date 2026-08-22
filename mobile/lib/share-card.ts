@@ -27,6 +27,12 @@ export type CardData =
       airedLine: string;
     }
   | {
+      kind: "top";
+      /** "Shows" or "Movies" — the card says which it is ranking. */
+      medium: string;
+      entries: { title: string; posterUrl: string | null }[];
+    }
+  | {
       kind: "year";
       year: number;
       episodes: number;
@@ -139,6 +145,8 @@ export function cardShareMessage(card: CardData): string {
     }
     case "fresh":
       return `Just watched ${card.showName} ${card.code} — ${card.airedLine.toLowerCase()} 📺`;
+    case "top":
+      return `My top ${card.entries.length} ${card.medium.toLowerCase()} 📺`;
     case "year":
       return `My ${card.year} in TV: ${card.episodes} episodes, ${watchTimeLine(card.minutes)} watched 📺`;
   }
@@ -158,9 +166,27 @@ export function cardFileName(card: CardData): string {
       return `finished-${slug(card.showName)}.png`;
     case "fresh":
       return `${slug(card.showName)}-${card.code.toLowerCase()}.png`;
+    case "top":
+      return `my-top-${card.medium.toLowerCase()}.png`;
     case "year":
       return `my-${card.year}-in-tv.png`;
   }
+}
+
+/**
+ * Ten is the count people argue about. Fewer than three is not a ranking,
+ * it is a preference, and a card claiming otherwise invites the reply.
+ */
+export const TOP_MAX = 10;
+export const TOP_MIN = 3;
+
+/** Null when the shelf is too short to be worth calling a ranking. */
+export function topCard(
+  medium: string,
+  entries: { title: string; posterUrl: string | null }[]
+): CardData | null {
+  if (entries.length < TOP_MIN) return null;
+  return { kind: "top", medium, entries: entries.slice(0, TOP_MAX) };
 }
 
 /** Build the fresh-episode card from a local episode row. */

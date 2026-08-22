@@ -157,6 +157,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="history" options={{ title: "Watch history" }} />
         <Stack.Screen name="find-friends" options={{ title: "Add friends" }} />
+        <Stack.Screen name="edit-favourites" options={{ title: "Arrange favourites" }} />
         <Stack.Screen name="choose-avatar" options={{ title: "Profile picture" }} />
       </Stack>
       )}

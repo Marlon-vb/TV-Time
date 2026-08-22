@@ -21,11 +21,23 @@ import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import { useFocusData } from "@/lib/useFocusData";
 import { useTabTop } from "@/lib/useTabTop";
-import type { CardData } from "@/lib/share-card";
+import { topCard, type CardData } from "@/lib/share-card";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [shareCard, setShareCard] = useState<CardData | null>(null);
+
+  const shareTop = () => {
+    const shows = repo.favorites();
+    const films = movies.favoriteMovies();
+    // Whichever shelf you have actually arranged. Shows win a tie because the
+    // app is named after them.
+    const useShows = shows.length >= films.length;
+    const card = useShows
+      ? topCard("Shows", shows.map((s) => ({ title: s.name, posterUrl: s.poster_url })))
+      : topCard("Movies", films.map((m) => ({ title: m.title, posterUrl: m.poster_url })));
+    if (card) setShareCard(card);
+  };
 
   const shareYear = () => {
     const year = new Date().getFullYear();
@@ -156,6 +168,32 @@ export default function ProfileScreen() {
           <Ionicons name="sparkles" size={15} color={colors.accent} />
           <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 13 }}>
             Share my {new Date().getFullYear()} in TV
+          </Text>
+        </Bouncy>
+      )}
+
+      {/* Only once the shelf is long enough to be a ranking rather than a
+          preference. */}
+      {repo.favorites().length + movies.favoriteMovies().length >= 3 && (
+        <Bouncy
+          onPress={shareTop}
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Share your ranked favourites"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            paddingVertical: 14,
+            borderRadius: radius.sm,
+            borderWidth: 1,
+            borderColor: colors.line,
+          }}
+        >
+          <Ionicons name="star" size={15} color={colors.accent} />
+          <Text style={{ color: colors.fg, fontWeight: "800", fontSize: 13 }}>
+            Share my top list
           </Text>
         </Bouncy>
       )}

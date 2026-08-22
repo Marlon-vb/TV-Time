@@ -33,6 +33,7 @@ function item(
     rating: null,
     review: null,
     favorited_at: null,
+    favorite_rank: null,
     },
     episode: {
       id: id * 100,

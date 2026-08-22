@@ -256,7 +256,9 @@ export async function getFeed(before?: {
  * than refusing the tap.
  */
 export async function setFavorite(
-  show: { id: number; name: string; posterUrl: string | null } | number
+  show:
+    | { id: number; name: string; posterUrl: string | null; position?: number | null }
+    | number
 ): Promise<void> {
   const me = await uid();
   if (!me) return;
@@ -273,6 +275,7 @@ export async function setFavorite(
     show_id: show.id,
     name: show.name,
     poster_url: show.posterUrl,
+    position: show.position ?? null,
   });
 }
 
@@ -282,7 +285,12 @@ export async function setFavorite(
  * on your profile, which is the same trap the watch-history mirror avoids.
  */
 export async function upsertFavorites(
-  shows: { id: number; name: string; posterUrl: string | null }[]
+  shows: {
+    id: number;
+    name: string;
+    posterUrl: string | null;
+    position?: number | null;
+  }[]
 ): Promise<void> {
   const me = await uid();
   if (!me || shows.length === 0) return;
@@ -292,13 +300,16 @@ export async function upsertFavorites(
       show_id: s.id,
       name: s.name,
       poster_url: s.posterUrl,
+      position: s.position ?? null,
     }))
   );
 }
 
 /** Mirror a starred film. Signed out this is a no-op, as with shows. */
 export async function setFavoriteMovie(
-  movie: { id: number; title: string; posterUrl: string | null } | number
+  movie:
+    | { id: number; title: string; posterUrl: string | null; position?: number | null }
+    | number
 ): Promise<void> {
   const me = await uid();
   if (!me) return;
@@ -315,6 +326,7 @@ export async function setFavoriteMovie(
     movie_id: movie.id,
     title: movie.title,
     poster_url: movie.posterUrl,
+    position: movie.position ?? null,
   });
 }
 
@@ -328,13 +340,19 @@ export async function getFavoriteMovies(
     .from("favorite_movies")
     .select("movie_id, title, poster_url")
     .eq("user_id", target)
+    .order("position", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
   return (data as FavoriteMovie[]) ?? [];
 }
 
 /** Push a whole set of local film stars up. Upsert only, same as shows. */
 export async function upsertFavoriteMovies(
-  movies: { id: number; title: string; posterUrl: string | null }[]
+  movies: {
+    id: number;
+    title: string;
+    posterUrl: string | null;
+    position?: number | null;
+  }[]
 ): Promise<void> {
   const me = await uid();
   if (!me || movies.length === 0) return;
@@ -344,6 +362,7 @@ export async function upsertFavoriteMovies(
       movie_id: m.id,
       title: m.title,
       poster_url: m.posterUrl,
+      position: m.position ?? null,
     }))
   );
 }
@@ -356,6 +375,9 @@ export async function getFavorites(userId?: string): Promise<FavoriteShow[]> {
     .from("favorite_shows")
     .select("show_id, name, poster_url")
     .eq("user_id", target)
+    // Nulls last, so an arranged top of the shelf survives and everything
+    // never reordered still falls in newest-first behind it.
+    .order("position", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
   return (data as FavoriteShow[]) ?? [];
 }

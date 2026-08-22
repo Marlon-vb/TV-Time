@@ -39,18 +39,23 @@ async function reconcileOnce(showId?: number): Promise<boolean> {
     // Stars picked before signing in have never reached the profile. Only on
     // a full pass — per-show reconciles run often and this is one query.
     if (showId == null) {
+      // Index, not the stored rank: favorites() has already applied the
+      // ranked-then-newest rule, so the array order is the shelf order and
+      // sending it directly keeps the server agreeing with the device.
       await api.upsertFavorites(
-        repo.favorites().map((s) => ({
+        repo.favorites().map((s, i) => ({
           id: s.id,
           name: s.name,
           posterUrl: s.poster_url,
+          position: i,
         }))
       );
       await api.upsertFavoriteMovies(
-        movies.favoriteMovies().map((m) => ({
+        movies.favoriteMovies().map((m, i) => ({
           id: m.id,
           title: m.title,
           posterUrl: m.poster_url,
+          position: i,
         }))
       );
     }

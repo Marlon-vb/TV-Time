@@ -18,9 +18,14 @@ create table if not exists public.favorite_shows (
   show_id integer not null,
   name text not null,
   poster_url text,
+  -- Your order on the shelf. Null until you have arranged it, which reads as
+  -- "after everything ranked" so a new star lands at the end.
+  position integer,
   created_at timestamptz not null default now(),
   primary key (user_id, show_id)
 );
+
+alter table public.favorite_shows add column if not exists position integer;
 
 create index if not exists idx_favorites_user
   on public.favorite_shows(user_id, created_at desc);
@@ -49,9 +54,12 @@ create table if not exists public.favorite_movies (
   movie_id integer not null,          -- TMDB movie id
   title text not null,
   poster_url text,
+  position integer,
   created_at timestamptz not null default now(),
   primary key (user_id, movie_id)
 );
+
+alter table public.favorite_movies add column if not exists position integer;
 
 create index if not exists idx_favorite_movies_user
   on public.favorite_movies(user_id, created_at desc);

@@ -26,8 +26,10 @@ export const CARD_HEIGHT = 1920;
 const PAD = 96;
 
 export default function ShareCard({ card }: { card: CardData }) {
+  // The year and top cards stand for a whole library rather than one title,
+  // so neither borrows a poster as its ground.
   const backdrop =
-    card.kind === "year" ? null : card.posterUrl;
+    card.kind === "finished" || card.kind === "fresh" ? card.posterUrl : null;
 
   return (
     <View
@@ -76,6 +78,8 @@ export default function ShareCard({ card }: { card: CardData }) {
           <Finished card={card} />
         ) : card.kind === "fresh" ? (
           <Fresh card={card} />
+        ) : card.kind === "top" ? (
+          <Top card={card} />
         ) : (
           <Year card={card} />
         )}
@@ -262,6 +266,50 @@ function Fresh({ card }: { card: Extract<CardData, { kind: "fresh" }> }) {
       <View style={{ height: 48 }} />
       <ShowName>{card.showName}</ShowName>
       {card.episodeName ? <Meta>{card.episodeName}</Meta> : null}
+      <View style={{ height: 68 }} />
+    </>
+  );
+}
+
+/**
+ * The ranking, as a ranking. Numerals carry it rather than posters, because
+ * the argument a top ten starts is about the order — and a grid of artwork
+ * shows what is on the list while hiding what it is actually claiming.
+ */
+function Top({ card }: { card: Extract<CardData, { kind: "top" }> }) {
+  return (
+    <>
+      <Eyebrow text={`My top ${card.medium}`} />
+      <View style={{ flex: 1 }} />
+      <View style={{ gap: 26 }}>
+        {card.entries.map((entry, i) => (
+          <View key={`${entry.title}-${i}`} style={{ flexDirection: "row", alignItems: "center", gap: 32 }}>
+            <Text
+              style={{
+                color: i === 0 ? colors.accent : colors.faint,
+                fontFamily: fonts.display,
+                fontSize: 56,
+                width: 96,
+                textAlign: "right",
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {i + 1}
+            </Text>
+            <Text
+              style={{
+                color: colors.fg,
+                fontFamily: fonts.display,
+                fontSize: i === 0 ? 62 : 48,
+                flex: 1,
+              }}
+              numberOfLines={1}
+            >
+              {entry.title}
+            </Text>
+          </View>
+        ))}
+      </View>
       <View style={{ height: 68 }} />
     </>
   );

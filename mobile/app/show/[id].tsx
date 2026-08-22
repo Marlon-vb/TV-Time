@@ -526,6 +526,7 @@ function remoteToRow(r: RemoteShow): ShowRow {
     rating: null,
     review: null,
     favorited_at: null,
+    favorite_rank: null,
   };
 }
 

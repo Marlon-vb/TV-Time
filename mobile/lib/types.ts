@@ -12,6 +12,7 @@ export interface MovieRow {
   watched_at: string | null; // null = still on your watchlist
   rating: number | null; // your star rating, ½–5
   favorited_at: string | null; // starred for your profile; null = not a favourite
+  favorite_rank: number | null; // your order on the shelf; null = unranked
 }
 
 /** A movie as returned from a search (not yet tracked). */
@@ -46,6 +47,7 @@ export interface ShowRow {
   rating: number | null; // your show-level star rating (½–5)
   review: string | null; // private notes — never leaves the device
   favorited_at: string | null; // starred for your profile; null = not a favourite
+  favorite_rank: number | null; // your order on the shelf; null = unranked
 }
 
 export interface EpisodeRow {

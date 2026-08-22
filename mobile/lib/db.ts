@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS shows (
   followed_at TEXT NOT NULL,
   archived INTEGER NOT NULL DEFAULT 0,
   last_synced_at TEXT,
-  favorited_at TEXT
+  favorited_at TEXT,
+  favorite_rank INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS episodes (
@@ -52,7 +53,8 @@ CREATE TABLE IF NOT EXISTS movies (
   added_at TEXT NOT NULL,
   watched_at TEXT,
   rating REAL,
-  favorited_at TEXT
+  favorited_at TEXT,
+  favorite_rank INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_episodes_show ON episodes(show_id, season, number);
@@ -178,6 +180,21 @@ function migrate(handle: SQLite.SQLiteDatabase): void {
       handle.execSync("ALTER TABLE movies ADD COLUMN favorited_at TEXT");
     }
     handle.execSync("PRAGMA user_version = 9");
+  }
+  // v10: an explicit order for favourites. Null keeps the old
+  // most-recently-starred behaviour until something is actually reordered.
+  if (version < 10) {
+    const has = (table: string, col: string) =>
+      handle
+        .getAllSync<{ name: string }>(`PRAGMA table_info(${table})`)
+        .some((c) => c.name === col);
+    if (!has("shows", "favorite_rank")) {
+      handle.execSync("ALTER TABLE shows ADD COLUMN favorite_rank INTEGER");
+    }
+    if (!has("movies", "favorite_rank")) {
+      handle.execSync("ALTER TABLE movies ADD COLUMN favorite_rank INTEGER");
+    }
+    handle.execSync("PRAGMA user_version = 10");
   }
 }
 

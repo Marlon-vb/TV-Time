@@ -34,6 +34,7 @@ function item(
     rating: null,
     review: null,
     favorited_at: null,
+    favorite_rank: null,
       ...(overrides.show ?? {}),
     },
     episode: {

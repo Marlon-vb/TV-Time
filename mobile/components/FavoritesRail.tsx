@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
@@ -22,12 +22,15 @@ export default function FavoritesRail({
   title = "Favourites",
   onOpen,
   emptyBody,
+  onEdit,
 }: {
   items: FavoriteItem[];
   title?: string;
   onOpen: (showId: number) => void;
   /** Shown instead of the shelf when empty. Omit to render nothing at all. */
   emptyBody?: string;
+  /** Only your own shelf can be arranged, so only Library passes this. */
+  onEdit?: () => void;
 }) {
   if (items.length === 0 && !emptyBody) return null;
 
@@ -47,6 +50,19 @@ export default function FavoritesRail({
           {title}
         </Text>
         <Text style={{ color: colors.faint, fontSize: 11 }}>{items.length || ""}</Text>
+        {onEdit && items.length > 1 ? (
+          <Pressable
+            onPress={onEdit}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Arrange your favourites"
+            style={{ marginLeft: "auto" }}
+          >
+            <Text style={{ color: colors.accent, fontSize: 12, fontWeight: "600" }}>
+              Arrange
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {items.length === 0 ? (
