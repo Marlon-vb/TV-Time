@@ -27,8 +27,13 @@ import type { EpisodeRow } from "@/lib/types";
  * is the unit people actually compare — "season three fell apart" is a claim
  * about a season, not about episode 14.
  */
-const PER_ROW = 5;
-const GAP = 6;
+/**
+ * Seven across rather than five: at five, a long season ran most of a screen
+ * on its own. Seven roughly halves the area of a tile while leaving room for
+ * "10.0", which is the widest thing one ever has to hold.
+ */
+const PER_ROW = 7;
+const GAP = 5;
 
 export default function SeasonRatings({
   episodes,
@@ -198,8 +203,8 @@ function Tile({
       }
       style={{
         width: size,
-        height: size * 0.78,
-        borderRadius: 9,
+        height: size * 0.82,
+        borderRadius: 7,
         backgroundColor: tier?.color ?? UNRATED.color,
         alignItems: "center",
         justifyContent: "center",
@@ -211,9 +216,10 @@ function Tile({
       <Text
         style={{
           color: tier?.ink ?? UNRATED.ink,
-          fontSize: 9,
-          opacity: 0.75,
+          fontSize: 7.5,
+          opacity: 0.7,
         }}
+        numberOfLines={1}
       >
         E{cell.number}
       </Text>
@@ -221,9 +227,14 @@ function Tile({
         style={{
           color: tier?.ink ?? UNRATED.ink,
           fontFamily: fonts.display,
-          fontSize: 14,
+          fontSize: 12,
           fontVariant: ["tabular-nums"],
         }}
+        numberOfLines={1}
+        // A perfect 10 is one character wider than every other score, and it
+        // is exactly the episode nobody wants to see clipped.
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
       >
         {cell.rating != null ? cell.rating.toFixed(1) : "–"}
       </Text>
