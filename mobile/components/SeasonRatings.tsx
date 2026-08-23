@@ -1,18 +1,17 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
 import { colors, fonts, radius } from "@/lib/theme";
 import {
   buildRatingMap,
   initialSeasonIndex,
-  RATING_TIERS,
   tierFor,
   UNRATED,
   type RatingCell,
@@ -30,8 +29,6 @@ import type { EpisodeRow } from "@/lib/types";
  */
 const PER_ROW = 5;
 const GAP = 6;
-/** The page's own gutter, so a page can be exactly as wide as the viewport. */
-const PAGE_INSET = 18;
 
 export default function SeasonRatings({
   episodes,
@@ -40,17 +37,35 @@ export default function SeasonRatings({
   episodes: EpisodeRow[];
   onOpenEpisode: (episodeId: number) => void;
 }) {
-  const { width } = useWindowDimensions();
   const map = buildRatingMap(episodes);
-  const pageWidth = width - PAGE_INSET * 2;
-  const tile = (pageWidth - GAP * (PER_ROW - 1)) / PER_ROW;
-
   const scroller = useRef<ScrollView>(null);
   const [index, setIndex] = useState(() => initialSeasonIndex(map, episodes));
   const [picked, setPicked] = useState<RatingCell | null>(null);
 
+  // Measured, not derived. pagingEnabled snaps to the scroll view's own width,
+  // so a page has to be exactly that — deriving it from an assumed gutter left
+  // every page short by the margin and the error compounded with the starting
+  // offset, which is what dragged the previous season into view.
+  const [pageW, setPageW] = useState(0);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && w !== pageW) setPageW(w);
+  };
+
+  // contentOffset only applies at mount, before the width is known, so the
+  // opening season is scrolled to once there is a page width to multiply.
+  const jumped = useRef(false);
+  useEffect(() => {
+    if (pageW === 0 || jumped.current) return;
+    jumped.current = true;
+    if (index > 0) {
+      scroller.current?.scrollTo({ x: index * pageW, animated: false });
+    }
+  }, [pageW, index]);
+
   const onPaged = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const next = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+    if (pageW === 0) return;
+    const next = Math.round(e.nativeEvent.contentOffset.x / pageW);
     if (next !== index) {
       setIndex(next);
       setPicked(null);
@@ -76,21 +91,6 @@ export default function SeasonRatings({
         <Text style={{ color: colors.faint, fontSize: 11 }}>TVmaze</Text>
       </View>
 
-      {/* The bands are named, so the colours mean something without having to
-          be learned from the chart itself. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          {RATING_TIERS.map((t) => (
-            <View key={t.label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <View
-                style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.color }}
-              />
-              <Text style={{ color: colors.muted, fontSize: 10.5 }}>{t.label}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
       <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
         <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 15 }}>
           Season {current?.season ?? 1}
@@ -105,23 +105,19 @@ export default function SeasonRatings({
         </Text>
       </View>
 
-      {/* Negative margin lets a page be the full screen width while the section
-          around it keeps the show page's gutter. */}
+      <View onLayout={onLayout}>
       <ScrollView
         ref={scroller}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onPaged}
-        contentOffset={{ x: index * pageWidth, y: 0 }}
-        style={{ marginHorizontal: -PAGE_INSET }}
       >
         {map.seasons.map((s) => (
           <View
             key={s.season}
             style={{
-              width: pageWidth,
-              marginHorizontal: PAGE_INSET,
+              width: pageW,
               flexDirection: "row",
               flexWrap: "wrap",
               gap: GAP,
@@ -131,7 +127,7 @@ export default function SeasonRatings({
               <Tile
                 key={cell.episodeId}
                 cell={cell}
-                size={tile}
+                size={(pageW - GAP * (PER_ROW - 1)) / PER_ROW}
                 selected={picked?.episodeId === cell.episodeId}
                 onPress={() =>
                   setPicked((p) => (p?.episodeId === cell.episodeId ? null : cell))
@@ -141,6 +137,7 @@ export default function SeasonRatings({
           </View>
         ))}
       </ScrollView>
+      </View>
 
       {picked ? (
         <Pressable
