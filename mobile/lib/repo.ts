@@ -260,10 +260,12 @@ export function yearStats(year: number): YearStats {
     minutes: totals?.minutes ?? 0,
     shows: totals?.shows ?? 0,
     topGenre,
+    // Five, not four: the card spends the first on its full-bleed ground and
+    // still wants a row of four under the numbers.
     posters: perShow
       .map((r) => r.poster_url)
       .filter((u): u is string => Boolean(u))
-      .slice(0, 4),
+      .slice(0, 5),
   };
 }
 

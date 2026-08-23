@@ -6,7 +6,7 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { accentGradient, colors, fonts } from "@/lib/theme";
 import { starString } from "@/lib/share";
-import { watchTimeLine, type CardData } from "@/lib/share-card";
+import { cardBackdrop, watchTimeLine, type CardData } from "@/lib/share-card";
 
 /**
  * The image people post — the "Spotlight" direction.
@@ -25,11 +25,29 @@ export const CARD_HEIGHT = 1920;
 
 const PAD = 96;
 
+/**
+ * How hard the artwork gets pushed back, by what sits on it.
+ *
+ * A single numeral can hold its own against a bright poster, so that scrim
+ * stays light for as long as possible and lets the picture read. A ten-row
+ * ranking cannot — small white type over a poster is where legibility goes —
+ * so the list version darkens sooner and reaches ink well above the first row,
+ * leaving the top third as the picture and the rest as ground.
+ */
+const SCRIM = {
+  headline: {
+    colors: ["rgba(11,12,20,0.15)", "rgba(11,12,20,0.72)", colors.ink],
+    locations: [0, 0.46, 0.88],
+  },
+  list: {
+    colors: ["rgba(11,12,20,0.30)", "rgba(11,12,20,0.86)", colors.ink],
+    locations: [0, 0.30, 0.62],
+  },
+} as const;
+
 export default function ShareCard({ card }: { card: CardData }) {
-  // The year and top cards stand for a whole library rather than one title,
-  // so neither borrows a poster as its ground.
-  const backdrop =
-    card.kind === "finished" || card.kind === "fresh" ? card.posterUrl : null;
+  const backdrop = cardBackdrop(card);
+  const scrim = SCRIM[card.kind === "top" ? "list" : "headline"];
 
   return (
     <View
@@ -52,8 +70,8 @@ export default function ShareCard({ card }: { card: CardData }) {
           transition={0}
         />
       ) : (
-        // The year card has no single show to stand for it, so the ground is
-        // the app's own navy rather than one arbitrary poster.
+        // Nothing on this card has artwork — a library with no posters cached
+        // yet. The app's own navy stands in rather than a blank.
         <LinearGradient
           colors={["#1d3a5c", "#0e1b2c", colors.ink]}
           locations={[0, 0.45, 1]}
@@ -63,11 +81,9 @@ export default function ShareCard({ card }: { card: CardData }) {
         />
       )}
 
-      {/* Heavy enough by the midpoint that any poster, however bright, still
-          gives white text something to sit on. */}
       <LinearGradient
-        colors={["rgba(11,12,20,0.15)", "rgba(11,12,20,0.72)", colors.ink]}
-        locations={[0, 0.46, 0.88]}
+        colors={scrim.colors}
+        locations={scrim.locations}
         style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
       />
 
@@ -121,6 +137,15 @@ function Glow() {
 }
 
 /**
+ * Space Grotesk's figures in ems: how far they reach above the baseline (the
+ * round digits overshoot the 0.70 cap height slightly), the font's descent,
+ * and the leading the headline numerals are set on.
+ */
+const FIGURE_TOP = 0.714;
+const DESCENT = 0.292;
+const LEADING = 0.86;
+
+/**
  * The signature of this direction: a numeral filled with the accent gradient.
  *
  * MaskedView rather than SVG text, because the mask is a real RN Text and so
@@ -145,11 +170,20 @@ function GradientNumber({
   // code is judged on its own longest row rather than the whole string.
   const longest = Math.max(...children.split("\n").map((l) => l.length));
   const size = Math.min(max, (CARD_WIDTH - PAD * 2) / (longest * 0.62));
+  // iOS puts the baseline at `lineHeight - descent` below the top of the line
+  // box, so leading this tight pushes the figures out through the top of the
+  // view — and MaskedView clips at the view, which sliced the tops off the
+  // digits. Pad the box by the overflow rather than loosening the leading,
+  // which the stacked episode code is built on.
+  const overflow = size * (FIGURE_TOP + DESCENT - LEADING);
+  // Plus two for the anti-aliased fringe, which lands just outside the metric.
+  const headroom = overflow > 0 ? Math.ceil(overflow) + 2 : 0;
   const style = {
     fontFamily: fonts.display,
     fontSize: size,
-    lineHeight: size * 0.86,
-    letterSpacing: -size * 0.05,
+    lineHeight: size * LEADING,
+    letterSpacing: -size * 0.03,
+    paddingTop: headroom,
   } as const;
   return (
     <MaskedView
@@ -321,6 +355,9 @@ function Year({ card }: { card: Extract<CardData, { kind: "year" }> }) {
     `${watchTimeLine(card.minutes)} on screen`,
     `${card.shows} shows`,
   ];
+  // The year's biggest show is already the card's ground, so the row under the
+  // numbers is what came after it rather than the same poster twice.
+  const rest = card.posters.slice(1, 5);
   return (
     <>
       <Eyebrow text={`My ${card.year} in TV`} />
@@ -340,9 +377,9 @@ function Year({ card }: { card: Extract<CardData, { kind: "year" }> }) {
           {`Mostly ${card.topGenre}`}
         </Text>
       ) : null}
-      {card.posters.length > 0 && (
+      {rest.length > 0 && (
         <View style={{ flexDirection: "row", gap: 20, marginTop: 56 }}>
-          {card.posters.slice(0, 4).map((url, i) => (
+          {rest.map((url, i) => (
             <Image
               key={`${url}-${i}`}
               source={{ uri: url }}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   airedLine,
+  cardBackdrop,
   earnsFinishCard,
   cardFileName,
   cardShareMessage,
@@ -208,5 +209,70 @@ describe("cardFileName", () => {
         airedLine: "",
       })
     ).toBe("tv-app-s01e01.png");
+  });
+});
+
+describe("cardBackdrop", () => {
+  it("gives the ranking cards the artwork of what they put first", () => {
+    expect(
+      cardBackdrop({
+        kind: "top",
+        medium: "Shows",
+        entries: [
+          { title: "Arcane", posterUrl: "arcane.jpg" },
+          { title: "Andor", posterUrl: "andor.jpg" },
+        ],
+      })
+    ).toBe("arcane.jpg");
+
+    expect(
+      cardBackdrop({
+        kind: "year",
+        year: 2026,
+        episodes: 222,
+        minutes: 9200,
+        shows: 28,
+        topGenre: "Action",
+        posters: ["bleach.jpg", "the-pitt.jpg"],
+      })
+    ).toBe("bleach.jpg");
+  });
+
+  it("falls past a leading entry that has no poster", () => {
+    expect(
+      cardBackdrop({
+        kind: "top",
+        medium: "Movies",
+        entries: [
+          { title: "Something obscure", posterUrl: null },
+          { title: "Dune", posterUrl: "dune.jpg" },
+        ],
+      })
+    ).toBe("dune.jpg");
+  });
+
+  it("returns null when there is no artwork to stand on", () => {
+    expect(
+      cardBackdrop({
+        kind: "year",
+        year: 2026,
+        episodes: 1,
+        minutes: 40,
+        shows: 1,
+        topGenre: null,
+        posters: [],
+      })
+    ).toBeNull();
+
+    expect(
+      cardBackdrop({
+        kind: "finished",
+        showName: "Chernobyl",
+        posterUrl: null,
+        episodes: 5,
+        minutes: 330,
+        rating: 5,
+      })
+    ).toBeNull();
   });
 });

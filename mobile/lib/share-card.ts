@@ -43,6 +43,29 @@ export type CardData =
     };
 
 /**
+ * The artwork a card stands on.
+ *
+ * Every kind gets one, including the two that speak for a whole library rather
+ * than a single title. The leading entry is not an arbitrary pick — it is what
+ * the card already puts first — so it can carry the picture while the numerals
+ * carry the claim, and a flat ground stops being the thing people notice.
+ *
+ * Null only when nothing on the card has a poster at all, which is the one
+ * case that still falls back to the app's own navy.
+ */
+export function cardBackdrop(card: CardData): string | null {
+  switch (card.kind) {
+    case "finished":
+    case "fresh":
+      return card.posterUrl;
+    case "top":
+      return card.entries.find((e) => e.posterUrl)?.posterUrl ?? null;
+    case "year":
+      return card.posters[0] ?? null;
+  }
+}
+
+/**
  * A finish is an ended show with nothing left unwatched. Catching up on a
  * running show is "up to date", which is not the same feeling and would fire
  * this card again every week when the next episode landed.
