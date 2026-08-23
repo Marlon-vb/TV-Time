@@ -88,11 +88,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     right: 20,
-    // Minimum, not fixed: a bar that cannot grow clips its own labels the
-    // moment anything makes them taller than the number picked on one device.
-    minHeight: 60,
+    // Minimum, not fixed, and padded rather than relying on the children
+    // fitting inside a number measured on one device.
+    minHeight: 62,
+    paddingVertical: 6,
     flexDirection: "row",
-    alignItems: "center",
+    // Stretch, not centre: items fill the bar's height and centre their own
+    // contents, so an item can never be taller than the thing drawing it.
+    alignItems: "stretch",
     borderRadius: 30,
     borderWidth: 1,
     borderColor: colors.lineStrong,
@@ -113,8 +116,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
-    paddingTop: 8,
-    paddingBottom: 8,
+    minHeight: 44,
   },
-  label: { fontSize: 10, fontWeight: "600" },
+  // Explicit lineHeight: without one the text box is whatever the platform
+  // decides the font needs, which is the number that differs between an
+  // iPhone and the same layout scaled onto an iPad.
+  label: { fontSize: 10, lineHeight: 13, fontWeight: "600" },
 });
