@@ -37,13 +37,11 @@ export type CardData =
  * The artwork a card stands on.
  *
  * Every kind gets one, the ranking included even though it speaks for a shelf
- * rather than a single title. Its leading entry is not an arbitrary pick — it
- * is what the card already puts first — so it can carry the picture while the
- * type carries the claim, and a flat ground stops being the thing people
- * notice.
- *
- * Null only when nothing on the card has a poster at all, which is the one
- * case that still falls back to the app's own navy.
+ * rather than a single title. It is the number one spot's artwork and only
+ * that: the ground and the top of the list have to agree, because a card whose
+ * picture is one show and whose first line is another reads as a mistake. So
+ * an unillustrated favourite at number one drops the card to the app's own
+ * navy rather than promoting the poster of whatever sits below it.
  */
 export function cardBackdrop(card: CardData): string | null {
   switch (card.kind) {
@@ -51,7 +49,7 @@ export function cardBackdrop(card: CardData): string | null {
     case "fresh":
       return card.posterUrl;
     case "top":
-      return card.entries.find((e) => e.posterUrl)?.posterUrl ?? null;
+      return card.entries[0]?.posterUrl ?? null;
   }
 }
 

@@ -214,7 +214,9 @@ describe("cardBackdrop", () => {
     ).toBe("arcane.jpg");
   });
 
-  it("falls past a leading entry that has no poster", () => {
+  it("does not promote a lower poster when the top spot has none", () => {
+    // The ground has to be whatever the list calls number one, or the card
+    // shows one title and names another.
     expect(
       cardBackdrop({
         kind: "top",
@@ -224,7 +226,7 @@ describe("cardBackdrop", () => {
           { title: "Dune", posterUrl: "dune.jpg" },
         ],
       })
-    ).toBe("dune.jpg");
+    ).toBeNull();
   });
 
   it("returns null when there is no artwork to stand on", () => {
