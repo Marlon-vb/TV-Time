@@ -67,12 +67,12 @@ export default function SwipeTabBar({
             <Text
               style={[styles.label, { color }]}
               numberOfLines={1}
-              // Chrome, not content. At 10pt inside a fixed pill, Dynamic Type
-              // at iPad's larger default sizes pushes the label past the
-              // bottom edge and clips it mid-glyph — which is exactly what
-              // review saw. Bounded rather than disabled, so the setting still
-              // does something for people who need it.
-              maxFontSizeMultiplier={1.2}
+              // Off, not merely bounded. lineHeight does not scale with the
+              // font, so any scaling at all grows the glyphs inside a line box
+              // that stays put and shears them — which is what review saw, and
+              // what a capped multiplier still allowed. A 10pt tab label is
+              // chrome; the icon above it carries the meaning.
+              allowFontScaling={false}
             >
               {label}
             </Text>
@@ -88,14 +88,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20,
     right: 20,
-    // Minimum, not fixed, and padded rather than relying on the children
-    // fitting inside a number measured on one device.
-    minHeight: 62,
-    paddingVertical: 6,
+    // Explicit, and with room to spare over the 39pt its contents actually
+    // occupy. Nothing here should depend on an intrinsic height again.
+    height: 64,
     flexDirection: "row",
     // Stretch, not centre: items fill the bar's height and centre their own
     // contents, so an item can never be taller than the thing drawing it.
     alignItems: "stretch",
+    overflow: "visible",
     borderRadius: 30,
     borderWidth: 1,
     borderColor: colors.lineStrong,
@@ -115,11 +115,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    minHeight: 44,
+    gap: 3,
   },
-  // Explicit lineHeight: without one the text box is whatever the platform
-  // decides the font needs, which is the number that differs between an
-  // iPhone and the same layout scaled onto an iPad.
+  // lineHeight is safe to state only because scaling is off above; the two
+  // have to move together or not at all.
   label: { fontSize: 10, lineHeight: 13, fontWeight: "600" },
 });
