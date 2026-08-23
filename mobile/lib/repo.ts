@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import * as tvmaze from "./tvmaze";
 import * as tmdb from "./tmdb";
 import { computeCategory } from "./categories";
+import { favoritesOf } from "./favorites-order";
 import type {
   EpisodeRow,
   RemoteEpisode,
@@ -266,17 +267,12 @@ export function yearStats(year: number): YearStats {
   };
 }
 
-/**
- * Your starred shows, in the order you put them.
- *
- * Ranked ones first, then anything never reordered, newest star first — so
- * arranging the top of the shelf does not require arranging all of it, and a
- * new favourite lands at the end rather than silently in the middle.
- */
+/** Your starred shows, in the order you put them. */
 export function favorites(): ShowRow[] {
-  return getDb().getAllSync<ShowRow>(
-    `SELECT * FROM shows WHERE favorited_at IS NOT NULL
-     ORDER BY favorite_rank IS NULL, favorite_rank ASC, favorited_at DESC`
+  return favoritesOf(
+    getDb().getAllSync<ShowRow>(
+      "SELECT * FROM shows WHERE favorited_at IS NOT NULL"
+    )
   );
 }
 

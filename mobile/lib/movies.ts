@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { favoritesOf } from "./favorites-order";
 import type { MovieRow, RemoteMovie } from "./types";
 
 /** Movie/documentary tracking. Local-only (like show follows) — one row per
@@ -72,9 +73,10 @@ export function setMovieFavorite(id: number, favorite: boolean): void {
 
 /** Your starred movies, in the order you put them. Same rule as shows. */
 export function favoriteMovies(): MovieRow[] {
-  return getDb().getAllSync<MovieRow>(
-    `SELECT * FROM movies WHERE favorited_at IS NOT NULL
-     ORDER BY favorite_rank IS NULL, favorite_rank ASC, favorited_at DESC`
+  return favoritesOf(
+    getDb().getAllSync<MovieRow>(
+      "SELECT * FROM movies WHERE favorited_at IS NOT NULL"
+    )
   );
 }
 

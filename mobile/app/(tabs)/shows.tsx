@@ -33,6 +33,7 @@ import * as movies from "@/lib/movies";
 import * as movieSearch from "@/lib/movie-search";
 import { useFocusData } from "@/lib/useFocusData";
 import { useTabTop } from "@/lib/useTabTop";
+import { favoritesOf } from "@/lib/favorites-order";
 import {
   filterShows,
   SHOW_SORTS,
@@ -166,11 +167,11 @@ function ShowsLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =>
     setRefreshing(false);
   };
 
-  // Derived from the shows already loaded rather than a second query: the
-  // grid holds every followed show, and favourites are a subset of it.
-  const favorites = shows
-    .filter((s) => s.favorited_at != null)
-    .sort((a, b) => (b.favorited_at ?? "").localeCompare(a.favorited_at ?? ""));
+  // Derived from the shows already loaded rather than a second query — the
+  // grid holds every followed show and favourites are a subset of it — but
+  // through the shared rule, so this shelf and the arrange screen cannot
+  // disagree about what order they are in.
+  const favorites = favoritesOf(shows);
 
   const counts = new Map<string, number>();
   for (const s of shows)
@@ -498,10 +499,8 @@ function MoviesLibrary({ mode, onMode }: { mode: LibMode; onMode: (m: LibMode) =
   };
 
   const watchedCount = mine.filter((m) => m.watched_at).length;
-  // Derived from the list already loaded — favourites are a subset of it.
-  const favoriteFilms = mine
-    .filter((m) => m.favorited_at != null)
-    .sort((a, b) => (b.favorited_at ?? "").localeCompare(a.favorited_at ?? ""));
+  // Same shared rule as the shows shelf.
+  const favoriteFilms = favoritesOf(mine);
 
   return (
     <FlatList
