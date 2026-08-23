@@ -35,7 +35,7 @@ import { showShareMessage } from "@/lib/share";
 import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
 import { offerCatchUp } from "@/lib/catch-up";
-import RatingHeatmap from "@/components/RatingHeatmap";
+import SeasonRatings from "@/components/SeasonRatings";
 import ShareCardSheet from "@/components/ShareCardSheet";
 import { hasEnoughRatings } from "@/lib/rating-map";
 import { earnsFinishCard, type CardData } from "@/lib/share-card";
@@ -474,9 +474,11 @@ export default function ShowScreen() {
           {/* The shape of the show. Hidden when TVmaze has rated too few of
               its episodes — a grid that is mostly holes reads as a bug. */}
           {hasEnoughRatings(episodes) && (
-            <RatingHeatmap
+            <SeasonRatings
               episodes={episodes}
-              onOpenEpisode={(epId) => router.push(`/episode/${epId}` as never)}
+              onOpenEpisode={(epId: number) =>
+                router.push(`/episode/${epId}` as never)
+              }
             />
           )}
 
