@@ -39,20 +39,6 @@ export default function ProfileScreen() {
     if (card) setShareCard(card);
   };
 
-  const shareYear = () => {
-    const year = new Date().getFullYear();
-    const y = repo.yearStats(year);
-    setShareCard({
-      kind: "year",
-      year,
-      episodes: y.episodes,
-      minutes: y.minutes,
-      shows: y.shows,
-      topGenre: y.topGenre,
-      posters: y.posters,
-    });
-  };
-
   const scrollRef = useRef<ScrollView>(null);
   // Declared before the empty-state early return below, which renders no
   // ScrollView — the ref is simply null there and the tap does nothing.
@@ -145,33 +131,6 @@ export default function ProfileScreen() {
         <StatTile label="Behind" value={data.episodesBehind} accent />
       </View>
 
-      {/* Only once there is a year worth showing — a card reading "3 episodes"
-          is not one anybody posts, and offering it anyway is the app asking
-          for something it has not earned. */}
-      {data.episodesWatched >= 20 && (
-        <Bouncy
-          onPress={shareYear}
-          scaleTo={0.97}
-          accessibilityRole="button"
-          accessibilityLabel="Share your year in TV"
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            paddingVertical: 14,
-            borderRadius: radius.sm,
-            borderWidth: 1,
-            borderColor: colors.accent,
-          }}
-        >
-          <Ionicons name="sparkles" size={15} color={colors.accent} />
-          <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 13 }}>
-            Share my {new Date().getFullYear()} in TV
-          </Text>
-        </Bouncy>
-      )}
-
       {/* Only once the shelf is long enough to be a ranking rather than a
           preference. */}
       {repo.favorites().length + movies.favoriteMovies().length >= 3 && (
@@ -188,11 +147,11 @@ export default function ProfileScreen() {
             paddingVertical: 14,
             borderRadius: radius.sm,
             borderWidth: 1,
-            borderColor: colors.line,
+            borderColor: colors.accent,
           }}
         >
           <Ionicons name="star" size={15} color={colors.accent} />
-          <Text style={{ color: colors.fg, fontWeight: "800", fontSize: 13 }}>
+          <Text style={{ color: colors.accent, fontWeight: "800", fontSize: 13 }}>
             Share my top list
           </Text>
         </Bouncy>

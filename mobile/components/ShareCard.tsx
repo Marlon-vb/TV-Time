@@ -94,10 +94,8 @@ export default function ShareCard({ card }: { card: CardData }) {
           <Finished card={card} />
         ) : card.kind === "fresh" ? (
           <Fresh card={card} />
-        ) : card.kind === "top" ? (
-          <Top card={card} />
         ) : (
-          <Year card={card} />
+          <Top card={card} />
         )}
         <Wordmark />
       </View>
@@ -344,53 +342,6 @@ function Top({ card }: { card: Extract<CardData, { kind: "top" }> }) {
           </View>
         ))}
       </View>
-      <View style={{ height: 68 }} />
-    </>
-  );
-}
-
-function Year({ card }: { card: Extract<CardData, { kind: "year" }> }) {
-  const parts = [
-    `${card.episodes.toLocaleString()} episodes`,
-    `${watchTimeLine(card.minutes)} on screen`,
-    `${card.shows} shows`,
-  ];
-  // The year's biggest show is already the card's ground, so the row under the
-  // numbers is what came after it rather than the same poster twice.
-  const rest = card.posters.slice(1, 5);
-  return (
-    <>
-      <Eyebrow text={`My ${card.year} in TV`} />
-      <View style={{ flex: 1 }} />
-      <GradientNumber size={264}>{card.episodes.toLocaleString()}</GradientNumber>
-      <Meta>{parts.slice(1).join("   ·   ")}</Meta>
-      {card.topGenre ? (
-        <Text
-          style={{
-            color: colors.accent,
-            fontFamily: fonts.display,
-            fontSize: 76,
-            marginTop: 40,
-          }}
-          numberOfLines={1}
-        >
-          {`Mostly ${card.topGenre}`}
-        </Text>
-      ) : null}
-      {rest.length > 0 && (
-        <View style={{ flexDirection: "row", gap: 20, marginTop: 56 }}>
-          {rest.map((url, i) => (
-            <Image
-              key={`${url}-${i}`}
-              source={{ uri: url }}
-              style={{ width: 172, height: 248, borderRadius: 18, backgroundColor: colors.raised }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-            />
-          ))}
-        </View>
-      )}
       <View style={{ height: 68 }} />
     </>
   );

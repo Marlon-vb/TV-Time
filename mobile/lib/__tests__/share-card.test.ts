@@ -172,18 +172,6 @@ describe("cardShareMessage", () => {
         airedLine: "Aired 4 hours ago",
       })
     ).toBe("Just watched Severance S02E07 — aired 4 hours ago 📺");
-
-    expect(
-      cardShareMessage({
-        kind: "year",
-        year: 2026,
-        episodes: 812,
-        minutes: 24000,
-        shows: 41,
-        topGenre: "Drama",
-        posters: [],
-      })
-    ).toBe("My 2026 in TV: 812 episodes, 16 days 16h watched 📺");
   });
 });
 
@@ -213,7 +201,7 @@ describe("cardFileName", () => {
 });
 
 describe("cardBackdrop", () => {
-  it("gives the ranking cards the artwork of what they put first", () => {
+  it("gives the ranking card the artwork of what it puts first", () => {
     expect(
       cardBackdrop({
         kind: "top",
@@ -224,18 +212,6 @@ describe("cardBackdrop", () => {
         ],
       })
     ).toBe("arcane.jpg");
-
-    expect(
-      cardBackdrop({
-        kind: "year",
-        year: 2026,
-        episodes: 222,
-        minutes: 9200,
-        shows: 28,
-        topGenre: "Action",
-        posters: ["bleach.jpg", "the-pitt.jpg"],
-      })
-    ).toBe("bleach.jpg");
   });
 
   it("falls past a leading entry that has no poster", () => {
@@ -252,18 +228,6 @@ describe("cardBackdrop", () => {
   });
 
   it("returns null when there is no artwork to stand on", () => {
-    expect(
-      cardBackdrop({
-        kind: "year",
-        year: 2026,
-        episodes: 1,
-        minutes: 40,
-        shows: 1,
-        topGenre: null,
-        posters: [],
-      })
-    ).toBeNull();
-
     expect(
       cardBackdrop({
         kind: "finished",

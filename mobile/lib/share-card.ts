@@ -31,24 +31,16 @@ export type CardData =
       /** "Shows" or "Movies" — the card says which it is ranking. */
       medium: string;
       entries: { title: string; posterUrl: string | null }[];
-    }
-  | {
-      kind: "year";
-      year: number;
-      episodes: number;
-      minutes: number;
-      shows: number;
-      topGenre: string | null;
-      posters: string[];
     };
 
 /**
  * The artwork a card stands on.
  *
- * Every kind gets one, including the two that speak for a whole library rather
- * than a single title. The leading entry is not an arbitrary pick — it is what
- * the card already puts first — so it can carry the picture while the numerals
- * carry the claim, and a flat ground stops being the thing people notice.
+ * Every kind gets one, the ranking included even though it speaks for a shelf
+ * rather than a single title. Its leading entry is not an arbitrary pick — it
+ * is what the card already puts first — so it can carry the picture while the
+ * type carries the claim, and a flat ground stops being the thing people
+ * notice.
  *
  * Null only when nothing on the card has a poster at all, which is the one
  * case that still falls back to the app's own navy.
@@ -60,8 +52,6 @@ export function cardBackdrop(card: CardData): string | null {
       return card.posterUrl;
     case "top":
       return card.entries.find((e) => e.posterUrl)?.posterUrl ?? null;
-    case "year":
-      return card.posters[0] ?? null;
   }
 }
 
@@ -170,8 +160,6 @@ export function cardShareMessage(card: CardData): string {
       return `Just watched ${card.showName} ${card.code} — ${card.airedLine.toLowerCase()} 📺`;
     case "top":
       return `My top ${card.entries.length} ${card.medium.toLowerCase()} 📺`;
-    case "year":
-      return `My ${card.year} in TV: ${card.episodes} episodes, ${watchTimeLine(card.minutes)} watched 📺`;
   }
 }
 
@@ -191,8 +179,6 @@ export function cardFileName(card: CardData): string {
       return `${slug(card.showName)}-${card.code.toLowerCase()}.png`;
     case "top":
       return `my-top-${card.medium.toLowerCase()}.png`;
-    case "year":
-      return `my-${card.year}-in-tv.png`;
   }
 }
 
