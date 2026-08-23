@@ -2,15 +2,17 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-import Bouncy from "@/components/Bouncy";
 import Poster from "@/components/Poster";
+import ReorderList from "@/components/ReorderList";
 import { EmptyState, card } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
 import * as social from "@/lib/social/api";
 import { useFocusData } from "@/lib/useFocusData";
+
+/** Fixed, because the drag maths is arithmetic on one row pitch. */
+const ROW_H = 78;
 
 interface Item {
   id: number;
@@ -21,12 +23,10 @@ interface Item {
 /**
  * Arrange the favourites shelf.
  *
- * Move buttons rather than drag-and-drop: dragging in React Native needs
- * Reanimated and Gesture Handler, two native modules, to reorder a list that
- * is almost never longer than ten. Buttons also work under VoiceOver, which a
- * drag target does not.
+ * Drag the handle to reorder. ReorderList does it on PanResponder rather than
+ * a drag library, so this costs no native modules.
  *
- * The whole order is written on every move. Ten rows is nothing to rewrite,
+ * The whole order is written on every drop. Ten rows is nothing to rewrite,
  * and a partial swap leaves gaps that the next insert quietly resolves wrong.
  */
 export default function EditFavouritesScreen() {
@@ -50,13 +50,11 @@ export default function EditFavouritesScreen() {
   );
   const { data, reload } = useFocusData(loader);
   const items: Item[] = (tab === "shows" ? data?.shows : data?.films) ?? [];
+  // A drag and a page scroll are the same gesture; the list wins while one is
+  // in progress.
+  const [dragging, setDragging] = useState(false);
 
-  const move = (from: number, to: number) => {
-    if (to < 0 || to >= items.length) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const next = [...items];
-    const [row] = next.splice(from, 1);
-    next.splice(to, 0, row);
+  const commit = (next: Item[]) => {
     const ids = next.map((i) => i.id);
     if (tab === "shows") {
       repo.setFavoriteOrder(ids);
@@ -83,7 +81,10 @@ export default function EditFavouritesScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}>
+    <ScrollView
+      scrollEnabled={!dragging}
+      contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
+    >
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
         {(["shows", "movies"] as const).map((t) => (
           <Pressable
@@ -125,92 +126,72 @@ export default function EditFavouritesScreen() {
           }
         />
       ) : (
-        items.map((item, i) => (
-          <View
-            key={item.id}
-            style={{ ...card, flexDirection: "row", alignItems: "center", gap: 12, padding: 10 }}
-          >
-            <Text
+        <ReorderList
+          items={items}
+          keyOf={(i) => i.id}
+          rowHeight={ROW_H}
+          gap={10}
+          onReorder={commit}
+          onDragStateChange={setDragging}
+          renderRow={(item, i, handle, isDragging) => (
+            <View
               style={{
-                color: colors.accent,
-                fontFamily: fonts.display,
-                fontSize: 16,
-                width: 24,
-                textAlign: "center",
-                fontVariant: ["tabular-nums"],
+                ...card,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                padding: 10,
+                height: ROW_H,
+                // Lifted off the page while in the air, so it reads as held
+                // rather than as a row that happens to be moving.
+                backgroundColor: isDragging ? colors.overlay : colors.surface,
+                borderColor: isDragging ? colors.accent : colors.line,
               }}
             >
-              {i + 1}
-            </Text>
-            <Pressable
-              onPress={() =>
-                router.push(
-                  (tab === "shows" ? `/show/${item.id}` : `/movie/${item.id}`) as never
-                )
-              }
-            >
-              <Poster src={item.posterUrl} name={item.title} width={40} height={58} radius={7} />
-            </Pressable>
-            <Text style={{ color: colors.fg, flex: 1, fontSize: 13 }} numberOfLines={2}>
-              {item.title}
-            </Text>
-            <View style={{ flexDirection: "row", gap: 6 }}>
-              <MoveButton
-                dir="up"
-                disabled={i === 0}
-                label={`Move ${item.title} up`}
-                onPress={() => move(i, i - 1)}
-              />
-              <MoveButton
-                dir="down"
-                disabled={i === items.length - 1}
-                label={`Move ${item.title} down`}
-                onPress={() => move(i, i + 1)}
-              />
+              <Text
+                style={{
+                  color: colors.accent,
+                  fontFamily: fonts.display,
+                  fontSize: 16,
+                  width: 24,
+                  textAlign: "center",
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {i + 1}
+              </Text>
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    (tab === "shows" ? `/show/${item.id}` : `/movie/${item.id}`) as never
+                  )
+                }
+              >
+                <Poster src={item.posterUrl} name={item.title} width={40} height={58} radius={7} />
+              </Pressable>
+              <Text style={{ color: colors.fg, flex: 1, fontSize: 13 }} numberOfLines={2}>
+                {item.title}
+              </Text>
+              {/* The handle owns the gesture, so the poster stays tappable and
+                  a drag started anywhere else scrolls the page instead. */}
+              <View
+                {...handle}
+                accessible
+                accessibilityRole="adjustable"
+                accessibilityLabel={`Reorder ${item.title}, position ${i + 1} of ${items.length}`}
+                style={{
+                  width: 44,
+                  height: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="reorder-three" size={22} color={colors.muted} />
+              </View>
             </View>
-          </View>
-        ))
+          )}
+        />
       )}
     </ScrollView>
-  );
-}
-
-function MoveButton({
-  dir,
-  disabled,
-  label,
-  onPress,
-}: {
-  dir: "up" | "down";
-  disabled: boolean;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Bouncy
-      onPress={disabled ? () => {} : onPress}
-      disabled={disabled}
-      scaleTo={0.9}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      style={{
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.raised,
-        borderWidth: 1,
-        borderColor: colors.line,
-        opacity: disabled ? 0.3 : 1,
-      }}
-    >
-      <Ionicons
-        name={dir === "up" ? "chevron-up" : "chevron-down"}
-        size={16}
-        color={colors.fg}
-      />
-    </Bouncy>
   );
 }

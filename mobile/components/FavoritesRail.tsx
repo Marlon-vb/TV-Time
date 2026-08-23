@@ -75,9 +75,40 @@ export default function FavoritesRail({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 10, paddingRight: 4 }}
         >
-          {items.map((s) => (
+          {items.map((s, i) => (
             <Bouncy key={s.id} onPress={() => onOpen(s.id)} scaleTo={0.96} style={{ width: 84 }}>
-              <Poster src={s.posterUrl} name={s.name} width={84} height={122} radius={radius.sm} />
+              <View>
+                <Poster src={s.posterUrl} name={s.name} width={84} height={122} radius={radius.sm} />
+                {/* The shelf is ordered now, so say so. Without the number a
+                    ranked list and a recently-starred one look identical. */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 5,
+                    left: 5,
+                    minWidth: 21,
+                    height: 21,
+                    paddingHorizontal: 5,
+                    borderRadius: 11,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: i === 0 ? colors.accent : "rgba(11,12,20,0.82)",
+                    borderWidth: 1,
+                    borderColor: i === 0 ? colors.accent : "rgba(255,255,255,0.18)",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: i === 0 ? colors.ink : colors.fg,
+                      fontFamily: fonts.display,
+                      fontSize: 11,
+                      fontVariant: ["tabular-nums"],
+                    }}
+                  >
+                    {i + 1}
+                  </Text>
+                </View>
+              </View>
               <Text
                 style={{ color: colors.muted, fontSize: 11, marginTop: 5 }}
                 numberOfLines={2}
