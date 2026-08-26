@@ -10,6 +10,7 @@ import {
 } from "./tvmaze";
 import {
   buildTasteProfile,
+  pickSeeds,
   rankCandidates,
   type CandidateShow,
   type Recommendation,
@@ -22,22 +23,26 @@ export type { Recommendation } from "./recommend-core";
  * "Recommended for you" on Discover — our own engine, no API key.
  *
  * TVmaze has no similar-shows endpoint, so we combine three signals:
- *  1. People graph (TVmaze): actors and creators from the shows you watch
- *     most → the other shows they made. TVmaze's `weight` (its popularity
- *     score, derived from real user behavior) breaks ties.
+ *  1. People graph (TVmaze): actors and creators from the seed shows → the
+ *     other shows they made. TVmaze's `weight` (its popularity score, derived
+ *     from real user behavior) breaks ties.
  *  2. Taste profile (local): candidates are boosted by how well their genres
- *     match what you actually watch, weighted by minutes.
+ *     match what you watch, with the last few months counting for more than
+ *     the years before them.
  *  3. Community (our Supabase): "people who watch your shows also watch…"
  *     from TV App's own users — real collaborative filtering that gets
  *     smarter as the user base grows. Optional signal; empty is fine.
+ *
+ * Seeds are half recent watching and half all-time, minus anything the user
+ * rated badly, so the rail moves as their taste does instead of being fixed
+ * forever by whatever they watched most years ago.
  *
  * Every candidate is a real TVmaze show, so opening/following works directly.
  * Results are cached for a day. Scoring lives in recommend-core.ts (pure).
  */
 
-const CACHE_KEY = "recs_cache_v2";
+const CACHE_KEY = "recs_cache_v3";
 const TTL_MS = 24 * 60 * 60 * 1000;
-const SEED_SHOWS = 4;
 const ACTORS_PER_SEED = 3;
 const CREATORS_PER_SEED = 2;
 const SHOWS_PER_ACTOR = 20;
@@ -100,9 +105,13 @@ export async function recommendedShows(
     const followed = repo.listShowsWithProgress();
     const exclude = new Set(followed.map((s) => s.id));
     const stats = repo.stats();
-    const seeds = stats.mostWatched.slice(0, SEED_SHOWS).map((m) => m.show);
+    const recent = repo.recentTaste();
+    const seeds = pickSeeds(
+      recent.shows.map((r) => r.show),
+      stats.mostWatched.map((m) => m.show)
+    );
     if (seeds.length === 0) return [];
-    const profile = buildTasteProfile(stats.topGenres);
+    const profile = buildTasteProfile(stats.topGenres, recent.genreMinutes);
 
     // Your people: top-billed cast + creators across the seed shows.
     const actorNames = new Map<number, string>();

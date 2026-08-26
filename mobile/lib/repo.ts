@@ -764,6 +764,51 @@ export function upcoming(days?: number): UpcomingItem[] {
   });
 }
 
+// ------------------------------------------------------------- recent taste
+
+/** How far back "what you're watching now" reaches. */
+export const RECENT_TASTE_DAYS = 120;
+
+export interface RecentTaste {
+  /** Shows watched inside the window, most minutes first. */
+  shows: { show: ShowRow; minutes: number }[];
+  /** Genre minutes over the window only, biggest first. */
+  genreMinutes: { genre: string; minutes: number }[];
+}
+
+/**
+ * The last few months of watching, for recommendations.
+ *
+ * Deliberately not part of stats(), which is all-time by design because it
+ * backs the profile screen where the whole history is the point.
+ * Recommendations want the opposite question answered: what is this person
+ * watching now, rather than what did they once watch most.
+ */
+export function recentTaste(days = RECENT_TASTE_DAYS): RecentTaste {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const rows = getDb().getAllSync<ShowRow & { minutes: number }>(
+    `SELECT s.*, SUM(COALESCE(e.runtime, s.runtime, 40)) AS minutes
+     FROM episodes e JOIN shows s ON s.id = e.show_id AND s.archived = 0
+     WHERE e.watched_at IS NOT NULL AND e.watched_at >= ?
+     GROUP BY e.show_id
+     ORDER BY minutes DESC`,
+    since
+  );
+  const genreMinutes = new Map<string, number>();
+  const shows = rows.map(({ minutes, ...show }) => {
+    for (const genre of JSON.parse(show.genres) as string[]) {
+      genreMinutes.set(genre, (genreMinutes.get(genre) ?? 0) + minutes);
+    }
+    return { show: show as ShowRow, minutes };
+  });
+  return {
+    shows,
+    genreMinutes: [...genreMinutes.entries()]
+      .map(([genre, minutes]) => ({ genre, minutes }))
+      .sort((a, b) => b.minutes - a.minutes),
+  };
+}
+
 // ---------------------------------------------------------------------- stats
 
 export interface Stats {
