@@ -25,7 +25,13 @@ export function planReconcile(
   const localKeys = new Set(local.map((r) => key(r)));
   const upserts = local.filter((r) => {
     const s = serverByKey.get(key(r));
-    return !s || (s.rating ?? null) !== (r.rating ?? null);
+    if (!s) return true;
+    if ((s.rating ?? null) !== (r.rating ?? null)) return true;
+    // Backfill only. watched_at arrived after these rows did, so a server row
+    // still missing one gets sent again — but a row that HAS one is left
+    // alone, because the two sides format timestamps differently and a
+    // value-equality check would re-upsert the whole library on every pass.
+    return s.watched_at == null && r.watched_at != null;
   });
   const deletes = server.filter(
     (r) => judgeShowIds.has(r.show_id) && !localKeys.has(key(r))

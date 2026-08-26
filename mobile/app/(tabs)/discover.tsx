@@ -25,6 +25,13 @@ import * as movies from "@/lib/movies";
 import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
+import {
+  trending,
+  type Trending,
+  type TrendingEpisode,
+} from "@/lib/trending";
+import { watchersLine } from "@/lib/trending-core";
+import { epCode } from "@/lib/format";
 import { rankByTitle } from "@/lib/search-rank";
 import { useTabTop } from "@/lib/useTabTop";
 import type { RemoteMovie, RemoteShow } from "@/lib/types";
@@ -133,6 +140,7 @@ export default function DiscoverScreen() {
   const [tonight, setTonight] = useState<RemoteShow[]>([]);
   const [best, setBest] = useState<tvmaze.RatedShow[]>([]);
   const [premieres, setPremieres] = useState<RemoteShow[]>([]);
+  const [trend, setTrend] = useState<Trending>({ shows: [], episodes: [] });
 
   useEffect(() => {
     let alive = true;
@@ -166,6 +174,14 @@ export default function DiscoverScreen() {
       })
       .catch(() => {
         // offline — the rail simply doesn't render
+      });
+    // What the community watched this week (signed in only; cached 6h).
+    trending()
+      .then((t) => {
+        if (alive) setTrend(t);
+      })
+      .catch(() => {
+        // signed out, offline, or too few watchers — the rails don't render
       });
     return () => {
       alive = false;
@@ -366,6 +382,24 @@ export default function DiscoverScreen() {
                   onOpen={(id) => router.push(`/show/${id}` as never)}
                 />
               ) : null}
+              {trend.shows.length > 0 && (
+                <Rail
+                  title="TRENDING THIS WEEK"
+                  items={trend.shows.map((t) => ({
+                    id: t.show_id,
+                    name: t.show_name ?? "",
+                    posterUrl: t.poster_url,
+                    sub: watchersLine(t.watchers),
+                  }))}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
+              )}
+              {trend.episodes.length > 0 && (
+                <BiggestEpisodes
+                  rows={trend.episodes}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                />
+              )}
               {premieres.length > 0 && (
                 <Rail
                   title="PREMIERING SOON"
@@ -564,6 +598,74 @@ function MovieResultRow({
         </Text>
       </View>
     </Bouncy>
+  );
+}
+
+/**
+ * The week's biggest single episodes, as a list rather than a rail.
+ *
+ * A poster rail would show the same artwork the trending rail above it just
+ * showed, and the thing worth reading here is the episode code and how many
+ * people are on it — which is text, so let it be a list of text.
+ */
+function BiggestEpisodes({
+  rows,
+  onOpen,
+}: {
+  rows: TrendingEpisode[];
+  onOpen: (showId: number) => void;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={sectionLabel}>BIGGEST EPISODES THIS WEEK</Text>
+      <View style={{ gap: 8 }}>
+        {rows.map((r) => (
+          <Bouncy
+            key={`${r.show_id}-${r.season}-${r.episode}`}
+            onPress={() => onOpen(r.show_id)}
+            scaleTo={0.98}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${r.show_name ?? "show"}`}
+            style={{
+              ...card,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              padding: 8,
+            }}
+          >
+            <Poster
+              src={r.poster_url}
+              name={r.show_name ?? ""}
+              width={40}
+              height={58}
+              radius={7}
+            />
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: colors.fg,
+                  fontFamily: fonts.displayMedium,
+                  fontSize: 13,
+                }}
+              >
+                {r.show_name}
+              </Text>
+              <Text numberOfLines={1} style={{ color: colors.faint, fontSize: 11 }}>
+                <Text style={{ color: colors.accent }}>
+                  {epCode(r.season, r.episode)}
+                </Text>
+                {r.episode_name ? `  ${r.episode_name}` : ""}
+              </Text>
+            </View>
+            <Text style={{ color: colors.muted, fontSize: 11 }}>
+              {watchersLine(r.watchers)}
+            </Text>
+          </Bouncy>
+        ))}
+      </View>
+    </View>
   );
 }
 

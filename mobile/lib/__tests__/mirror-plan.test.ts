@@ -5,8 +5,9 @@ const row = (
   show_id: number,
   season: number,
   episode: number,
-  rating: number | null = null
-) => ({ show_id, season, episode, rating });
+  rating: number | null = null,
+  watched_at: string | null = "2026-08-01T12:00:00Z"
+) => ({ show_id, season, episode, rating, watched_at });
 
 describe("planReconcile", () => {
   it("NEVER deletes server history for shows the local library doesn't have (fresh install / second device)", () => {
@@ -35,8 +36,26 @@ describe("planReconcile", () => {
 
   it("treats null and undefined ratings as equal (no phantom upserts)", () => {
     const local = [row(1, 1, 1, null)];
-    const server = [{ show_id: 1, season: 1, episode: 1, rating: null }];
+    const server = [
+      { show_id: 1, season: 1, episode: 1, rating: null, watched_at: "x" },
+    ];
     const plan = planReconcile(local, server, new Set([1]));
     expect(plan.upserts).toEqual([]);
+  });
+
+  it("re-sends a row whose server copy predates the watched_at column", () => {
+    const local = [row(1, 1, 1)];
+    const server = [row(1, 1, 1, null, null)];
+    const plan = planReconcile(local, server, new Set([1]));
+    expect(plan.upserts).toEqual(local);
+  });
+
+  it("does not re-send once the server has a date, however it is formatted", () => {
+    // The device writes "2026-08-01T12:00:00Z"; Postgres hands it back as
+    // "2026-08-01 12:00:00+00". Comparing those would upsert the whole
+    // library on every pass, forever.
+    const local = [row(1, 1, 1, null, "2026-08-01T12:00:00Z")];
+    const server = [row(1, 1, 1, null, "2026-08-01 12:00:00+00")];
+    expect(planReconcile(local, server, new Set([1])).upserts).toEqual([]);
   });
 });

@@ -390,6 +390,8 @@ export async function recordWatch(input: {
   showName: string;
   posterUrl: string | null;
   episodeName?: string | null;
+  /** Defaults to now; pass the row's own date when mirroring older history. */
+  watchedAt?: string | null;
 }): Promise<void> {
   const me = await uid();
   if (!me) return;
@@ -399,6 +401,7 @@ export async function recordWatch(input: {
     season: input.season,
     episode: input.episode,
     rating: input.rating ?? null,
+    watched_at: input.watchedAt ?? new Date().toISOString(),
   });
   await publishActivity({
     type: input.rating != null ? "rated" : "watched",
@@ -436,7 +439,13 @@ export async function unrecordWatch(
  */
 export async function recordWatchForEpisode(
   show: { id: number; name: string; poster_url: string | null },
-  ep: { season: number; number: number; name: string; rating: number | null }
+  ep: {
+    season: number;
+    number: number;
+    name: string;
+    rating: number | null;
+    watched_at?: string | null;
+  }
 ): Promise<void> {
   await recordWatch({
     showId: show.id,
@@ -446,6 +455,7 @@ export async function recordWatchForEpisode(
     showName: show.name,
     posterUrl: show.poster_url,
     episodeName: ep.name,
+    watchedAt: ep.watched_at ?? null,
   });
 }
 
@@ -480,6 +490,9 @@ export interface WatchedRow {
   season: number;
   episode: number;
   rating: number | null;
+  /** When it was actually watched, not when the row reached the server.
+   *  Null on rows written before the column existed. */
+  watched_at: string | null;
 }
 
 /** All of my watched rows on the server (paginated past PostgREST's cap). */
@@ -491,7 +504,7 @@ export async function fetchMyWatched(showId?: number): Promise<WatchedRow[]> {
   for (let from = 0; ; from += page) {
     let q = supabase
       .from("watched_episodes")
-      .select("show_id,season,episode,rating")
+      .select("show_id,season,episode,rating,watched_at")
       .eq("user_id", me)
       .order("show_id")
       .order("season")
@@ -1035,4 +1048,68 @@ export async function upsertMyContactHashes(email?: string | null): Promise<void
     id: me,
     email_hash: await sha256(normalized),
   });
+}
+
+// ----------------------------------------------------------------- trending
+
+export interface TrendingShow {
+  show_id: number;
+  watchers: number;
+  episodes: number;
+  show_name: string | null;
+  poster_url: string | null;
+}
+
+export interface TrendingEpisode {
+  show_id: number;
+  season: number;
+  episode: number;
+  watchers: number;
+  show_name: string | null;
+  episode_name: string | null;
+  poster_url: string | null;
+}
+
+/**
+ * What the community watched in the last `days`, ranked by how many DISTINCT
+ * people watched it — so one person's binge, or one person's import, cannot
+ * manufacture a trend.
+ *
+ * Empty when signed out or on any error: this is a section that hides rather
+ * than a section that shows an apology.
+ */
+export async function trendingShows(
+  days = 7,
+  limit = 20
+): Promise<TrendingShow[]> {
+  const me = await uid();
+  if (!me) return [];
+  try {
+    const { data, error } = await supabase.rpc("trending_shows", {
+      p_days: days,
+      p_limit: limit,
+    });
+    if (error) return [];
+    return (data as TrendingShow[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function trendingEpisodes(
+  days = 7,
+  limit = 20
+): Promise<TrendingEpisode[]> {
+  const me = await uid();
+  if (!me) return [];
+  try {
+    const { data, error } = await supabase.rpc("trending_episodes", {
+      p_days: days,
+      p_limit: limit,
+    });
+    if (error) return [];
+    return (data as TrendingEpisode[]) ?? [];
+  } catch {
+    return [];
+  }
 }

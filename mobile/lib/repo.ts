@@ -503,14 +503,18 @@ export function countWatchedEpisodes(): number {
 }
 
 /** All watched (show, season, episode, rating) tuples in one indexed scan. */
-export function listWatchedRows(
-  showId?: number
-): { show_id: number; season: number; episode: number; rating: number | null }[] {
+export function listWatchedRows(showId?: number): {
+  show_id: number;
+  season: number;
+  episode: number;
+  rating: number | null;
+  watched_at: string | null;
+}[] {
   const where =
     showId != null ? "watched_at IS NOT NULL AND show_id = ?" : "watched_at IS NOT NULL";
   const params = showId != null ? [showId] : [];
   return getDb().getAllSync(
-    `SELECT show_id, season, number AS episode, rating
+    `SELECT show_id, season, number AS episode, rating, watched_at
      FROM episodes WHERE ${where}`,
     ...params
   );
