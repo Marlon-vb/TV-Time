@@ -27,11 +27,13 @@ export function planReconcile(
     const s = serverByKey.get(key(r));
     if (!s) return true;
     if ((s.rating ?? null) !== (r.rating ?? null)) return true;
-    // Backfill only. watched_at arrived after these rows did, so a server row
-    // still missing one gets sent again — but a row that HAS one is left
-    // alone, because the two sides format timestamps differently and a
-    // value-equality check would re-upsert the whole library on every pass.
-    return s.watched_at == null && r.watched_at != null;
+    // Backfill only, for both columns. They arrived after these rows did, so a
+    // server row still missing one gets sent again — but a row that HAS one is
+    // left alone. That matters most for watched_at, where the two sides format
+    // timestamps differently and a value-equality check would re-upsert the
+    // whole library on every pass.
+    if (s.watched_at == null && r.watched_at != null) return true;
+    return s.runtime == null && r.runtime != null;
   });
   const deletes = server.filter(
     (r) => judgeShowIds.has(r.show_id) && !localKeys.has(key(r))

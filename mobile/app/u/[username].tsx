@@ -23,6 +23,7 @@ import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
 import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
+import { watchTimeCompact } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import type { FavoriteMovie, FavoriteShow, Profile } from "@/lib/social/types";
@@ -50,6 +51,7 @@ export default function UserProfileScreen() {
   const [summary, setSummary] = useState<{
     totalEpisodes: number;
     totalShows: number;
+    totalMinutes: number;
     top: ShowSummary[];
     inCommon: ShowSummary[];
   } | null>(null);
@@ -113,6 +115,7 @@ export default function UserProfileScreen() {
     setSummary({
       totalEpisodes: rows.reduce((n, r) => n + r.episodes, 0),
       totalShows: rows.length,
+      totalMinutes: rows.reduce((n, r) => n + (r.minutes ?? 0), 0),
       top,
       inCommon,
     });
@@ -313,8 +316,15 @@ export default function UserProfileScreen() {
           <>
             {/* Watch stats */}
             <View style={{ ...card, flexDirection: "row", padding: 14 }}>
-              <ProfileStat n={summary.totalEpisodes} label="episodes watched" />
-              <ProfileStat n={summary.totalShows} label="shows" />
+              <ProfileStat
+                value={summary.totalEpisodes.toLocaleString()}
+                label="episodes"
+              />
+              <ProfileStat value={summary.totalShows.toLocaleString()} label="shows" />
+              <ProfileStat
+                value={watchTimeCompact(summary.totalMinutes)}
+                label="watched"
+              />
             </View>
 
             {/* Shows in common */}
@@ -405,7 +415,8 @@ function ShowRail({
   );
 }
 
-function ProfileStat({ n, label }: { n: number; label: string }) {
+/** Formatted by the caller: one of these is a duration, not a count. */
+function ProfileStat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ flex: 1, alignItems: "center" }}>
       <Text
@@ -416,7 +427,7 @@ function ProfileStat({ n, label }: { n: number; label: string }) {
           fontVariant: ["tabular-nums"],
         }}
       >
-        {n.toLocaleString()}
+        {value}
       </Text>
       <Text style={{ color: colors.faint, fontSize: 11 }}>{label}</Text>
     </View>

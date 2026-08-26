@@ -157,18 +157,27 @@ export async function followCounts(
   };
 }
 
+export interface WatchSummaryRow {
+  show_id: number;
+  episodes: number;
+  /** Total minutes for that show. Approximate for rows mirrored before the
+   *  runtime column existed; exact after that user's next reconcile. */
+  minutes: number;
+}
+
 /**
- * A profile's shows with watched counts (TVmaze ids, most-watched first).
- * Empty unless it's you or someone you follow — RLS keeps strangers private.
+ * A profile's shows with watched counts and minutes (TVmaze ids, most-watched
+ * first). Empty unless it's you or someone you follow — RLS keeps strangers
+ * private, and this function stays SECURITY INVOKER so that it does.
  */
 export async function profileWatchSummary(
   userId: string
-): Promise<{ show_id: number; episodes: number }[]> {
+): Promise<WatchSummaryRow[]> {
   const { data, error } = await supabase.rpc("profile_watch_summary", {
     p_user_id: userId,
   });
   if (error) return [];
-  return (data as { show_id: number; episodes: number }[]) ?? [];
+  return (data as WatchSummaryRow[]) ?? [];
 }
 
 /**
@@ -423,6 +432,8 @@ export async function recordWatch(input: {
   episodeName?: string | null;
   /** Defaults to now; pass the row's own date when mirroring older history. */
   watchedAt?: string | null;
+  /** Episode length, so followers' profiles can total real minutes. */
+  runtime?: number | null;
 }): Promise<void> {
   const me = await uid();
   if (!me) return;
@@ -433,6 +444,7 @@ export async function recordWatch(input: {
     episode: input.episode,
     rating: input.rating ?? null,
     watched_at: input.watchedAt ?? new Date().toISOString(),
+    runtime: input.runtime ?? null,
   });
   await publishActivity({
     type: input.rating != null ? "rated" : "watched",
@@ -476,6 +488,7 @@ export async function recordWatchForEpisode(
     name: string;
     rating: number | null;
     watched_at?: string | null;
+    runtime?: number | null;
   }
 ): Promise<void> {
   await recordWatch({
@@ -487,6 +500,7 @@ export async function recordWatchForEpisode(
     posterUrl: show.poster_url,
     episodeName: ep.name,
     watchedAt: ep.watched_at ?? null,
+    runtime: ep.runtime ?? null,
   });
 }
 
@@ -524,6 +538,9 @@ export interface WatchedRow {
   /** When it was actually watched, not when the row reached the server.
    *  Null on rows written before the column existed. */
   watched_at: string | null;
+  /** Episode length in minutes — the server has no episode table to look it
+   *  up in. Null on rows written before the column existed. */
+  runtime: number | null;
 }
 
 /** All of my watched rows on the server (paginated past PostgREST's cap). */
@@ -535,7 +552,7 @@ export async function fetchMyWatched(showId?: number): Promise<WatchedRow[]> {
   for (let from = 0; ; from += page) {
     let q = supabase
       .from("watched_episodes")
-      .select("show_id,season,episode,rating,watched_at")
+      .select("show_id,season,episode,rating,watched_at,runtime")
       .eq("user_id", me)
       .order("show_id")
       .order("season")

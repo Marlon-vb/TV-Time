@@ -53,6 +53,22 @@ export function minutesHuman(totalMinutes: number): {
   };
 }
 
+/**
+ * A watch total in one unit, for a stat sitting in a third of a card.
+ *
+ * The profile's own headline splits into months, days and hours because it has
+ * a whole card to do it in. Three of those side by side would wrap, and nobody
+ * reads the third unit anyway — the question a profile answers is roughly how
+ * deep someone is, not to the hour.
+ */
+export function watchTimeCompact(totalMinutes: number): string {
+  const hours = Math.round(totalMinutes / 60);
+  if (hours < 72) return `${hours}h`;
+  const days = Math.round(hours / 24);
+  if (days < 60) return `${days}d`;
+  return `${Math.round(days / 30)}mo`;
+}
+
 export function monthLabel(yyyyMm: string): string {
   const [y, m] = yyyyMm.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString(undefined, {

@@ -509,13 +509,20 @@ export function listWatchedRows(showId?: number): {
   episode: number;
   rating: number | null;
   watched_at: string | null;
+  runtime: number | null;
 }[] {
   const where =
-    showId != null ? "watched_at IS NOT NULL AND show_id = ?" : "watched_at IS NOT NULL";
+    showId != null
+      ? "e.watched_at IS NOT NULL AND e.show_id = ?"
+      : "e.watched_at IS NOT NULL";
   const params = showId != null ? [showId] : [];
+  // The same runtime fallback stats() uses, resolved here rather than on the
+  // server — which has no episode table to fall back through.
   return getDb().getAllSync(
-    `SELECT show_id, season, number AS episode, rating, watched_at
-     FROM episodes WHERE ${where}`,
+    `SELECT e.show_id, e.season, e.number AS episode, e.rating, e.watched_at,
+            COALESCE(e.runtime, s.runtime, 40) AS runtime
+     FROM episodes e JOIN shows s ON s.id = e.show_id
+     WHERE ${where}`,
     ...params
   );
 }

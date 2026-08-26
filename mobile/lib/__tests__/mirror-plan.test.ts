@@ -6,8 +6,9 @@ const row = (
   season: number,
   episode: number,
   rating: number | null = null,
-  watched_at: string | null = "2026-08-01T12:00:00Z"
-) => ({ show_id, season, episode, rating, watched_at });
+  watched_at: string | null = "2026-08-01T12:00:00Z",
+  runtime: number | null = 45
+) => ({ show_id, season, episode, rating, watched_at, runtime });
 
 describe("planReconcile", () => {
   it("NEVER deletes server history for shows the local library doesn't have (fresh install / second device)", () => {
@@ -37,7 +38,7 @@ describe("planReconcile", () => {
   it("treats null and undefined ratings as equal (no phantom upserts)", () => {
     const local = [row(1, 1, 1, null)];
     const server = [
-      { show_id: 1, season: 1, episode: 1, rating: null, watched_at: "x" },
+      { show_id: 1, season: 1, episode: 1, rating: null, watched_at: "x", runtime: 45 },
     ];
     const plan = planReconcile(local, server, new Set([1]));
     expect(plan.upserts).toEqual([]);
@@ -48,6 +49,12 @@ describe("planReconcile", () => {
     const server = [row(1, 1, 1, null, null)];
     const plan = planReconcile(local, server, new Set([1]));
     expect(plan.upserts).toEqual(local);
+  });
+
+  it("re-sends a row whose server copy has no runtime yet", () => {
+    const local = [row(1, 1, 1)];
+    const server = [row(1, 1, 1, null, "2026-08-01T12:00:00Z", null)];
+    expect(planReconcile(local, server, new Set([1])).upserts).toEqual(local);
   });
 
   it("does not re-send once the server has a date, however it is formatted", () => {
