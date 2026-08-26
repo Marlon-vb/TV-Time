@@ -47,6 +47,7 @@ async function reconcileOnce(showId?: number): Promise<boolean> {
           id: s.id,
           name: s.name,
           posterUrl: s.poster_url,
+          backdropUrl: s.backdrop_url,
           position: i,
         }))
       );

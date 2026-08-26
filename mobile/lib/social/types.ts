@@ -78,6 +78,8 @@ export interface FavoriteShow {
   show_id: number;
   name: string;
   poster_url: string | null;
+  /** Wide art. The first favourite's is the profile header. */
+  backdrop_url: string | null;
 }
 
 /** A film someone has starred. Kept apart from FavoriteShow because tapping

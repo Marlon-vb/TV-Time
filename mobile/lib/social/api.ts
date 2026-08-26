@@ -297,7 +297,13 @@ export async function getFeed(before?: {
  */
 export async function setFavorite(
   show:
-    | { id: number; name: string; posterUrl: string | null; position?: number | null }
+    | {
+        id: number;
+        name: string;
+        posterUrl: string | null;
+        backdropUrl?: string | null;
+        position?: number | null;
+      }
     | number
 ): Promise<void> {
   const me = await uid();
@@ -315,6 +321,9 @@ export async function setFavorite(
     show_id: show.id,
     name: show.name,
     poster_url: show.posterUrl,
+    ...(show.backdropUrl !== undefined
+      ? { backdrop_url: show.backdropUrl }
+      : {}),
     position: show.position ?? null,
   });
 }
@@ -324,22 +333,34 @@ export async function setFavorite(
  * signing in on a fresh install would otherwise wipe the favourites already
  * on your profile, which is the same trap the watch-history mirror avoids.
  */
+/**
+ * Write the whole shelf.
+ *
+ * backdrop_url is only sent when a caller actually has one. An upsert updates
+ * exactly the columns in its payload, so leaving the key out preserves what is
+ * stored — which is what the arrange screen needs, since it reorders from a
+ * list that carries posters and no wide art. Sending null there would wipe
+ * every profile header on a drag.
+ */
 export async function upsertFavorites(
   shows: {
     id: number;
     name: string;
     posterUrl: string | null;
+    backdropUrl?: string | null;
     position?: number | null;
   }[]
 ): Promise<void> {
   const me = await uid();
   if (!me || shows.length === 0) return;
+  const withBackdrops = shows.every((s) => s.backdropUrl !== undefined);
   await supabase.from("favorite_shows").upsert(
     shows.map((s) => ({
       user_id: me,
       show_id: s.id,
       name: s.name,
       poster_url: s.posterUrl,
+      ...(withBackdrops ? { backdrop_url: s.backdropUrl ?? null } : {}),
       position: s.position ?? null,
     }))
   );
@@ -413,7 +434,7 @@ export async function getFavorites(userId?: string): Promise<FavoriteShow[]> {
   if (!target) return [];
   const { data } = await supabase
     .from("favorite_shows")
-    .select("show_id, name, poster_url")
+    .select("show_id, name, poster_url, backdrop_url")
     .eq("user_id", target)
     // Nulls last, so an arranged top of the shelf survives and everything
     // never reordered still falls in newest-first behind it.

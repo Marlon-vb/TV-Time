@@ -117,7 +117,14 @@ export default function ShowScreen() {
     // Mirrored separately, as every repo write is: the local star stands even
     // signed out, where this is a no-op.
     void social.setFavorite(
-      next ? { id: showId, name: row.name, posterUrl: row.poster_url } : showId
+      next
+        ? {
+            id: showId,
+            name: row.name,
+            posterUrl: row.poster_url,
+            backdropUrl: row.backdrop_url,
+          }
+        : showId
     );
   };
 

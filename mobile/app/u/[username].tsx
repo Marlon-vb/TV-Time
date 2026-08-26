@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
@@ -186,6 +188,10 @@ export default function UserProfileScreen() {
   };
 
   const deepLink = `tvtime://u/${profile.username}`;
+  // Their number one, and only if it has wide art — a 2:3 poster cropped to a
+  // header band is unusable, so no backdrop means no header rather than a bad
+  // one.
+  const header = favorites.find((f) => f.backdrop_url)?.backdrop_url ?? null;
 
   return (
     <>
@@ -200,6 +206,36 @@ export default function UserProfileScreen() {
         }}
       >
         <View style={{ alignItems: "center", gap: 8 }}>
+          {/* The one picture that is genuinely theirs: whatever they put first
+              on their shelf. Escapes the ScrollView's padding to run to the
+              edges and up under the transparent nav bar. */}
+          {header ? (
+            <View
+              style={{
+                position: "absolute",
+                left: -16,
+                right: -16,
+                top: -(insets.top + 56),
+                height: insets.top + 56 + 150,
+              }}
+              pointerEvents="none"
+            >
+              <Image
+                source={{ uri: header }}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
+              />
+              {/* Opaque well before the name, so the type never depends on how
+                  bright somebody's favourite show happens to be. */}
+              <LinearGradient
+                colors={["rgba(11,12,20,0.35)", "rgba(11,12,20,0.85)", colors.ink]}
+                locations={[0, 0.55, 1]}
+                style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+              />
+            </View>
+          ) : null}
           <Avatar name={name} url={profile.avatar_url} size={84} />
           <Text style={{ color: colors.fg, fontFamily: fonts.display, fontSize: 20 }}>
             {name}
