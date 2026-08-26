@@ -8,26 +8,29 @@ export interface HeaderAction {
   /** Spoken by VoiceOver, so name the destination, not the glyph. */
   label: string;
   onPress: () => void;
+  /** Unread dot. The count stays out of it — the number is on the screen. */
+  badge?: boolean;
 }
 
 /**
  * Large in-screen title (tab headers are hidden) with one optional control on
  * the right — the app's editorial masthead.
  *
- * The control is passed in rather than named by a flag. Each tab that has one
- * has a different one (Profile opens Settings, Friends opens the add-friends
- * screen), and a header that grows a boolean per destination ends up knowing
- * about every screen in the app. Tabs without one pass nothing: repeating a
- * control on all six made it furniture rather than a destination.
+ * Controls are passed in rather than named by a flag. Each tab that has one
+ * has a different one (Profile opens Settings, Friends opens notifications and
+ * the add-friends screen), and a header that grows a boolean per destination
+ * ends up knowing about every screen in the app. Tabs without one pass
+ * nothing: repeating a control on all six made it furniture rather than a
+ * destination.
  */
 export default function ScreenHeader({
   title,
   subtitle,
-  action,
+  actions,
 }: {
   title: string;
   subtitle?: string | null;
-  action?: HeaderAction;
+  actions?: HeaderAction[];
 }) {
   const insets = useSafeAreaInsets();
 
@@ -59,26 +62,45 @@ export default function ScreenHeader({
           </Text>
         ) : null}
       </View>
-      {action ? (
-        <Pressable
-          onPress={action.onPress}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.line,
-            marginBottom: 4,
-          }}
-        >
-          <Ionicons name={action.icon} size={17} color={colors.muted} />
-        </Pressable>
+      {actions && actions.length > 0 ? (
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
+          {actions.map((action) => (
+            <Pressable
+              key={action.icon}
+              onPress={action.onPress}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.line,
+              }}
+            >
+              <Ionicons name={action.icon} size={17} color={colors.muted} />
+              {action.badge ? (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 7,
+                    right: 8,
+                    width: 9,
+                    height: 9,
+                    borderRadius: 5,
+                    backgroundColor: colors.accent,
+                    borderWidth: 1.5,
+                    borderColor: colors.surface,
+                  }}
+                />
+              ) : null}
+            </Pressable>
+          ))}
+        </View>
       ) : null}
     </View>
   );

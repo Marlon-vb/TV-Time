@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AgreementLine from "@/components/AgreementLine";
 import Avatar from "@/components/Avatar";
@@ -25,6 +25,8 @@ import * as repo from "@/lib/repo";
 import { feedActivityText, shortAgo } from "@/lib/format-social";
 import { groupActivityText, groupFeed, type FeedGroup } from "@/lib/social/feed-group";
 import { useTabTop } from "@/lib/useTabTop";
+import { getSetting } from "@/lib/db";
+import { FOLLOWERS_SEEN_KEY, hasUnseen } from "@/lib/follow-inbox";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
 type Tab = "friends" | "feed";
@@ -40,6 +42,23 @@ export default function FriendsScreen() {
   // Friends first, and the default: the tab is named after the people, so
   // opening it should answer "who do I follow" before "what have they done".
   const [tab, setTab] = useState<Tab>("friends");
+  // Whether the bell wears a dot. Re-checked whenever the screen regains
+  // focus, so following someone back and coming straight back clears it.
+  const [unseen, setUnseen] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      social
+        .recentFollowers()
+        .then((rows) => {
+          if (alive) setUnseen(hasUnseen(rows, getSetting(FOLLOWERS_SEEN_KEY)));
+        })
+        .catch(() => {});
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
 
   if (!ready) {
     return (
@@ -72,11 +91,19 @@ export default function FriendsScreen() {
       <ScreenHeader
         title="Friends"
         subtitle={profile ? `@${profile.username}` : undefined}
-        action={{
-          icon: "person-add",
-          label: "Add friends",
-          onPress: () => router.push("/find-friends" as never),
-        }}
+        actions={[
+          {
+            icon: "notifications",
+            label: "New followers",
+            badge: unseen,
+            onPress: () => router.push("/followers" as never),
+          },
+          {
+            icon: "person-add",
+            label: "Add friends",
+            onPress: () => router.push("/find-friends" as never),
+          },
+        ]}
       />
       <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 8 }}>
         {TABS.map((t) => (

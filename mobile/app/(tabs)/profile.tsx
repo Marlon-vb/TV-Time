@@ -56,11 +56,13 @@ export default function ProfileScreen() {
       <View>
         <ScreenHeader
           title="Profile"
-          action={{
-            icon: "settings-sharp",
-            label: "Settings",
-            onPress: () => router.push("/settings"),
-          }}
+          actions={[
+            {
+              icon: "settings-sharp",
+              label: "Settings",
+              onPress: () => router.push("/settings"),
+            },
+          ]}
         />
         <View style={{ padding: 16, gap: 12 }}>
           <AccountCard />
@@ -92,11 +94,13 @@ export default function ProfileScreen() {
       <View style={{ marginHorizontal: -16 }}>
         <ScreenHeader
           title="Profile"
-          action={{
-            icon: "settings-sharp",
-            label: "Settings",
-            onPress: () => router.push("/settings"),
-          }}
+          actions={[
+            {
+              icon: "settings-sharp",
+              label: "Settings",
+              onPress: () => router.push("/settings"),
+            },
+          ]}
         />
       </View>
 

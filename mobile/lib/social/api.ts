@@ -107,6 +107,37 @@ export async function getFollowing(userId?: string): Promise<Profile[]> {
   return ((data as any[]) ?? []).map((r) => r.followee as Profile);
 }
 
+export interface FollowerRow extends Profile {
+  /** When they followed you — what the inbox sorts and marks unseen by. */
+  followed_at: string;
+}
+
+/**
+ * People who follow me, newest first.
+ *
+ * The follows table IS the inbox: a notifications table would be a second copy
+ * of the same fact, free to drift from it every time someone unfollows.
+ */
+export async function recentFollowers(limit = 50): Promise<FollowerRow[]> {
+  const me = await uid();
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from("follows")
+    .select("created_at, follower:profiles!follows_follower_id_fkey(*)")
+    .eq("followee_id", me)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  return ((data as any[]) ?? [])
+    .map((r) =>
+      r.follower
+        ? { ...(r.follower as Profile), followed_at: r.created_at as string }
+        : null
+    )
+    .filter((r): r is FollowerRow => r != null);
+}
+
 export async function followCounts(
   userId: string
 ): Promise<{ followers: number; following: number }> {
