@@ -138,6 +138,27 @@ Claude can do from here — no laptop required.
 
 ---
 
+## Releasing a new version
+
+App Store Connect closes a version's "train" once that version is live, and
+refuses any further upload under it — `ITMS-90186: Invalid Pre-Release Train`
+alongside `ITMS-90062: CFBundleShortVersionString must contain a higher
+version than the previously approved version`. Both mean the same thing: the
+marketing version has to go up.
+
+**Bump `mobile/app.json` (`expo.version`) and that is all.** The CI script
+propagates it into the native project with `agvtool new-marketing-version` on
+every build, so the copies in `mobile/ios/TVTime/Info.plist` and the four
+`MARKETING_VERSION` build settings — one pair of which is where the widget
+extension gets its own version — cannot drift from it.
+
+They can still drift for a *local* Xcode build, which does not run the CI
+script, so keeping them in sync in the commit is worth doing anyway. The build
+number needs no attention at all: it is `CI_BUILD_NUMBER + 100`, so it always
+increases.
+
+---
+
 ## Free tier
 
 Xcode Cloud includes **25 compute hours/month** free. A TV Time build is small,
