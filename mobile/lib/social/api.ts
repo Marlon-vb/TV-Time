@@ -1038,16 +1038,56 @@ export async function findFriendsFromContacts(): Promise<{
   return { granted: true, profiles: (data as Profile[]) ?? [] };
 }
 
+/**
+ * True for the per-app address Apple issues when someone picks "Hide My
+ * Email". It is unique to this app and this user, so nobody on earth has it in
+ * their address book — hashing it stores a row that can never match anything.
+ */
+function isPrivateRelay(email: string): boolean {
+  return email.endsWith("@privaterelay.appleid.com");
+}
+
 /** Store hashes of the user's own email so contacts of theirs can match them. */
 export async function upsertMyContactHashes(email?: string | null): Promise<void> {
   const me = await uid();
   if (!me) return;
   const normalized = normalizeEmail(email ?? "");
-  if (!normalized) return;
+  if (!normalized || isPrivateRelay(normalized)) return;
   await supabase.from("profile_contacts").upsert({
     id: me,
     email_hash: await sha256(normalized),
   });
+}
+
+// -------------------------------------------------------------- suggestions
+
+export interface SuggestedFriend extends Profile {
+  /** "Followed by 3 people you follow" / "12 shows in common". */
+  reason: string;
+  mutuals: number;
+  shows_in_common: number;
+}
+
+/**
+ * Who to follow, from the graph the app already has: people followed by
+ * people you follow, and people whose watched shows overlap yours.
+ *
+ * This is what fills the screen for everyone who declines contacts access —
+ * and for everyone signed in with Hide My Email, whose address is in nobody's
+ * address book by construction.
+ */
+export async function suggestedFriends(limit = 12): Promise<SuggestedFriend[]> {
+  const me = await uid();
+  if (!me) return [];
+  try {
+    const { data, error } = await supabase.rpc("suggested_friends", {
+      p_limit: limit,
+    });
+    if (error) return [];
+    return (data as SuggestedFriend[]) ?? [];
+  } catch {
+    return [];
+  }
 }
 
 // ----------------------------------------------------------------- trending

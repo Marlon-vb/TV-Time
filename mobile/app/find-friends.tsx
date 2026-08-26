@@ -50,9 +50,29 @@ function FindFriends({
     Profile[] | "scanning" | "denied" | null
   >(null);
   const [searching, setSearching] = useState(false);
+  const [suggested, setSuggested] = useState<social.SuggestedFriend[] | null>(
+    null
+  );
   // Who I already follow, fetched ONCE — not one round trip per result row.
   const { ids: followingIds, toggle: toggleFollow } = useFollowing();
   const gen = useRef(0);
+
+  // Loaded once on open rather than per keystroke: this is the answer to an
+  // empty screen, not a search result.
+  useEffect(() => {
+    let alive = true;
+    social
+      .suggestedFriends()
+      .then((s) => {
+        if (alive) setSuggested(s);
+      })
+      .catch(() => {
+        if (alive) setSuggested([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     const q = query.trim();
@@ -161,6 +181,28 @@ function FindFriends({
               ))}
             </View>
           )}
+
+          {/* Hidden while searching: the answer to a typed query is the query's
+              results, not a list of people the app picked. */}
+          {query.trim().length < 2 &&
+            suggested != null &&
+            suggested.length > 0 && (
+              <View style={{ gap: 8 }}>
+                <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium }}>
+                  Suggested for you
+                </Text>
+                {suggested.map((p) => (
+                  <UserRow
+                    key={p.id}
+                    profile={p}
+                    note={p.reason}
+                    following={followingIds ? followingIds.has(p.id) : null}
+                    onToggle={() => toggleFollow(p.id)}
+                    onOpen={onOpenUser}
+                  />
+                ))}
+              </View>
+            )}
 
           {query.trim().length >= 2 && results.length > 0 && (
             <Text style={{ color: colors.muted, fontSize: 12, fontFamily: fonts.displayMedium, marginTop: 4 }}>

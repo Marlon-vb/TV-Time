@@ -17,12 +17,15 @@ import type { Profile } from "@/lib/social/types";
 export default function UserRow({
   profile,
   following,
+  note,
   onToggle,
   onOpen,
 }: {
   profile: Profile;
   /** null while the following set is still loading. */
   following: boolean | null;
+  /** Why this person is being shown — "3 shows in common". Suggestions only. */
+  note?: string | null;
   onToggle: () => void;
   onOpen: (username: string) => void;
 }) {
@@ -36,6 +39,11 @@ export default function UserRow({
           {profile.display_name || profile.username}
         </Text>
         <Text style={{ color: colors.faint, fontSize: 12 }}>@{profile.username}</Text>
+        {note ? (
+          <Text style={{ color: colors.accent, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+            {note}
+          </Text>
+        ) : null}
       </Pressable>
       <Bouncy
         onPress={onToggle}
