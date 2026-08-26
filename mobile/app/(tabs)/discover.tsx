@@ -22,6 +22,7 @@ import * as movieSearch from "@/lib/movie-search";
 import { MovieSearchUnavailable } from "@/lib/movie-search";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
+import * as social from "@/lib/social/api";
 import { getSetting, setSetting } from "@/lib/db";
 import { rescheduleAll } from "@/lib/notifications";
 import { recommendedShows, type Recommendation } from "@/lib/recommendations";
@@ -141,6 +142,7 @@ export default function DiscoverScreen() {
   const [best, setBest] = useState<tvmaze.RatedShow[]>([]);
   const [premieres, setPremieres] = useState<RemoteShow[]>([]);
   const [trend, setTrend] = useState<Trending>({ shows: [], episodes: [] });
+  const [sent, setSent] = useState<social.SentShow[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -175,6 +177,14 @@ export default function DiscoverScreen() {
       .catch(() => {
         // offline — the rail simply doesn't render
       });
+    // Shows friends sent me. Re-read on focus below rather than only here —
+    // one arriving while the tab is open should not wait for a relaunch.
+    social
+      .recommendationsForMe()
+      .then((r) => {
+        if (alive) setSent(r);
+      })
+      .catch(() => {});
     // What the community watched this week (signed in only; cached 6h).
     trending()
       .then((t) => {
@@ -368,6 +378,24 @@ export default function DiscoverScreen() {
                 Everything you follow is stored on this device — no account, no
                 cloud.
               </Text>
+              {sent.length > 0 && (
+                <FromFriends
+                  rows={sent}
+                  onOpen={(id) => router.push(`/show/${id}` as never)}
+                  onDismiss={(r) => {
+                    setSent((rs) =>
+                      rs.filter(
+                        (x) =>
+                          !(
+                            x.show_id === r.show_id &&
+                            x.from_user_id === r.from_user_id
+                          )
+                      )
+                    );
+                    void social.dismissRecommendation(r.from_user_id, r.show_id);
+                  }}
+                />
+              )}
               {recsLoading ? (
                 <ActivityIndicator color={colors.accent} />
               ) : recs.length > 0 ? (
@@ -598,6 +626,96 @@ function MovieResultRow({
         </Text>
       </View>
     </Bouncy>
+  );
+}
+
+/**
+ * Shows a friend sent you.
+ *
+ * Above every other rail on the screen, because a person chose these — a name
+ * and a sentence outrank an algorithm, and burying them under the generated
+ * lists would say the opposite. Dismissable, since an unanswerable card that
+ * never goes away turns a gift into a chore.
+ */
+function FromFriends({
+  rows,
+  onOpen,
+  onDismiss,
+}: {
+  rows: social.SentShow[];
+  onOpen: (showId: number) => void;
+  onDismiss: (row: social.SentShow) => void;
+}) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={sectionLabel}>SENT BY FRIENDS</Text>
+      <View style={{ gap: 8 }}>
+        {rows.map((r) => {
+          const who =
+            r.from?.display_name || (r.from ? `@${r.from.username}` : "A friend");
+          return (
+            <View
+              key={`${r.from_user_id}-${r.show_id}`}
+              style={{
+                ...card,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                padding: 8,
+                borderColor: colors.accent,
+              }}
+            >
+              <Bouncy
+                onPress={() => onOpen(r.show_id)}
+                scaleTo={0.97}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${r.show_name}`}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}
+              >
+                <Poster
+                  src={r.poster_url}
+                  name={r.show_name}
+                  width={40}
+                  height={58}
+                  radius={7}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: colors.fg,
+                      fontFamily: fonts.displayMedium,
+                      fontSize: 13,
+                    }}
+                  >
+                    {r.show_name}
+                  </Text>
+                  <Text numberOfLines={1} style={{ color: colors.accent, fontSize: 11 }}>
+                    {`${who} thinks you'd like this`}
+                  </Text>
+                  {r.note ? (
+                    <Text
+                      numberOfLines={2}
+                      style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}
+                    >
+                      {`“${r.note}”`}
+                    </Text>
+                  ) : null}
+                </View>
+              </Bouncy>
+              <Pressable
+                onPress={() => onDismiss(r)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={`Dismiss ${r.show_name}`}
+              >
+                <Ionicons name="close" size={16} color={colors.faint} />
+              </Pressable>
+            </View>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 

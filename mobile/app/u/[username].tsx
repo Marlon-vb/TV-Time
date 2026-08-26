@@ -20,6 +20,7 @@ import Avatar from "@/components/Avatar";
 import Bouncy from "@/components/Bouncy";
 import FavoritesRail from "@/components/FavoritesRail";
 import Poster from "@/components/Poster";
+import RecommendSheet from "@/components/RecommendSheet";
 import { card, sectionLabel } from "@/components/ui";
 import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
@@ -48,6 +49,7 @@ export default function UserProfileScreen() {
   const [following, setFollowing] = useState<boolean | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [qr, setQr] = useState(false);
+  const [recommending, setRecommending] = useState(false);
   const [favorites, setFavorites] = useState<FavoriteShow[]>([]);
   const [favoriteFilms, setFavoriteFilms] = useState<FavoriteMovie[]>([]);
   const [summary, setSummary] = useState<{
@@ -285,6 +287,21 @@ export default function UserProfileScreen() {
                     {following == null ? "…" : following ? "Following" : "Follow"}
                   </Text>
                 </Bouncy>
+                {/* Only once you follow them — which is also what the insert
+                    policy requires, so the button never offers something the
+                    server will refuse. */}
+                {following ? (
+                  <Bouncy
+                    onPress={() => setRecommending(true)}
+                    scaleTo={0.94}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Recommend a show to ${name}`}
+                    style={btn(false)}
+                  >
+                    <Ionicons name="send" size={14} color={colors.fg} />
+                    <Text style={btnText(false)}>Recommend</Text>
+                  </Bouncy>
+                ) : null}
                 <Bouncy
                   onPress={() =>
                     ActionSheetIOS.showActionSheetWithOptions(
@@ -389,6 +406,13 @@ export default function UserProfileScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <RecommendSheet
+        toUserId={profile.id}
+        toName={name}
+        visible={recommending}
+        onClose={() => setRecommending(false)}
+      />
 
       <Modal visible={qr} transparent animationType="fade" onRequestClose={() => setQr(false)}>
         <Pressable

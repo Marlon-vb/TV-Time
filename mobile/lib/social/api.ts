@@ -1159,6 +1159,90 @@ export async function suggestedFriends(limit = 12): Promise<SuggestedFriend[]> {
   }
 }
 
+// ---------------------------------------------------------- recommendations
+
+export interface SentShow {
+  from_user_id: string;
+  to_user_id: string;
+  show_id: number;
+  show_name: string;
+  poster_url: string | null;
+  note: string | null;
+  created_at: string;
+  /** Joined for the recipient's rail: who sent it. */
+  from?: Profile | null;
+}
+
+/**
+ * Send one show to one person.
+ *
+ * Returns false when the write did not land, which the caller must surface —
+ * the insert policy refuses anyone you do not follow, and a silent failure
+ * would leave you believing you had sent something.
+ */
+export async function recommendShow(input: {
+  toUserId: string;
+  showId: number;
+  showName: string;
+  posterUrl: string | null;
+  note?: string | null;
+}): Promise<boolean> {
+  const me = await uid();
+  if (!me || me === input.toUserId) return false;
+  const { error } = await supabase.from("show_recommendations").upsert({
+    from_user_id: me,
+    to_user_id: input.toUserId,
+    show_id: input.showId,
+    show_name: input.showName,
+    poster_url: input.posterUrl,
+    note: input.note?.trim() || null,
+  });
+  return !error;
+}
+
+/** Shows people have sent me, newest first. */
+export async function recommendationsForMe(limit = 20): Promise<SentShow[]> {
+  const me = await uid();
+  if (!me) return [];
+  const { data, error } = await supabase
+    .from("show_recommendations")
+    .select("*, from:profiles!show_recommendations_from_user_id_fkey(*)")
+    .eq("to_user_id", me)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data as SentShow[];
+}
+
+/** Which shows I have already sent this person, so the picker can say so. */
+export async function recommendationsISent(
+  toUserId: string
+): Promise<Set<number>> {
+  const me = await uid();
+  if (!me) return new Set();
+  const { data } = await supabase
+    .from("show_recommendations")
+    .select("show_id")
+    .eq("from_user_id", me)
+    .eq("to_user_id", toUserId);
+  return new Set(((data as { show_id: number }[]) ?? []).map((r) => r.show_id));
+}
+
+/** Dismiss one from my rail. */
+export async function dismissRecommendation(
+  fromUserId: string,
+  showId: number
+): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("show_recommendations")
+    .delete()
+    .eq("to_user_id", me)
+    .eq("from_user_id", fromUserId)
+    .eq("show_id", showId);
+}
+
 // ----------------------------------------------------------------- trending
 
 export interface TrendingShow {
