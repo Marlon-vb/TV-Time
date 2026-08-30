@@ -1,0 +1,95 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TV App — follow me</title>
+<meta
+  name="description"
+  content="Someone wants you to follow them on TV App, an iPhone app for tracking the TV shows, movies and documentaries you watch."
+/>
+<meta name="theme-color" content="#0b0c14" />
+<link rel="icon" href="../assets/favicon.png?v=2" />
+<link rel="apple-touch-icon" href="../assets/icon-192.png?v=2" />
+<link rel="stylesheet" href="../assets/style.css?v=9" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Follow me on TV App" />
+<meta
+  property="og:description"
+  content="Track the shows, movies and documentaries you watch — and see what your friends thought."
+/>
+<meta property="og:image" content="../assets/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="brand" href="../" aria-label="TV App home">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M38.4 23.3 50 33.6 61.6 23.3" fill="none" stroke="#fbd737" stroke-width="5.1" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="21.9" y="35.5" width="56.2" height="39" rx="5.5" fill="#fbd737" />
+        <path d="M44.2 45.9 61.1 55 44.2 64.1Z" fill="#0b0c14" />
+      </svg>
+      TV App
+    </a>
+    <nav>
+      <a href="../support/">Support</a>
+    </nav>
+  </header>
+</div>
+
+<main id="main">
+  <div class="wrap">
+    <div class="doc">
+      <div class="doc-head">
+        <p class="eyebrow">Invitation</p>
+        <h1 id="headline">Follow me on TV App</h1>
+        <p class="meta" id="handle"></p>
+      </div>
+
+      <div class="summary">
+        <p>
+          TV App tracks the TV shows, movies and documentaries you watch — what's up
+          next, what's airing soon, and what your friends thought of it.
+        </p>
+      </div>
+
+      <article>
+        <p>
+          <a class="btn" id="openApp" href="#">Open in TV App</a>
+          <a class="btn" id="getApp" href="https://apps.apple.com/app/id6791087580">
+            Get it on the App Store
+          </a>
+        </p>
+        <p id="fallback">
+          Already have the app but the button did nothing? Open TV App, go to
+          <strong>Friends → Add friends</strong>, and search the username above.
+        </p>
+      </article>
+    </div>
+  </div>
+</main>
+
+<script>
+  // The username rides in the hash rather than the path: GitHub Pages is
+  // static, so /u/<name> has no page of its own and would be served as a 404.
+  // 404.html rewrites the pretty link to this one, and the hash never reaches
+  // the server, so the same file answers for everybody.
+  var raw = decodeURIComponent((location.hash || "").replace(/^#/, "").trim());
+  // Anything that is not a plausible username is treated as no username at
+  // all — this string goes into the page, and a share link is a thing
+  // strangers can craft.
+  var name = /^[A-Za-z0-9_.]{1,30}$/.test(raw) ? raw : "";
+
+  if (name) {
+    document.getElementById("headline").textContent = "Follow @" + name + " on TV App";
+    document.getElementById("handle").textContent = "@" + name;
+    document.title = "Follow @" + name + " on TV App";
+    document.getElementById("openApp").href = "tvtime://u/" + name;
+  } else {
+    // No username — this is just an invite to the app, so drop the control
+    // that would open a profile that does not exist.
+    document.getElementById("openApp").hidden = true;
+    document.getElementById("fallback").textContent =
+      "Open TV App, go to Friends → Add friends, and search for the username you were sent.";
+  }
+</script>

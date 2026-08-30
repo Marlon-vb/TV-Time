@@ -16,6 +16,7 @@ import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import { useFollowing } from "@/lib/social/useFollowing";
 import * as social from "@/lib/social/api";
+import { SITE, inviteMessage } from "@/lib/share";
 import type { Profile } from "@/lib/social/types";
 
 /**
@@ -95,8 +96,8 @@ function FindFriends({
   const invite = async () => {
     await Share.share({
       message: myUsername
-        ? `Follow me on TV App — I'm @${myUsername}. Got the app? Tap tvtime://u/${myUsername} — otherwise search @${myUsername} once you're in.`
-        : "Join me on TV App!",
+        ? inviteMessage(myUsername)
+        : `Join me on TV App — ${SITE}`,
     });
   };
 

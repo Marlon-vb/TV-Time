@@ -11,6 +11,16 @@
      site is served at the root of its own domain (see CNAME), so that root is
      "/" — it was "/TV-Time/" while this was a project page. -->
 
+<script>
+  // Profile links are shared as /u/<username>, which is a pretty path with no
+  // file behind it — GitHub Pages is static and answers it with this page. Send
+  // it to the real invite page, which reads the name from the hash.
+  (function () {
+    var m = location.pathname.match(/^\/u\/([A-Za-z0-9_.]{1,30})\/?$/);
+    if (m) location.replace("/u/#" + m[1]);
+  })();
+</script>
+
 <a class="skip" href="#main">Skip to content</a>
 
 <div class="wrap">

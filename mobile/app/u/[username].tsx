@@ -26,6 +26,7 @@ import { colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
 import { confirmBlock, reportWithFeedback } from "@/lib/social/moderation";
+import { inviteMessage, profileUrl } from "@/lib/share";
 import { watchTimeCompact } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
@@ -189,7 +190,7 @@ export default function UserProfileScreen() {
     setCounts(await social.followCounts(profile.id));
   };
 
-  const deepLink = `tvtime://u/${profile.username}`;
+  const link = profileUrl(profile.username);
   // Their number one, and only if it has wide art — a 2:3 poster cropped to a
   // header band is unusable, so no backdrop means no header rather than a bad
   // one.
@@ -258,7 +259,7 @@ export default function UserProfileScreen() {
                 <Bouncy
                   onPress={() =>
                     void Share.share({
-                      message: `Follow me on TV App — I'm @${profile.username}. Got the app? Tap ${deepLink} — otherwise search @${profile.username} once you're in.`,
+                      message: inviteMessage(profile.username),
                     })
                   }
                   scaleTo={0.94}
@@ -424,11 +425,11 @@ export default function UserProfileScreen() {
               @{profile.username}
             </Text>
             <View style={{ backgroundColor: "#fff", padding: 14, borderRadius: 14 }}>
-              <QRCode value={deepLink} size={200} backgroundColor="#fff" color="#0b0c14" />
+              <QRCode value={link} size={200} backgroundColor="#fff" color="#0b0c14" />
             </View>
             <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center" }}>
-              Friends with the app can scan this with the iPhone camera to
-              open your profile.
+              Scan this with the iPhone camera — it opens the app if they
+              have it, and the App Store if they don't.
             </Text>
           </View>
         </Pressable>
