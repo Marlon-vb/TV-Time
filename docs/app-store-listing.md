@@ -137,6 +137,28 @@ not they already have the app.
 ```
 [1099]
 
+## What's New — 1.1.1 (4000)
+
+A screenshots-only release: the framed 6.9" set replacing raw captures, plus
+whatever the version needs to exist at all. Nothing functional changed, so the
+note says nothing functional changed — inventing a feature to justify a
+metadata update is how a metadata rejection starts.
+
+```
+Small fixes, and a tidier App Store listing.
+```
+[43]
+
+Put this in the review notes too. A reviewer with nothing to test moves faster
+when told there is nothing to test:
+
+```
+Screenshots-only update. No functional or code changes from 1.1.0 — the
+binary differs only in its version and build number. The new screenshots
+fill the iPhone 6.9" slot, which the previous submission left holding the
+older captures.
+```
+
 ---
 
 ## Before submitting
