@@ -74,6 +74,29 @@ key server-side. The app never holds it.
 Skipping this leaves TV search working and film search reporting that it is
 unavailable, rather than silently returning nothing.
 
+## Show artwork (~2 minutes)
+
+TVmaze serves a poster and no wide art at all, so a show's backdrop can only
+come from TMDB. It used to need a key each user pasted into Settings
+themselves, which meant almost no show had one and the profile hero banner had
+nothing to draw for anybody. Same fix as movie search: the key stays on the
+server.
+
+Needs `TMDB_KEY` from the section above — it is one secret per project, so if
+you did movie search there is nothing new to set.
+
+1. Deploy the function:
+   ```bash
+   supabase functions deploy artwork
+   ```
+2. In **SQL Editor** → **New query**, paste
+   [`show-artwork.sql`](./show-artwork.sql), **Run**. That is the cache, keyed
+   by IMDb or TVDB id, and it stores misses too — plenty of shows are not in
+   TMDB and without that every sync of one costs an upstream call forever.
+
+Skipping this leaves posters as TVmaze serves them and profiles without a hero
+banner, which is what the app did before.
+
 ## Push notifications (optional, ~5 minutes)
 
 Sends a real iPhone push when someone follows you, likes your comment, or

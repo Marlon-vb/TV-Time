@@ -19,6 +19,10 @@ export async function syncAndReschedule(opts?: {
     concurrency: 4,
     limit: opts?.limit,
   });
+  // Starred shows missing wide art, a few per pass. Separate from the sweep
+  // above because that one is bounded by staleness and this one by a hole in
+  // the data — a show synced an hour ago can still have no backdrop.
+  await repo.backfillFavoriteArtwork().catch(() => 0);
   await rescheduleAll();
   syncUpNextWidget();
   return result;

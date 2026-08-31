@@ -771,6 +771,45 @@ export function upcoming(days?: number): UpcomingItem[] {
   });
 }
 
+/**
+ * Fill in wide art for starred shows that have none.
+ *
+ * Every show predating the artwork proxy has a null backdrop, and the ordinary
+ * staleness sweep only reaches twenty-five shows per pass — a big library
+ * would take a fortnight of launches to come good, which for a banner on a
+ * profile reads as a feature that does not work rather than one arriving.
+ *
+ * Favourites first because they are the only shows whose wide art is ever
+ * seen: the profile header is drawn from the top of the shelf. Poster and
+ * title are left alone. Swapping artwork somebody is used to, unasked, for a
+ * feature they did not request is not an improvement.
+ */
+export async function backfillFavoriteArtwork(limit = 8): Promise<number> {
+  const db = getDb();
+  const rows = db.getAllSync<ShowRow>(
+    `SELECT * FROM shows
+     WHERE favorited_at IS NOT NULL AND backdrop_url IS NULL
+     ORDER BY favorite_rank IS NULL, favorite_rank
+     LIMIT ?`,
+    limit
+  );
+  let filled = 0;
+  for (const row of rows) {
+    const art = await tmdb
+      .findShowArtwork(row.imdb_id, row.tvdb_id)
+      .catch(() => null);
+    if (!art?.backdropUrl) continue;
+    db.runSync(
+      "UPDATE shows SET backdrop_url = ?, tmdb_id = COALESCE(tmdb_id, ?) WHERE id = ?",
+      art.backdropUrl,
+      art.tmdbId,
+      row.id
+    );
+    filled++;
+  }
+  return filled;
+}
+
 // ------------------------------------------------------------- recent taste
 
 /** How far back "what you're watching now" reaches. */

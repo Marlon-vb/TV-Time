@@ -1,9 +1,20 @@
 import { getSetting } from "./db";
+import { supabase } from "./supabase";
 
 /**
- * Optional TMDB enrichment: nicer artwork for followed shows and exact
- * TVDB-episode-id resolution for classic TV Time imports. Configure a v3
- * API key or v4 read token in Settings.
+ * TMDB enrichment: nicer artwork for followed shows, and exact
+ * TVDB-episode-id resolution for classic imports.
+ *
+ * Artwork no longer needs a key of your own. TVmaze has no wide art at all —
+ * it returns a poster and nothing else — so a backdrop could only come from
+ * here, and requiring a key everybody had to paste in themselves meant almost
+ * no show had one, and anything built on top of a backdrop had nothing to
+ * draw. findShowArtwork falls back to our own `artwork` Edge Function, which
+ * holds the key server-side and caches by external id.
+ *
+ * A personal key still short-circuits that: it is one hop instead of two, and
+ * it is what the import path needs anyway for episode resolution, which the
+ * proxy does not cover.
  */
 
 const BASE = "https://api.themoviedb.org/3";
@@ -63,11 +74,34 @@ export interface TmdbArtwork {
   backdropUrl: string | null;
 }
 
+/**
+ * The same answer via our own function, for everyone without a key.
+ *
+ * Never throws: artwork is an enhancement on top of a show that already has a
+ * TVmaze poster, so a proxy that is down, undeployed or unreachable has to
+ * degrade to what the app did before it existed rather than fail a follow.
+ */
+async function artworkFromProxy(
+  imdbId: string | null,
+  tvdbId: number | null
+): Promise<TmdbArtwork | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke<{
+      artwork?: TmdbArtwork | null;
+    }>("artwork", { body: { imdbId, tvdbId } });
+    if (error) return null;
+    return data?.artwork ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function findShowArtwork(
   imdbId: string | null,
   tvdbId: number | null
 ): Promise<TmdbArtwork | null> {
-  if (!tmdbConfigured()) return null;
+  if (!imdbId && tvdbId == null) return null;
+  if (!tmdbConfigured()) return artworkFromProxy(imdbId, tvdbId);
   try {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     let tv: any = null;
