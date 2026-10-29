@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +19,8 @@ import {
 import { minutesHuman, monthLabel } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as movies from "@/lib/movies";
+import { getSetting, setSetting } from "@/lib/db";
+import { useAuth } from "@/lib/social/auth";
 import { useFocusData } from "@/lib/useFocusData";
 import { useTabTop } from "@/lib/useTabTop";
 import { topCard, type CardData } from "@/lib/share-card";
@@ -48,6 +50,24 @@ export default function ProfileScreen() {
     []
   );
   const { data } = useFocusData(loader);
+
+  // Accounts that predate character avatars get asked once. Everyone who
+  // went through onboarding since picked one there, so for them this never
+  // fires — the profile already has a picture by the time it loads.
+  const { profile } = useAuth();
+  useEffect(() => {
+    if (!profile || profile.avatar_url) return;
+    if (getSetting("avatar_prompt_shown") === "1") return;
+    setSetting("avatar_prompt_shown", "1");
+    Alert.alert(
+      "Pick a profile picture",
+      "Choose a poster or character from your shows — it's what friends see next to everything you watch.",
+      [
+        { text: "Not now", style: "cancel" },
+        { text: "Choose", onPress: () => router.push("/choose-avatar") },
+      ]
+    );
+  }, [profile, router]);
 
   if (!data) return null;
 

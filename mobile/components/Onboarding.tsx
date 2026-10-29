@@ -23,7 +23,9 @@ import Bouncy from "@/components/Bouncy";
 import { accentGradient, colors, fonts, radius } from "@/lib/theme";
 import { useAuth } from "@/lib/social/auth";
 import * as social from "@/lib/social/api";
+import { PickAvatarPage, PickShowsPage } from "@/components/OnboardingSetup";
 import type { Profile } from "@/lib/social/types";
+import type { ShowRow } from "@/lib/types";
 
 const SHOTS = {
   watchNext: require("@/assets/onboarding/watch-next.webp"),
@@ -32,11 +34,14 @@ const SHOTS = {
 } as const;
 
 /**
- * First-run intro: three screens, skippable from any of them, and it never
- * gates the app behind an account. The third screen is where sign-in and
- * contact matching are offered — both optional, both with the explanation in
- * front of the system prompt rather than after it, which is what Apple's
- * review guidance on permission requests asks for.
+ * First-run intro: five screens, skippable from any of them, and it never
+ * gates the app behind an account. Two of them do real work — picking three
+ * favourite shows (which follows and stars them, so Watch Next, the Library
+ * and the profile all start life populated) and choosing a character as a
+ * profile picture. The last screen is where sign-in and contact matching are
+ * offered — both optional, both with the explanation in front of the system
+ * prompt rather than after it, which is what Apple's review guidance on
+ * permission requests asks for.
  */
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const { width, height } = useWindowDimensions();
@@ -48,7 +53,10 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   // horizontal one has no height to inherit — measure the pager and hand it
   // down rather than hoping the cross-axis stretch resolves.
   const [pagerHeight, setPagerHeight] = useState(0);
-  const last = 2;
+  // Lifted here because two pages share it: the picker fills it, the avatar
+  // page reads casts from it.
+  const [picked, setPicked] = useState<ShowRow[]>([]);
+  const last = 4;
 
   // Small phones (SE) can't afford the full device frame; the copy matters more.
   const shotHeight = Math.min(height * 0.42, 340);
@@ -70,6 +78,12 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     const next = Math.round(e.nativeEvent.contentOffset.x / width);
     if (next !== page) setPage(next);
   };
+
+  // The pick page's Next holds until three shows are chosen — that is the
+  // page's whole job. Swiping past and the top-right Skip both still work:
+  // a gate someone is looking for a way around has already failed, and App
+  // Review reads a hard wall before first use the same way.
+  const needPicks = page === 2 && picked.length < 3;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.ink }}>
@@ -135,10 +149,17 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           title="Never lose your place"
           body="Watch Next always knows the next episode. Upcoming shows what airs tonight, and a home-screen widget keeps it a glance away."
         />
+        <PickShowsPage
+          width={width}
+          height={pagerHeight}
+          picked={picked}
+          onChange={setPicked}
+        />
+        <PickAvatarPage width={width} height={pagerHeight} shows={picked} />
         <FriendsPage
           width={width}
           height={pagerHeight}
-          index={2}
+          index={4}
           scrollX={scrollX}
           shotHeight={shotHeight}
         />
@@ -152,12 +173,15 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           gap: 18,
         }}
       >
-        <Dots count={3} page={page} />
+        <Dots count={5} page={page} />
         <Bouncy
           onPress={() => (page === last ? finish() : goTo(page + 1))}
+          disabled={needPicks}
           accessibilityRole="button"
-          accessibilityLabel={page === last ? "Start watching" : "Next"}
-          style={{ borderRadius: radius.md, overflow: "hidden" }}
+          accessibilityLabel={
+            needPicks ? "Pick three shows to continue" : page === last ? "Start watching" : "Next"
+          }
+          style={{ borderRadius: radius.md, overflow: "hidden", opacity: needPicks ? 0.45 : 1 }}
         >
           <LinearGradient
             colors={accentGradient}
@@ -166,7 +190,11 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
             style={{ paddingVertical: 15, alignItems: "center" }}
           >
             <Text style={{ color: colors.ink, fontFamily: fonts.display, fontSize: 16 }}>
-              {page === last ? "Start watching" : "Next"}
+              {needPicks
+                ? `Pick ${3 - picked.length} more`
+                : page === last
+                  ? "Start watching"
+                  : "Next"}
             </Text>
           </LinearGradient>
         </Bouncy>

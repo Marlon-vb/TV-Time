@@ -9,7 +9,9 @@ import {
 } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import type { Session } from "@supabase/supabase-js";
+import { getSetting, setSetting } from "@/lib/db";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { PENDING_AVATAR_KEY } from "@/components/OnboardingSetup";
 import { registerForSocial } from "./api";
 import { reconcileIfStale } from "./mirror";
 import { resetCommentRate } from "./moderation";
@@ -45,7 +47,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("id", userId)
       .maybeSingle();
-    setProfile((data as Profile) ?? null);
+    let next = (data as Profile) ?? null;
+    // A profile picture chosen during onboarding was picked before any
+    // account existed to put it on. Apply it the first time a profile loads
+    // bare; cleared only once the write lands, so an offline sign-in retries
+    // on the next load instead of losing the pick. A profile that already
+    // has an avatar clears it unused — otherwise the leftover would lurk and
+    // re-apply after someone deliberately reset their picture.
+    const pending = next ? getSetting(PENDING_AVATAR_KEY) : null;
+    if (next && pending) {
+      if (next.avatar_url) {
+        setSetting(PENDING_AVATAR_KEY, "");
+      } else {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ avatar_url: pending })
+          .eq("id", userId);
+        if (!error) {
+          setSetting(PENDING_AVATAR_KEY, "");
+          next = { ...next, avatar_url: pending };
+        }
+      }
+    }
+    setProfile(next);
   }, []);
 
   useEffect(() => {
