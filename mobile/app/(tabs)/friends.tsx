@@ -33,16 +33,17 @@ import type { FeedItem, Profile } from "@/lib/social/types";
 type Tab = "friends" | "feed";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "friends", label: "Friends" },
   { key: "feed", label: "Activity" },
+  { key: "friends", label: "Friends" },
 ];
 
 export default function FriendsScreen() {
   const { session, profile, ready } = useAuth();
   const router = useRouter();
-  // Friends first, and the default: the tab is named after the people, so
-  // opening it should answer "who do I follow" before "what have they done".
-  const [tab, setTab] = useState<Tab>("friends");
+  // Activity first, and the default. The list of who you follow barely
+  // changes between visits; what they have been watching changes daily, and
+  // a tab that opens on the static half teaches people it never has news.
+  const [tab, setTab] = useState<Tab>("feed");
   // Whether the bell wears a dot. Re-checked whenever the screen regains
   // focus, so following someone back and coming straight back clears it.
   const [unseen, setUnseen] = useState(false);
