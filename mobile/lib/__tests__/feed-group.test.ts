@@ -111,3 +111,60 @@ describe("groupFeed", () => {
     expect(total).toBe(items.length);
   });
 });
+
+describe("added runs", () => {
+  const added = (
+    id: string,
+    user: string,
+    showId: number,
+    at: string,
+    type: "added" | "movie_added" = "added"
+  ): FeedItem =>
+    item({
+      id,
+      user_id: user,
+      type,
+      show_id: showId,
+      show_name: `Show ${showId}`,
+      season: null,
+      episode: null,
+      created_at: at,
+    });
+
+  it("collapses a library-stocking spree across different shows", () => {
+    // A new user starring their backlog is the flood this exists for — and
+    // unlike a watched run, every row is a different show.
+    const items = [
+      added("a", "u1", 3, "2026-10-29T10:02:00Z"),
+      added("b", "u1", 2, "2026-10-29T10:01:00Z"),
+      added("c", "u1", 1, "2026-10-29T10:00:00Z"),
+    ];
+    const groups = groupFeed(items);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].count).toBe(3);
+    expect(groupActivityText(groups[0])).toBe("added 3 shows to their library");
+  });
+
+  it("keeps shows and movies as separate runs", () => {
+    const items = [
+      added("a", "u1", 3, "2026-10-29T10:02:00Z", "movie_added"),
+      added("b", "u1", 2, "2026-10-29T10:01:00Z"),
+      added("c", "u1", 1, "2026-10-29T10:00:00Z"),
+    ];
+    const groups = groupFeed(items);
+    expect(groups).toHaveLength(2);
+    // A run of one renders feedActivityText in the UI; the group wording
+    // still has to survive being asked, without saying "1 movies".
+    expect(groupActivityText(groups[0])).toBe(
+      "added 1 movie to their watchlist"
+    );
+  });
+
+  it("never merges two users' additions", () => {
+    const items = [
+      added("a", "u1", 1, "2026-10-29T10:01:00Z"),
+      added("b", "u2", 2, "2026-10-29T10:00:00Z"),
+    ];
+    expect(groupFeed(items)).toHaveLength(2);
+  });
+});

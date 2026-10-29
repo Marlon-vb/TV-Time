@@ -23,9 +23,21 @@ export default function MovieScreen() {
   const { data: movie, reload } = useFocusData(loader);
 
   const toggleWatched = (next: boolean) => {
+    if (!movie) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     movies.setMovieWatched(movieId, next);
     reload();
+    // Mirrored separately, as every local write is (no-op signed out).
+    if (next) {
+      void social.recordMovieWatch({
+        id: movieId,
+        title: movie.title,
+        posterUrl: movie.poster_url,
+        rating: movie.rating,
+      });
+    } else {
+      void social.unrecordMovieWatch(movieId);
+    }
   };
 
   const favorited = movie?.favorited_at != null;
@@ -46,8 +58,19 @@ export default function MovieScreen() {
   };
 
   const rate = (value: number | null) => {
+    if (!movie) return;
     movies.setMovieRating(movieId, value);
     reload();
+    // A rating on a watched film upgrades its feed row in place; rating
+    // something still on the watchlist publishes nothing until it's seen.
+    if (movie.watched_at != null) {
+      void social.recordMovieWatch({
+        id: movieId,
+        title: movie.title,
+        posterUrl: movie.poster_url,
+        rating: value,
+      });
+    }
   };
 
   const confirmRemove = () =>
@@ -59,8 +82,9 @@ export default function MovieScreen() {
         onPress: () => {
           movies.removeMovie(movieId);
           // And the star, which would otherwise sit on your profile with
-          // nothing left in the library to un-star it from.
+          // nothing left in the library to un-star it from. Feed rows too.
           void social.setFavoriteMovie(movieId);
+          void social.removeMovieActivities(movieId);
           router.back();
         },
       },

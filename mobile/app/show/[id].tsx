@@ -73,8 +73,18 @@ export default function ShowScreen() {
   const follow = async () => {
     setBusy(true);
     try {
-      await repo.followShow(showId);
+      const row = await repo.followShow(showId);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // The follow itself is news — friends see the library grow, not just
+      // the episodes ticked later. Deliberate taps only: imports and restores
+      // go through repo directly and publish nothing.
+      if (row) {
+        void social.recordShowAdded({
+          id: row.id,
+          name: row.name,
+          posterUrl: row.poster_url,
+        });
+      }
       await rescheduleAll();
       reload();
     } finally {
@@ -93,6 +103,7 @@ export default function ShowScreen() {
           // The promise above extends to the server: clear the mirrored
           // history and this show's feed rows (no-op signed out).
           void social.deleteWatchedForShow(showId);
+          void social.unrecordShowAdded(showId);
           // And the star, which would otherwise outlive the library row it
           // came from — still on your profile, with nothing left to un-star
           // it from.

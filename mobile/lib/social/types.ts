@@ -11,7 +11,20 @@ export type ActivityType =
   | "rated"
   | "finished"
   | "started"
-  | "commented";
+  | "commented"
+  /** A show joining someone's library. */
+  | "added"
+  /** Movies. show_id carries the TMDB movie id and season/episode stay null —
+   *  a TMDB id can collide with a TVmaze id, so the type is what tells a tap
+   *  which page to open. */
+  | "movie_added"
+  | "movie_watched"
+  | "movie_rated";
+
+/** The film half of the feed, for routing and wording decisions. */
+export function isMovieActivity(type: ActivityType): boolean {
+  return type.startsWith("movie_");
+}
 
 /** A row from the feed() RPC — an activity joined with its author. */
 export interface FeedItem {

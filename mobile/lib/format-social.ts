@@ -15,6 +15,16 @@ export function feedActivityText(item: FeedItem): string {
       return `finished ${item.show_name ?? "a show"}`;
     case "started":
       return `started ${item.show_name ?? "a show"}`;
+    case "added":
+      return `added ${item.show_name ?? "a show"} to their library`;
+    case "movie_added":
+      return `added ${item.show_name ?? "a movie"} to their watchlist`;
+    case "movie_watched":
+      return `watched ${item.show_name ?? "a movie"}`;
+    case "movie_rated":
+      return `rated ${item.show_name ?? "a movie"}${
+        item.rating != null ? ` ${item.rating}★` : ""
+      }`;
     case "commented":
       return `commented on ${item.show_name ?? "a show"}${code}`;
     case "watched":

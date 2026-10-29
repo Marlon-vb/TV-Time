@@ -27,6 +27,7 @@ import { groupActivityText, groupFeed, type FeedGroup } from "@/lib/social/feed-
 import { useTabTop } from "@/lib/useTabTop";
 import { getSetting } from "@/lib/db";
 import { FOLLOWERS_SEEN_KEY, hasUnseen } from "@/lib/follow-inbox";
+import { isMovieActivity } from "@/lib/social/types";
 import type { FeedItem, Profile } from "@/lib/social/types";
 
 type Tab = "friends" | "feed";
@@ -394,6 +395,12 @@ function FeedList({ onOpenUser }: { onOpenUser: (username: string) => void }) {
         // locally, otherwise the show.
         const openTarget = () => {
           if (item.show_id == null) return;
+          // Movie rows carry a TMDB id in show_id — the type, not the id,
+          // says which page it belongs to.
+          if (isMovieActivity(item.type)) {
+            router.push(`/movie/${item.show_id}` as never);
+            return;
+          }
           // A collapsed run is about the show, not any one episode in it.
           if (group.count === 1 && item.season != null && item.episode != null) {
             const epId = repo.findEpisodeId(item.show_id, item.season, item.episode);

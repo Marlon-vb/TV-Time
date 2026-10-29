@@ -285,6 +285,13 @@ export default function DiscoverScreen() {
     try {
       await repo.followShow(show.id);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Friends' feeds learn the library grew. Search-result taps only — the
+      // import path never passes through here.
+      void social.recordShowAdded({
+        id: show.id,
+        name: show.name,
+        posterUrl: show.posterUrl,
+      });
       // New episodes of this show should alert like everything else.
       void rescheduleAll().catch(() => {});
       setResults((rs) =>
@@ -304,6 +311,11 @@ export default function DiscoverScreen() {
   const addMovie = (m: RemoteMovie) => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     movies.addMovie(m); // instant, local
+    void social.recordMovieAdded({
+      id: m.id,
+      title: m.title,
+      posterUrl: m.posterUrl,
+    });
     setResults((rs) =>
       rs.map((r) =>
         r.kind === "movie" && r.movie.id === m.id ? { ...r, added: true } : r

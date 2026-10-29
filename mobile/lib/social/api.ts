@@ -479,6 +479,106 @@ export async function recordWatch(input: {
   });
 }
 
+/** A show joining the library — the follow itself, as news. */
+export async function recordShowAdded(show: {
+  id: number;
+  name: string;
+  posterUrl: string | null;
+}): Promise<void> {
+  await publishActivity({
+    type: "added",
+    showId: show.id,
+    showName: show.name,
+    posterUrl: show.posterUrl,
+  });
+}
+
+/** Unfollowing retracts the claim, exactly as un-watching an episode does. */
+export async function unrecordShowAdded(showId: number): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await supabase
+    .from("activities")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", showId)
+    .eq("type", "added");
+}
+
+// ------------------------------------------------------------ movie activity
+
+/** Every movie activity row of mine for one film, scoped by type. */
+async function deleteMovieActivities(
+  me: string,
+  movieId: number,
+  types: string[]
+): Promise<void> {
+  await supabase
+    .from("activities")
+    .delete()
+    .eq("user_id", me)
+    .eq("show_id", movieId)
+    .in("type", types);
+}
+
+export async function recordMovieAdded(movie: {
+  id: number;
+  title: string;
+  posterUrl: string | null;
+}): Promise<void> {
+  await publishActivity({
+    type: "movie_added",
+    showId: movie.id,
+    showName: movie.title,
+    posterUrl: movie.posterUrl,
+  });
+}
+
+/**
+ * One row per film, replaced rather than stacked: toggling the tick three
+ * times, or rating after watching, must still read as one event. The added
+ * row goes too — "watched Dune" supersedes "added Dune to their watchlist"
+ * the way watching supersedes planning to.
+ */
+export async function recordMovieWatch(movie: {
+  id: number;
+  title: string;
+  posterUrl: string | null;
+  rating?: number | null;
+}): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await deleteMovieActivities(me, movie.id, [
+    "movie_added",
+    "movie_watched",
+    "movie_rated",
+  ]);
+  await publishActivity({
+    type: movie.rating != null ? "movie_rated" : "movie_watched",
+    showId: movie.id,
+    showName: movie.title,
+    posterUrl: movie.posterUrl,
+    rating: movie.rating ?? null,
+  });
+}
+
+export async function unrecordMovieWatch(movieId: number): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await deleteMovieActivities(me, movieId, ["movie_watched", "movie_rated"]);
+}
+
+/** Removing a film from the library removes its whole trace from the feed. */
+export async function removeMovieActivities(movieId: number): Promise<void> {
+  const me = await uid();
+  if (!me) return;
+  await deleteMovieActivities(me, movieId, [
+    "movie_added",
+    "movie_watched",
+    "movie_rated",
+  ]);
+}
+
 export async function unrecordWatch(
   showId: number,
   season: number,

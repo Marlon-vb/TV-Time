@@ -40,7 +40,8 @@ create index if not exists idx_follows_followee on public.follows(followee_id);
 create table if not exists public.activities (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  type text not null check (type in ('watched','rated','finished','started','commented')),
+  type text not null check (type in ('watched','rated','finished','started','commented',
+                                     'added','movie_added','movie_watched','movie_rated')),
   show_id integer,
   show_name text,
   poster_url text,
@@ -54,7 +55,8 @@ create index if not exists idx_activities_user_time on public.activities(user_id
 -- Widen the type check for existing installs (additive; safe to re-run).
 alter table public.activities drop constraint if exists activities_type_check;
 alter table public.activities add constraint activities_type_check
-  check (type in ('watched','rated','finished','started','commented'));
+  check (type in ('watched','rated','finished','started','commented',
+                  'added','movie_added','movie_watched','movie_rated'));
 
 -- Watched log — one row per (user, episode) a friend has seen. Powers the
 -- "friends who watched" indicator, per episode and per show.

@@ -31,12 +31,20 @@ export interface FeedGroup {
 const SESSION_GAP_MS = 6 * 60 * 60 * 1000;
 
 /**
- * Only plain watches collapse. A rating, a comment or a finished-show marker
- * each carry something the group line would have to throw away, and none of
- * them arrive forty at a time.
+ * Only the types that arrive in floods collapse. A rating, a comment or a
+ * finished-show marker each carry something the group line would have to
+ * throw away, and none of them arrive forty at a time.
+ *
+ * Watched runs are one show ticked episode by episode, so they must share a
+ * show. Added runs are the opposite — a new user stocking their library IS a
+ * run of different shows — so those group on the user alone.
  */
-function groupable(item: FeedItem): boolean {
-  return item.type === "watched" && item.show_id != null;
+function sameRun(last: FeedItem, item: FeedItem): boolean {
+  if (last.user_id !== item.user_id || last.type !== item.type) return false;
+  if (item.type === "watched") {
+    return item.show_id != null && last.show_id === item.show_id;
+  }
+  return item.type === "added" || item.type === "movie_added";
 }
 
 /** Feed items are newest-first; runs are contiguous within that order. */
@@ -46,10 +54,7 @@ export function groupFeed(items: FeedItem[]): FeedGroup[] {
     const last = out[out.length - 1];
     if (
       last &&
-      groupable(item) &&
-      groupable(last.item) &&
-      last.item.user_id === item.user_id &&
-      last.item.show_id === item.show_id &&
+      sameRun(last.item, item) &&
       // Chained against the run's oldest, not its newest: a session extends
       // as long as each step follows the one before it closely enough.
       // Measuring from the newest would cut every run off at six hours no
@@ -67,5 +72,13 @@ export function groupFeed(items: FeedItem[]): FeedGroup[] {
 
 /** "watched 23 episodes of Breaking Bad" — the collapsed row's wording. */
 export function groupActivityText(group: FeedGroup): string {
-  return `watched ${group.count} episodes of ${group.item.show_name ?? "a show"}`;
+  const n = group.count;
+  const s = n === 1 ? "" : "s";
+  if (group.item.type === "added") {
+    return `added ${n} show${s} to their library`;
+  }
+  if (group.item.type === "movie_added") {
+    return `added ${n} movie${s} to their watchlist`;
+  }
+  return `watched ${n} episode${s} of ${group.item.show_name ?? "a show"}`;
 }
