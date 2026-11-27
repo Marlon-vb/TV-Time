@@ -60,17 +60,23 @@ this path (next to the Xcode project):
 #!/bin/sh
 set -e
 
+# Skip Homebrew's self-update and cleanup; both are slow on a fresh CI Mac.
+export HOMEBREW_NO_AUTO_UPDATE=1
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+
 # Xcode Cloud clones to $CI_PRIMARY_REPOSITORY_PATH; the Expo app is in mobile/.
 cd "$CI_PRIMARY_REPOSITORY_PATH/mobile"
 
-# Node (via the Xcode Cloud Homebrew) + JS dependencies.
-brew install node@20
-export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+# Node 24 is the supported Homebrew LTS. node@20 was disabled on 2026-10-28,
+# and Expo SDK 54 / React Native 0.81 need Node >= 20.19.4. node@24 is
+# keg-only, so its opt path has to be on PATH explicitly.
+brew install node@24
+export PATH="$(brew --prefix node@24)/bin:$PATH"
 npm ci
 
 # CocoaPods for the native project.
 export LANG=en_US.UTF-8
-HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
+brew install cocoapods
 cd ios
 pod install
 ```
