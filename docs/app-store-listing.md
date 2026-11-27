@@ -159,6 +159,23 @@ fill the iPhone 6.9" slot, which the previous submission left holding the
 older captures.
 ```
 
+## What's New — 1.2.0 (4000)
+
+```
+THE FEED
+The activity feed now shows when friends add a show to their library, and when they add, watch, or rate a movie. A film stays as one row that updates as they go, instead of stacking repeats.
+
+ACTIVITY FIRST
+Friends now opens on the activity feed, with your follow list to the right.
+
+GETTING STARTED
+New users pick three favourite shows, then a character from those shows as their profile picture, so Watch Next, the favourites shelf, and recommendations have something to work with from day one.
+
+EXISTING ACCOUNTS
+If you already use the app and don't have a profile picture yet, you'll be asked once to pick one from your favourite shows.
+```
+[649]
+
 ---
 
 ## Before submitting
