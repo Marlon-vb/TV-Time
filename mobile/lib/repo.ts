@@ -741,6 +741,19 @@ export function watchNext(): WatchNextItem[] {
 }
 
 /**
+ * Shows the calendar is built from: followed, and not archived. Episode
+ * alerts use this same set. `followed_at` is when the show was added, which
+ * the server keeps so an episode that aired before you followed it stays quiet.
+ */
+export function listAlertShows(): { id: number; name: string; followed_at: string }[] {
+  return getDb().getAllSync<{ id: number; name: string; followed_at: string }>(
+    `SELECT id, name, followed_at FROM shows
+     WHERE archived = 0
+     ORDER BY name COLLATE NOCASE`
+  );
+}
+
+/**
  * Every announced future episode of your shows, earliest first. Pass `days` to
  * cap how far ahead to look; omit it (the default) to show everything we have
  * air dates for, out to the last known episode.

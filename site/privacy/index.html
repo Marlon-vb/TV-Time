@@ -40,7 +40,7 @@
         <p class="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
         <p class="meta">
-          TV App for iPhone · Effective 27 July 2026 · Published by Monty Inc ·
+          TV App for iPhone · Effective 28 November 2026 · Published by Monty Inc ·
           <a href="mailto:info@montyinc.net">info@montyinc.net</a>
         </p>
       </div>
@@ -50,7 +50,7 @@
         <ul>
           <li><strong>TV App works entirely on your phone.</strong> Your shows, episodes, watch dates, episode ratings, rewatch counts and movie watchlist live in a database file on your iPhone. Not on our servers.</li>
           <li><strong>You never have to sign in.</strong> Tracking, ratings, upcoming episodes, notifications, the widget, Discover, import and backup all work with no account at all.</li>
-          <li><strong>Signing in with Apple is optional.</strong> It only turns on the social side: friends, the activity feed, comments, community ratings and character votes.</li>
+          <li><strong>Signing in with Apple is optional.</strong> It turns on the social side: friends, the activity feed, comments, community ratings and character votes. It is also how new-episode alerts are delivered when the app is closed, and how streaming availability is loaded if you have not added your own TMDB key.</li>
           <li><strong>We have no analytics, no advertising, no tracking and no crash-reporting tools.</strong> There is no SDK of that kind anywhere in the app.</li>
           <li><strong>We do not sell your data, and we never share it for advertising.</strong></li>
           <li><strong>You can delete your account and everything you shared from inside the app</strong>, in Settings → Account.</li>
@@ -91,7 +91,7 @@
           <li><strong>Your movies and documentaries watchlist</strong> — title, year, artwork and metadata, when you added it, when you watched it and your rating. Movies are local-only. They are never mirrored to our server and never appear in the feed or in comments.</li>
           <li><strong>Your settings</strong> — whether episode notifications are on, and the optional TMDB key you chose to paste in. That key is stored in the app's local database as plain text (not the iOS Keychain), and is only ever sent to TMDB itself.</li>
           <li><strong>Your home-screen widget snapshot</strong> — a tiny piece of text (show name, episode code, "aired N days ago", backlog count) shared with the widget through a private iOS app group. It stays on the device.</li>
-          <li><strong>Your episode alerts</strong> — "new episode is out" notifications are scheduled by iOS on your phone, from your local library. No server is involved in them at all.</li>
+          <li><strong>Your episode alerts, when you are signed out.</strong> "New episode is out" notifications are scheduled by iOS on your phone, from your local library. No server is involved. When you are signed in and alerts are on, the list of shows you follow is also copied to our server so a push can be sent when an episode airs. See section 8.</li>
           <li><strong>Your sign-in session</strong> — if you sign in, the login tokens are stored on the device so you stay signed in.</li>
           <li><strong>Older leftover fields</strong> — the database and the backup file still contain a couple of unused columns left behind by features that were removed from the app. Nothing writes to them, they stay empty, and nothing in them is ever sent anywhere.</li>
         </ul>
@@ -164,7 +164,22 @@
               </tr>
               <tr>
                 <td><strong>Push token</strong></td>
-                <td>The push token for your device, so we can deliver social notifications.</td>
+                <td>The push token for your device, so we can deliver episode alerts and social notifications.</td>
+                <td>Us only</td>
+              </tr>
+              <tr>
+                <td><strong>Episode alert preference</strong></td>
+                <td>Whether new-episode alerts are on, and when you last turned them on.</td>
+                <td>Us only</td>
+              </tr>
+              <tr>
+                <td><strong>Shows followed for alerts</strong></td>
+                <td>The id and name of each show you follow that is not archived, and when you followed it. Not your watch history, ratings, or episode progress.</td>
+                <td>Us only</td>
+              </tr>
+              <tr>
+                <td><strong>Alerts already sent</strong></td>
+                <td>Which episodes we have already pushed to you, so a single episode is not announced twice.</td>
                 <td>Us only</td>
               </tr>
               <tr>
@@ -181,6 +196,7 @@
           <li><strong>A list of up to 100 show IDs you follow</strong>, used to work out "other people who watch this also watch…" recommendations. The server answers with anonymous watcher counts and keeps nothing. This lookup only runs when you are signed in; signed out, the app checks first and never sends it.</li>
         </ul>
         <p><strong>GIF searches.</strong> When you use the GIF picker, the text you type goes to our server, which asks GIPHY for the results and passes them back. Our server keeps that text and the results in a shared cache table, so the same search does not have to be fetched again — six hours for a search, one hour for the default feed you see before you type anything. <strong>A cache row is keyed by the search text alone.</strong> No user id, no device id and no IP address is stored alongside it, so we do not build a record of who searched for what. Once the window is up, the next person who types that text refreshes the row.</p>
+        <p><strong>Where to watch.</strong> When you are signed in and open a show or movie, the app sends that title's id and the country from your device language settings (for example US or GB, not a GPS position) to our server, which asks TMDB which services offer it. The answer is cached by title and country, with no user id attached. Streaming availability is supplied to TMDB by JustWatch. If you are signed out, this request is not made unless you have pasted your own TMDB key, in which case your phone asks TMDB directly.</p>
         <p><strong>IP addresses.</strong> Any request to our backend, like any request on the internet, reveals your device's IP address to the server handling it. We do not log it into a database or use it to profile you, but we cannot claim our hosting provider keeps no record of it.</p>
 
         <hr />
@@ -277,13 +293,13 @@
               </tr>
               <tr>
                 <td><strong>Expo push service</strong></td>
-                <td>Your device's push token, and the text of each social notification, which includes the other person's name or @username and the show name.</td>
-                <td>Only when you are signed in <strong>and</strong> you have already allowed notifications for episode alerts. The app never asks separately — see section 8.</td>
+                <td>Your device's push token, and the text of each notification. Social notifications include the other person's name or @username and the show name. Episode alerts include the show name and the episode.</td>
+                <td>Only when you are signed in <strong>and</strong> you have already allowed notifications. The app asks for that permission from the Episode notifications switch in Settings, not at first launch. See section 8.</td>
               </tr>
               <tr>
-                <td><strong>TMDB</strong> <em>(off by default)</em></td>
-                <td>Only if you paste your own free TMDB key in Settings: that key, plus show and episode identifiers used to fetch better artwork or match episodes during an import.</td>
-                <td>Only if you enable it</td>
+                <td><strong>TMDB</strong></td>
+                <td>Show, movie, and episode identifiers, and (for where to watch) the country from your device language settings. When you are signed in, our server makes the request and keeps the API key. The results are cached by the title, not by your account. If you paste your own free key in Settings, your phone also sends that key to TMDB for artwork, import matching, and where to watch while signed out.</td>
+                <td>Movie search, show artwork, and where to watch when you are signed in. Directly from your phone only if you add your own key.</td>
               </tr>
             </tbody>
           </table>
@@ -294,10 +310,11 @@
         <hr />
 
         <h2 id="notifications">8. Notifications</h2>
-        <p>There are two completely different kinds, and one thing about them may surprise you.</p>
-        <p><strong>Episode alerts (local).</strong> When you turn on "Episode notifications" in Settings, the app schedules alerts directly on your iPhone from your own library — roughly the next 60 upcoming episodes, rebuilt each time the app opens or refreshes in the background. No server sees these and no data leaves your phone.</p>
-        <p><strong>Social pushes (from our server).</strong> New follower, someone liked your comment, someone replied on an episode you commented on. These go through Apple and the Expo push service and contain the other person's name and the show name.</p>
-        <p><strong>The thing to know:</strong> the app never asks separately for permission to send social pushes. If you have already allowed notifications for episode alerts, and you are signed in, it quietly registers for social pushes on the strength of that same permission. If you do not want them, turn TV App's notifications off in iOS Settings, or sign out. We are telling you this because the app's own wording does not make it obvious.</p>
+        <p>There are two kinds, and they share one permission.</p>
+        <p><strong>Episode alerts.</strong> The switch is in Settings. That is the only time the app asks for notification permission. It does not ask on first launch.</p>
+        <p><strong>Signed out,</strong> alerts are scheduled on your iPhone from your own library, roughly the next 60 upcoming episodes, rebuilt when the app opens or refreshes in the background. Nothing about them leaves the phone.</p>
+        <p><strong>Signed in,</strong> the app sends the id and name of each show you follow (archived shows are left out) and when you followed it. Every 15 minutes our server checks air dates and, if a new episode has come out, sends one push per episode through Apple and the Expo push service. The text is the show name and the episode. We store a row per episode we have already sent so you are not notified twice, and we store whether the switch is on. Turning the switch off deletes that show list from the server the next time the app can reach it.</p>
+        <p><strong>Social pushes.</strong> New follower, someone liked your comment, someone replied on an episode you commented on. These use the same permission and the same push token. The app does not ask a second time. If you do not want them, turn TV App's notifications off in iOS Settings, or sign out.</p>
 
         <hr />
 
@@ -309,7 +326,7 @@
           <li><strong>No crash or performance reporting.</strong> No Sentry, Crashlytics, Bugsnag or Datadog.</li>
           <li><strong>No tracking across apps or websites.</strong> None of your data is combined with data from other companies for advertising or measurement.</li>
           <li><strong>No selling or renting your data.</strong> We do not sell personal information and do not share it for cross-context behavioural advertising, in the sense those terms are used under California law or comparable laws elsewhere.</li>
-          <li><strong>No location.</strong> The app never asks for it and contains no location code.</li>
+          <li><strong>No location.</strong> The app never asks for location permission and contains no location code. Where to watch uses the country in your device language settings (for example US). That is not your GPS position.</li>
           <li><strong>No camera and no microphone.</strong> The app uses neither, and asks for neither.</li>
           <li><strong>No phone numbers.</strong> We never read, hash, send or store a phone number — yours or anyone else's.</li>
           <li><strong>No purchases.</strong> No in-app purchases, subscriptions or payment processing, so no payment data of any kind.</li>
@@ -414,7 +431,7 @@
           </table>
         </div>
         <p><strong>We do not collect:</strong> geolocation, biometric information, financial or payment information, commercial or purchase records, professional or education information, or inferences drawn to create a profile. We do not collect or use sensitive personal information, so there is nothing for you to limit.</p>
-        <p><strong>Who we disclose to.</strong> We disclose personal information only to service providers who process it for us under contract, and only for the business purposes above: Supabase (all server-side data), Expo and Apple (push token and notification text), and Apple (sign-in). We do not disclose personal information to anyone for their own purposes.</p>
+        <p><strong>Who we disclose to.</strong> We disclose personal information only to service providers who process it for us under contract, and only for the business purposes above: Supabase (all server-side data), Expo and Apple (push token and notification text), Apple (sign-in), and TMDB (title identifiers and the country from your language settings, for artwork, movie search, and where to watch). We do not disclose personal information to anyone for their own purposes. JustWatch supplies the streaming lineup to TMDB. We do not send your account to JustWatch. Opening their link is an ordinary visit to their site.</p>
         <p><strong>No sale, no sharing.</strong> We have not sold or shared personal information, including the personal information of consumers under 16 years of age, in the preceding 12 months. We have no plans to do so. Because there is nothing to opt out of, we do not operate a "Do Not Sell or Share My Personal Information" link.</p>
         <p><strong>Your rights.</strong> You have the right to know what we collect and to obtain a copy of it, the right to delete it, the right to correct inaccurate information, the right to opt out of sale or sharing (not applicable, as above), the right to limit the use of sensitive personal information (not applicable, as above), and the right not to be discriminated against for exercising any of them. We honour all of these.</p>
         <p><strong>How to exercise them.</strong> Email <a href="mailto:info@montyinc.net">info@montyinc.net</a>. We respond within 30 days and verify you the same way as in section 12. An <strong>authorised agent</strong> may act for you if they provide your signed written permission; we will still verify your identity directly and confirm you authorised the request.</p>
@@ -434,6 +451,7 @@
           <li>Every photo you uploaded to a comment</li>
           <li>Your character votes</li>
           <li>Your push token</li>
+          <li>The shows you follow for episode alerts, your alert preference, and the record of alerts already sent</li>
           <li>Your blocks, in both directions</li>
           <li>Reports you filed, and reports filed about you</li>
         </ul>
@@ -450,7 +468,7 @@
         <hr />
 
         <h2 id="how-long-we-keep-things">15. How long we keep things</h2>
-        <p>There is no automatic expiry. We do not run any scheduled job that deletes, ages out or purges data. <strong>Whatever you have shared stays until you remove it or delete your account.</strong> The one exception is push tokens: if Apple tells us a device no longer accepts notifications, that token is removed automatically.</p>
+        <p>There is no automatic expiry. We do not run any scheduled job that deletes, ages out or purges data. <strong>Whatever you have shared stays until you remove it or delete your account.</strong> The one exception is push tokens: if Apple tells us a device no longer accepts notifications, that token is removed automatically. A scheduled job does send new-episode alerts to people who turned that on. It does not delete anything of yours.</p>
         <p>We would rather say this plainly than invent a retention period we do not actually enforce.</p>
 
         <hr />
@@ -557,14 +575,15 @@
     </nav>
     <p>
       TV App is an independent app made by one person. It is not affiliated with,
-      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, JustWatch, or any network
       or streaming service, and it does not link to or provide any video.
     </p>
     <p>
       TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
       CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
-      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
-      not endorsed or certified by TMDB.
+      search powered by GIPHY. Artwork and streaming availability use the TMDB API
+      but are not endorsed or certified by TMDB. Streaming availability is
+      provided by <a href="https://www.justwatch.com">JustWatch</a>.
     </p>
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
   </div>
