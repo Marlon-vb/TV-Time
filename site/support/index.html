@@ -127,13 +127,14 @@
         <p>If a perfectly reasonable comment got caught by the filter — it happens, especially with show titles and character names — email <strong><a href="mailto:info@montyinc.net">info@montyinc.net</a></strong> with the text and we'll fix the rule.</p>
 
         <h3 id="do-episode-notifications-need-an-account">Do episode notifications need an account or a server?</h3>
-        <p>No. "New episode is out" alerts are scheduled directly on your iPhone from your own library, with nothing going through a server. Turn them on with the <strong>Episode notifications</strong> switch in Settings.</p>
-        <p>Two things to know:</p>
-        <ul>
-          <li>iOS limits how many notifications an app can have pending, so roughly your next 60 upcoming episodes are scheduled at a time. The list is rebuilt every time you open the app and during background refresh.</li>
-          <li>If you have notifications enabled <strong>and</strong> you're signed in, TV App also uses that same permission to send social pushes — a new follower, someone liking your comment, or a new comment on an episode you commented on. It reuses the permission you already granted rather than asking again. If you'd rather not receive those, sign out or turn off notifications for TV App in iOS Settings.</li>
-        </ul>
-        <p>Archived shows stop generating notifications entirely.</p>
+        <p>Not to work at all. Turn them on with the <strong>Episode notifications</strong> switch in Settings. That is the only time the app asks for notification permission. It does not ask when you first open it.</p>
+        <p><strong>Signed out,</strong> alerts are scheduled on your iPhone from your own library. iOS limits how many notifications an app can have pending, so roughly your next 60 upcoming episodes are scheduled at a time, and the list is rebuilt when you open the app.</p>
+        <p><strong>Signed in,</strong> the same switch sends the shows you follow to our server, which pushes you when a new episode actually airs, including when you have not opened the app. You get one notification per episode. Archived shows stay quiet. Turning the switch off stops them.</p>
+        <p>If notifications are on <strong>and</strong> you're signed in, TV App uses that same permission for social pushes too: a new follower, someone liking your comment, or a new comment on an episode you commented on. It does not ask again. If you'd rather not receive those, sign out or turn off notifications for TV App in iOS Settings.</p>
+
+        <h3 id="where-can-i-watch-this">Where can I watch a show or movie?</h3>
+        <p>Open the show or the movie. Under <strong>Where to watch</strong> you'll see the streaming services that offer it, and rent or buy options when those exist. The list uses the country in your iPhone's language settings, and it is provided by <a href="https://www.justwatch.com">JustWatch</a> via TMDB. It can be empty or out of date. The app does not play the video.</p>
+        <p>That lookup runs when you're signed in. If you're signed out, it runs only if you have added your own TMDB key in Settings.</p>
 
         <h3 id="a-show-is-missing-or-wrong">A show is missing, has the wrong artwork, or an air date looks wrong. What can I do?</h3>
         <p>TV App doesn't own the show data — TV shows, episodes, air dates, networks and cast all come from <strong>TVmaze</strong>, and movies and documentaries come from <strong>Apple's iTunes Search API</strong>. If something is missing or wrong there, it will be wrong in the app too.</p>
@@ -247,14 +248,15 @@
     </nav>
     <p>
       TV App is an independent app made by one person. It is not affiliated with,
-      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, JustWatch, or any network
       or streaming service, and it does not link to or provide any video.
     </p>
     <p>
       TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
       CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
-      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
-      not endorsed or certified by TMDB.
+      search powered by GIPHY. Artwork and streaming availability use the TMDB API
+      but are not endorsed or certified by TMDB. Streaming availability is
+      provided by <a href="https://www.justwatch.com">JustWatch</a>.
     </p>
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
   </div>

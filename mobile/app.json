@@ -63,7 +63,8 @@
       [
         "expo-notifications",
         {
-          "color": "#fbd737"
+          "color": "#fbd737",
+          "mode": "production"
         }
       ],
       "@bacons/apple-targets"

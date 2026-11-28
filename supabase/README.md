@@ -141,6 +141,71 @@ nothing, so you can run `notifications.sql` early without breaking anything.
 > servers** (they inject it into the function's environment). You never
 > copy or paste it anywhere, and it's never in the app.
 
+## New episode alerts (~10 minutes)
+
+A push when a new episode of a show you follow airs. This is separate from
+the social pushes above, and it reuses the same Expo token and the same
+`NOTIFY_SECRET`.
+
+Signed out, the phone still schedules alerts itself (iOS only keeps about 60
+pending, and only until the next time the app opens). Signed in, the phone
+uploads the shows the calendar already tracks and a job on the server sends
+the push, one per episode, even if the app has not been opened.
+
+1. In **Database → Extensions**, enable **pg_cron** and **pg_net** if they
+   are not already on. Social notifications already use pg_net.
+2. **SQL Editor** → paste [`alerts-and-watch.sql`](./alerts-and-watch.sql) →
+   **Run**. Safe to re-run. If the cron block prints a notice, enable pg_cron
+   and run the file again.
+3. Deploy the function (no JWT check; the shared secret gates it):
+
+```bash
+supabase functions deploy episode-alerts --no-verify-jwt
+```
+
+4. Point the job at it with the **same** `NOTIFY_SECRET` you set for social
+   pushes. If you never set one:
+
+```bash
+supabase secrets set NOTIFY_SECRET=<paste a long random string>
+```
+
+```sql
+insert into public.episode_alert_config (function_url, secret)
+values (
+  'https://dvrnfqyrljcuosjspyab.supabase.co/functions/v1/episode-alerts',
+  '<the same NOTIFY_SECRET>'
+)
+on conflict (single) do update
+  set function_url = excluded.function_url, secret = excluded.secret;
+```
+
+Until that row exists the scheduled job wakes up and does nothing.
+
+The show list only reaches the server after someone turns **Episode
+notifications** on in Settings (that is also when iOS asks for permission)
+and the app is signed in. Ship the app update after this is in place.
+Before the tables exist, the app keeps scheduling alerts on the phone, so
+nothing goes quiet.
+
+## Where to watch (~2 minutes)
+
+Show and movie pages list subscription, rent, and buy services from TMDB's
+watch providers, with the JustWatch credit TMDB requires. Needs the
+`TMDB_KEY` secret from movie search. Nothing new to set if that is already
+there.
+
+The cache table is in [`alerts-and-watch.sql`](./alerts-and-watch.sql), so
+running that file for episode alerts covers this too.
+
+```bash
+supabase functions deploy watch
+```
+
+JWT verification stays **on**. Signed-out phones with no personal TMDB key
+simply hide the row. A key pasted in Settings talks to TMDB directly and
+works signed out.
+
 ## GIF search (~5 minutes)
 
 Comments can carry a GIF. The app holds **no key** — it calls an Edge Function

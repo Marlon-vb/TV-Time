@@ -15,6 +15,7 @@ import { PENDING_AVATAR_KEY } from "@/components/OnboardingSetup";
 import { registerForSocial } from "./api";
 import { reconcileIfStale } from "./mirror";
 import { resetCommentRate } from "./moderation";
+import { rescheduleAll } from "../notifications";
 import type { Profile } from "./types";
 
 interface AuthState {
@@ -91,6 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Backfill/repair the server's copy of the watch history so friends
         // and community stats see the whole library (cheap when in sync).
         void reconcileIfStale();
+        // A fresh sign-in should switch episode alerts over to push (or turn
+        // the server copy off if the Settings switch is off). Launch already
+        // does this from the background sync, so skip the duplicate there.
+        if (event === "SIGNED_IN") void rescheduleAll();
       }
     });
     return () => sub.subscription.unsubscribe();

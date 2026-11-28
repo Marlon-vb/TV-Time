@@ -134,7 +134,9 @@ function NotificationsSection() {
       return;
     }
     setMessage(
-      on ? "You'll be notified when episodes of your shows air." : null
+      on
+        ? "You'll be notified when a new episode of a show you follow airs."
+        : null
     );
     setEnabled(on);
   };
@@ -149,8 +151,9 @@ function NotificationsSection() {
         }}
       >
         <Text style={{ ...bodyText, flex: 1, paddingRight: 12 }}>
-          Get notified the moment a new episode of a show you follow airs.
-          Archived shows stay quiet.
+          Get notified when a new episode of a show you follow airs. Archived
+          shows stay quiet. Permission is asked when you turn this on, not when
+          you first open the app.
         </Text>
         <Switch
           value={enabled}

@@ -28,7 +28,7 @@ export function tmdbConfigured(): boolean {
   return Boolean(getKey());
 }
 
-async function tmdbFetch(pathname: string): Promise<unknown | null> {
+export async function tmdbFetch(pathname: string): Promise<unknown | null> {
   const key = getKey();
   if (!key) return null;
   const isV4Token = key.startsWith("ey");

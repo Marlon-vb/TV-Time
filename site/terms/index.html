@@ -40,7 +40,7 @@
         <p class="eyebrow">Legal</p>
         <h1>Terms of Use</h1>
         <p class="meta">
-          Effective 27 July 2026 · Monty Inc — TV App for iPhone ·
+          Effective 28 November 2026 · Monty Inc — TV App for iPhone ·
           <a href="mailto:info@montyinc.net">info@montyinc.net</a> ·
           <a href="https://tvapp.montyinc.net">https://tvapp.montyinc.net</a>
         </p>
@@ -201,18 +201,25 @@
         </p>
 
         <p>
-          <strong>Signing in is optional.</strong> Sign in with Apple is the only sign-in
-          method, and it exists solely to unlock the social features: your public profile,
-          following people, the activity feed, community episode ratings, "friends who
-          watched", best-character votes and episode comments.
+          <strong>Signing in is optional.</strong> Sign in with Apple unlocks the social
+          features: your public profile, following people, the activity feed,
+          community episode ratings, "friends who watched", best-character votes
+          and episode comments. It is also what lets new-episode alerts arrive as
+          pushes when the app is closed, and what loads streaming availability when
+          you have not added your own TMDB key. Following shows, marking episodes,
+          on-device episode alerts, the widget, import and backup still work with
+          no account.
         </p>
 
         <p>
           <strong>What signing in shares.</strong> When you are signed in, the episodes you
           mark watched and the ratings you give them are mirrored to our backend so that
           people who follow you can see them, and so the App can compute community averages
-          and recommendations. When you first sign in, your existing local library is
-          backfilled to the server for the same reason. Comments you post are visible to
+          and           recommendations. When you first sign in, your existing local library is
+          backfilled to the server for the same reason. When episode alerts are on,
+          the App also sends the id and name of each non-archived show you follow,
+          and when you followed it, so a push can be sent when an episode airs.
+          Comments you post are visible to
           <strong>every</strong> signed-in user, not only to your followers. Photos you attach
           to comments are stored in a publicly-readable location and are retrievable by anyone
           who has the URL, even without an account. Do not post a photo you would not be
@@ -225,11 +232,12 @@
         </p>
 
         <p>
-          <strong>What the App does not do.</strong> The App does not play video, does not
-          link to or provide streaming, does not tell you where a title is available to
-          stream, and does not offer direct messages. Movies and documentaries are tracked
-          locally only and have no social layer. There is no cloud restore of your library —
-          moving to a new phone means exporting a backup file yourself.
+          <strong>What the App does not do.</strong> The App does not play video and
+          does not provide a stream. It can show which services offer a title in
+          your region, using data from TMDB and JustWatch, and it links to JustWatch
+          for that credit. It does not offer direct messages. Movies and documentaries
+          are tracked locally only and have no social layer. There is no cloud restore
+          of your library — moving to a new phone means exporting a backup file yourself.
         </p>
 
         <p>
@@ -706,8 +714,11 @@
           posters, stills and viewer ratings — is <strong>supplied by third-party data
           sources</strong>. Those sources are: <strong>TVmaze</strong> (used under the
           Creative Commons Attribution-ShareAlike licence), <strong>Apple's iTunes Search
-          API</strong>, and — only if you choose to add your own API key —
-          <strong>TMDB</strong>. GIFs come from <strong>GIPHY</strong>.
+          API</strong>, and <strong>TMDB</strong> (movie search, artwork, and where a
+          title can be streamed, rented, or bought; streaming availability is provided
+          by <strong>JustWatch</strong>). GIFs come from <strong>GIPHY</strong>. A TMDB
+          key you paste yourself is optional and is used from your phone. Otherwise our
+          server holds the key.
         </p>
 
         <p>
@@ -728,9 +739,13 @@
         </p>
 
         <p>
-          Notifications about upcoming episodes are scheduled on your device from this same
-          third-party data. They may fire late, early, or not at all, and iOS limits how many
-          can be pending at once. They are a convenience, not a guarantee.
+          Notifications about new episodes use this same third-party air-date data.
+          Signed out, they are scheduled on your device and iOS limits how many can
+          be pending at once. Signed in, our server sends one push per episode after
+          it has aired. They may arrive late, early, or not at all. They are a
+          convenience, not a guarantee. Where to watch can be missing or wrong for
+          your country, and a service can add or drop a title without the App
+          noticing until the next refresh.
         </p>
 
         <h3 id="102-no-affiliation-or-endorsement">10.2 No affiliation or endorsement</h3>
@@ -753,7 +768,7 @@
             successor to it;
           </li>
           <li>
-            TVmaze, GIPHY, TMDB, or any other metadata, image or content provider;
+            TVmaze, GIPHY, TMDB, JustWatch, or any other metadata, image or content provider;
           </li>
           <li>Apple Inc., other than as an App Store developer and as set out in Section 17; or</li>
           <li>
@@ -1256,7 +1271,8 @@
             TV data provided by TVmaze.com, used under CC BY-SA. Movie and documentary
             information provided by the Apple iTunes Search API; Apple does not endorse this
             app. GIF search powered by GIPHY. If you supply your own TMDB API key, this
-            product uses the TMDB API but is not endorsed or certified by TMDB. All programme
+            product uses the TMDB API but is not endorsed or certified by TMDB.
+            Streaming availability is provided by JustWatch. All programme
             titles, artwork and trademarks are the property of their respective owners.
           </em>
         </p>
@@ -1275,14 +1291,15 @@
     </nav>
     <p>
       TV App is an independent app made by one person. It is not affiliated with,
-      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, or any network
+      endorsed by or certified by TVmaze, Apple, GIPHY, TMDB, JustWatch, or any network
       or streaming service, and it does not link to or provide any video.
     </p>
     <p>
       TV data provided by <a href="https://www.tvmaze.com">TVmaze.com</a>, used under
       CC BY-SA. Movie and documentary data from the Apple iTunes Search API. GIF
-      search powered by GIPHY. Optional artwork enrichment uses the TMDB API but is
-      not endorsed or certified by TMDB.
+      search powered by GIPHY. Artwork and streaming availability use the TMDB API
+      but are not endorsed or certified by TMDB. Streaming availability is
+      provided by <a href="https://www.justwatch.com">JustWatch</a>.
     </p>
     <p>&copy; <span id="yr">2026</span> Monty Inc.</p>
   </div>

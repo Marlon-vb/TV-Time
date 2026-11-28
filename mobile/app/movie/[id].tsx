@@ -13,6 +13,7 @@ import { fmtDate } from "@/lib/format";
 import * as movies from "@/lib/movies";
 import * as social from "@/lib/social/api";
 import { useFocusData } from "@/lib/useFocusData";
+import WhereToWatch from "@/components/WhereToWatch";
 
 export default function MovieScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -199,6 +200,8 @@ export default function MovieScreen() {
           <Text style={sectionLabel}>YOUR RATING</Text>
           <StarRating value={movie.rating} onChange={rate} size={38} />
         </View>
+
+        <WhereToWatch kind="movie" tmdbId={movie.id} />
 
         {/* Synopsis */}
         {movie.overview && (

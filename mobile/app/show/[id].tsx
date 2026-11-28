@@ -31,6 +31,7 @@ import { epCode, fmtDate, relativeDay } from "@/lib/format";
 import * as repo from "@/lib/repo";
 import * as tvmaze from "@/lib/tvmaze";
 import { rescheduleAll } from "@/lib/notifications";
+import WhereToWatch from "@/components/WhereToWatch";
 import { showShareMessage } from "@/lib/share";
 import * as social from "@/lib/social/api";
 import * as mirror from "@/lib/social/mirror";
@@ -453,9 +454,10 @@ export default function ShowScreen() {
                 )}
                 <ActionButton
                   label={show.archived === 1 ? "Unarchive" : "Archive"}
-                  onPress={() =>
-                    change(() => repo.setArchived(showId, show.archived !== 1))
-                  }
+                  onPress={() => {
+                    change(() => repo.setArchived(showId, show.archived !== 1));
+                    void rescheduleAll();
+                  }}
                 />
                 <ActionButton
                   label="Share"
@@ -485,6 +487,13 @@ export default function ShowScreen() {
               <Text style={{ color: colors.fg, fontSize: 13 }}>{renewalLine}</Text>
             </View>
           )}
+
+          <WhereToWatch
+            kind="tv"
+            tmdbId={show.tmdb_id}
+            imdbId={show.imdb_id}
+            tvdbId={show.tvdb_id}
+          />
 
           {/* Friends who watched this show */}
           {followed && <FriendsWatchedRow showId={show.id} />}

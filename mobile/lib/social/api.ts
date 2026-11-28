@@ -1145,9 +1145,34 @@ export async function registerPushToken(token: string): Promise<void> {
 }
 
 /**
+ * Store the Expo push token when notification permission is already granted.
+ * Does not prompt. Returns false when there is no session, no permission,
+ * or the token cannot be minted (a simulator, or push credentials not set up).
+ */
+export async function registerPushTokenIfAllowed(): Promise<boolean> {
+  try {
+    const me = await uid();
+    if (!me) return false;
+    const perm = await Notifications.getPermissionsAsync();
+    if (!perm.granted) return false;
+    const extra = Constants.expoConfig?.extra as
+      | { eas?: { projectId?: string } }
+      | undefined;
+    const projectId = extra?.eas?.projectId;
+    if (!projectId) return false;
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    if (!token) return false;
+    await registerPushToken(token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * On sign-in: store the user's email hash (so their contacts can find them)
  * and register their Expo push token if notifications are already allowed.
- * Best-effort — never throws.
+ * Best-effort — never throws. Does not request permission.
  */
 export async function registerForSocial(email?: string | null): Promise<void> {
   try {
@@ -1156,13 +1181,7 @@ export async function registerForSocial(email?: string | null): Promise<void> {
     /* ignore */
   }
   try {
-    const perm = await Notifications.getPermissionsAsync();
-    if (!perm.granted) return;
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    const projectId = (Constants.expoConfig?.extra as any)?.eas?.projectId;
-    if (!projectId) return;
-    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    await registerPushToken(token);
+    await registerPushTokenIfAllowed();
   } catch {
     /* ignore */
   }
